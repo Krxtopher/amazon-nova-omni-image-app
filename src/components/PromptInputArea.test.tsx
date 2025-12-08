@@ -60,7 +60,7 @@ describe('PromptInputArea - Submit Handler', () => {
         await user.type(textarea, 'A beautiful sunset');
 
         // Submit
-        const submitButton = screen.getByRole('button', { name: /generate image/i });
+        const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
         // Verify placeholder was added immediately
@@ -91,7 +91,7 @@ describe('PromptInputArea - Submit Handler', () => {
         await user.type(textarea, 'A beautiful sunset');
 
         // Submit
-        const submitButton = screen.getByRole('button', { name: /generate image/i });
+        const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
         // Wait for generation to complete
@@ -129,7 +129,7 @@ describe('PromptInputArea - Submit Handler', () => {
         await user.type(textarea, 'A beautiful sunset');
 
         // Submit
-        const submitButton = screen.getByRole('button', { name: /generate image/i });
+        const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
         // Wait for error handling
@@ -163,7 +163,7 @@ describe('PromptInputArea - Submit Handler', () => {
         await user.type(textarea, 'A beautiful sunset');
 
         // Submit
-        const submitButton = screen.getByRole('button', { name: /generate image/i });
+        const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
         // Verify service was called with correct parameters
@@ -211,7 +211,7 @@ describe('PromptInputArea - Submit Handler', () => {
         await user.type(textarea, 'Make it more colorful');
 
         // Submit
-        const submitButton = screen.getByRole('button', { name: /generate image/i });
+        const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
         // Verify service was called with edit source
@@ -231,7 +231,7 @@ describe('PromptInputArea - Submit Handler', () => {
         });
     });
 
-    it('should clear prompt after successful generation', async () => {
+    it('should keep prompt after successful generation', async () => {
         const user = userEvent.setup();
 
         render(
@@ -247,7 +247,7 @@ describe('PromptInputArea - Submit Handler', () => {
         await user.type(textarea, 'A beautiful sunset');
 
         // Submit
-        const submitButton = screen.getByRole('button', { name: /generate image/i });
+        const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
         // Wait for generation to complete
@@ -255,7 +255,74 @@ describe('PromptInputArea - Submit Handler', () => {
             expect(mockUpdateImage).toHaveBeenCalled();
         });
 
-        // Verify prompt was cleared
-        expect(textarea.value).toBe('');
+        // Verify prompt was kept (not cleared)
+        expect(textarea.value).toBe('A beautiful sunset');
+    });
+
+    it('should allow multiple concurrent requests', async () => {
+        const user = userEvent.setup();
+
+        // Mock service with delayed response
+        let resolveFirst: (value: string) => void;
+        let resolveSecond: (value: string) => void;
+        const firstPromise = new Promise<string>((resolve) => { resolveFirst = resolve; });
+        const secondPromise = new Promise<string>((resolve) => { resolveSecond = resolve; });
+
+        mockBedrockService.generateImage = vi.fn()
+            .mockReturnValueOnce(firstPromise)
+            .mockReturnValueOnce(secondPromise);
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        const submitButton = screen.getByLabelText(/generate image/i);
+
+        // Submit first request
+        await user.clear(textarea);
+        await user.type(textarea, 'First image');
+        await user.click(submitButton);
+
+        // Verify first placeholder was added
+        await waitFor(() => {
+            expect(mockAddImage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    prompt: 'First image',
+                    status: 'generating',
+                })
+            );
+        });
+
+        // Submit second request while first is still generating
+        await user.clear(textarea);
+        await user.type(textarea, 'Second image');
+        await user.click(submitButton);
+
+        // Verify second placeholder was added
+        await waitFor(() => {
+            expect(mockAddImage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    prompt: 'Second image',
+                    status: 'generating',
+                })
+            );
+        });
+
+        // Verify both requests were made
+        expect(mockBedrockService.generateImage).toHaveBeenCalledTimes(2);
+
+        // Resolve both requests
+        resolveFirst!('data:image/png;base64,firstImage');
+        resolveSecond!('data:image/png;base64,secondImage');
+
+        // Wait for both to complete
+        await waitFor(() => {
+            expect(mockUpdateImage).toHaveBeenCalledTimes(2);
+        });
     });
 });
