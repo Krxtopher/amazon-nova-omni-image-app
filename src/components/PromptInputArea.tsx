@@ -11,7 +11,7 @@ import {
 import { useImageStore } from '@/stores/imageStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
-import { X, Upload, Loader2 } from 'lucide-react';
+import { X, Paperclip, Loader2 } from 'lucide-react';
 
 /**
  * Props for PromptInputArea component
@@ -99,7 +99,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
 
         // Create placeholder image immediately
         // Requirements: 1.3
-        const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         const placeholderImage: GeneratedImage = {
             id: placeholderId,
             url: '', // Empty URL for placeholder
@@ -325,94 +325,94 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                 </div>
             )}
 
-            {/* Image Placeholder Area */}
-            <div className="flex justify-center">
-                <div className="w-full max-w-md aspect-square bg-muted rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center relative">
-                    {editSource ? (
-                        <div className="relative w-full h-full group">
-                            <img
-                                src={editSource.url}
-                                alt="Edit source"
-                                className="w-full h-full object-contain rounded-lg"
-                            />
-                            {/* Remove button overlay */}
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={handleClearEditSource}
-                                aria-label="Remove edit source"
-                                title="Remove edit source"
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="text-center text-muted-foreground p-4">
-                            <Upload className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm mb-3">No image selected</p>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleUploadClick}
-                                disabled={isGenerating}
-                                aria-label="Upload image"
-                            >
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload Image
-                            </Button>
-                            <p className="text-xs mt-3">Upload an image to edit or generate from scratch</p>
-                            {fileError && (
-                                <p className="text-sm text-destructive mt-2" role="alert">
-                                    {fileError}
-                                </p>
-                            )}
-                        </div>
-                    )}
-                    {/* Hidden file input */}
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                        aria-label="File upload input"
-                    />
-                </div>
-            </div>
+            {/* Hidden file input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={handleFileUpload}
+                className="hidden"
+                aria-label="File upload input"
+            />
 
-            {/* Prompt Input */}
+            {/* Prompt Input with Thumbnail */}
             <div className="space-y-2">
                 <label htmlFor="prompt-input" className="text-sm font-medium">
                     Prompt
                 </label>
-                <Textarea
-                    id="prompt-input"
-                    placeholder="Describe the image you want to generate..."
-                    value={prompt}
-                    onChange={(e) => {
-                        setPrompt(e.target.value);
-                        // Clear validation error when user starts typing
-                        if (validationError) {
-                            setValidationError(null);
-                        }
-                    }}
-                    onKeyDown={handleKeyDown}
-                    disabled={isGenerating}
-                    className={`min-h-[100px] resize-none ${validationError ? 'border-destructive' : ''}`}
-                    aria-label="Image generation prompt"
-                    aria-invalid={!!validationError}
-                    aria-describedby={validationError ? 'prompt-error' : undefined}
-                />
+                <div className="flex gap-2 items-start">
+                    {/* Thumbnail preview (if image uploaded) */}
+                    {editSource && (
+                        <div className="relative shrink-0 group">
+                            <img
+                                src={editSource.url}
+                                alt="Edit source"
+                                className="w-16 h-16 object-cover rounded border-2 border-muted-foreground/25"
+                            />
+                            {/* Remove button */}
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-white shadow-md"
+                                onClick={handleClearEditSource}
+                                aria-label="Remove edit source"
+                                title="Remove edit source"
+                            >
+                                <X className="h-3 w-3 text-black" />
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Text input area */}
+                    <div className="flex-1">
+                        <Textarea
+                            id="prompt-input"
+                            placeholder="Describe the image you want to generate..."
+                            value={prompt}
+                            onChange={(e) => {
+                                setPrompt(e.target.value);
+                                // Clear validation error when user starts typing
+                                if (validationError) {
+                                    setValidationError(null);
+                                }
+                            }}
+                            onKeyDown={handleKeyDown}
+                            disabled={isGenerating}
+                            className={`min-h-[100px] resize-none ${validationError ? 'border-destructive' : ''}`}
+                            aria-label="Image generation prompt"
+                            aria-invalid={!!validationError}
+                            aria-describedby={validationError ? 'prompt-error' : undefined}
+                        />
+                    </div>
+                </div>
                 {validationError && (
                     <p id="prompt-error" className="text-sm text-destructive" role="alert">
                         {validationError}
+                    </p>
+                )}
+                {fileError && (
+                    <p className="text-sm text-destructive" role="alert">
+                        {fileError}
                     </p>
                 )}
             </div>
 
             {/* Controls Row */}
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
+                {/* Paperclip Upload Button */}
+                <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleUploadClick}
+                    disabled={isGenerating}
+                    aria-label="Upload image"
+                    title="Upload an image to edit"
+                    className="sm:w-auto w-full"
+                >
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    Upload Image
+                </Button>
+
                 {/* Aspect Ratio Selector */}
                 <div className="flex-1 space-y-2">
                     <label htmlFor="aspect-ratio-select" className="text-sm font-medium">
