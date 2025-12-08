@@ -1,0 +1,248 @@
+import { useEffect, useState } from 'react';
+import { PromptInputArea, GalleryGrid, ResetDataButton } from '@/components';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
+import { BedrockImageService } from '@/services/BedrockImageService';
+import { useImageStore } from '@/stores/imageStore';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
+import { Sparkles } from 'lucide-react';
+import { migrateFromLocalStorage, needsMigration } from '@/utils/migrateFromLocalStorage';
+import './App.css';
+
+/**
+ * Initialize Bedrock service with credentials
+ * Requirements: 10.3
+ * 
+ * Note: In a production application, credentials should be obtained from:
+ * - AWS Cognito Identity Pool
+ * - AWS Amplify
+ * - Environment variables (for server-side)
+ * 
+ * For this demo, we're using a placeholder configuration.
+ * You'll need to configure proper AWS credentials before using the app.
+ */
+function createBedrockService(): BedrockImageService {
+  // TODO: Replace with actual credential configuration
+  // Example using Cognito Identity Pool:
+  // import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers';
+  // 
+  // const credentials = fromCognitoIdentityPool({
+  //     clientConfig: { region: 'us-east-1' },
+  //     identityPoolId: 'YOUR_IDENTITY_POOL_ID',
+  // });
+
+  return new BedrockImageService({
+    region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '',
+    },
+  });
+}
+
+/**
+ * Main application content component
+ * Separated from App to allow access to BedrockService context
+ */
+function AppContent() {
+  const bedrockService = useBedrockService();
+  const { images, deleteImage, setEditSource, initialize, isLoading } = useImageStore();
+  const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
+
+  // Initialize the store and run migration if needed
+  useEffect(() => {
+    const initializeApp = async () => {
+      // Check if migration is needed
+      if (needsMigration()) {
+        setMigrationStatus('Migrating your data to new storage...');
+        const result = await migrateFromLocalStorage();
+
+        if (result.success && result.migratedImages > 0) {
+          toast.success(`Successfully migrated ${result.migratedImages} images to new storage`, {
+            duration: 5000,
+          });
+        } else if (!result.success) {
+          toast.error('Failed to migrate data. Please contact support.', {
+            duration: 5000,
+          });
+        }
+        setMigrationStatus(null);
+      }
+
+      // Initialize the store
+      await initialize();
+    };
+
+    initializeApp();
+  }, [initialize]);
+
+  /**
+   * Handle successful image generation
+   * Requirements: 1.5, 10.5
+   */
+  const handleSuccess = (message: string) => {
+    toast.success(message, {
+      duration: 3000,
+    });
+  };
+
+  /**
+   * Handle image generation errors
+   * Requirements: 1.5, 10.5
+   */
+  const handleError = (error: string) => {
+    toast.error(error, {
+      duration: 5000,
+    });
+  };
+
+  /**
+   * Handle image deletion
+   * Requirements: 4.2
+   */
+  const handleImageDelete = async (id: string) => {
+    try {
+      await deleteImage(id);
+      toast.success('Image deleted', {
+        duration: 2000,
+      });
+    } catch (error) {
+      toast.error('Failed to delete image', {
+        duration: 2000,
+      });
+    }
+  };
+
+  /**
+   * Handle image edit
+   * Sets the selected image as edit source and scrolls to prompt input
+   * Requirements: 5.2
+   */
+  const handleImageEdit = (image: any) => {
+    setEditSource({
+      id: image.id,
+      url: image.url,
+      aspectRatio: image.aspectRatio,
+      width: image.width,
+      height: image.height,
+    });
+
+    // Scroll to prompt input area
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+
+    toast.info('Image set as edit source', {
+      duration: 2000,
+    });
+  };
+
+  // Show loading state while initializing or migrating
+  if (isLoading || migrationStatus) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{migrationStatus || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">
+                  AI Image Generator
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Powered by Amazon Bedrock Nova 2 Omni
+                </p>
+              </div>
+            </div>
+            <ResetDataButton />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8 space-y-12">
+        {/* Prompt Input Area */}
+        <section aria-label="Image generation controls">
+          <PromptInputArea
+            bedrockService={bedrockService}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
+        </section>
+
+        {/* Gallery Grid */}
+        <section aria-label="Generated images gallery">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground">
+              Your Gallery
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {images.length === 0
+                ? 'No images yet. Generate your first image above!'
+                : `${images.length} ${images.length === 1 ? 'image' : 'images'}`}
+            </p>
+          </div>
+          <GalleryGrid
+            images={images}
+            onImageDelete={handleImageDelete}
+            onImageEdit={handleImageEdit}
+          />
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card mt-12">
+        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+          <p>
+            Built with React, TypeScript, Vite, and ShadCN UI
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+/**
+ * Main App component
+ * Sets up the application with all necessary providers and error boundaries
+ * Requirements: 9.4, 9.5
+ */
+function App() {
+  const bedrockService = createBedrockService();
+
+  useEffect(() => {
+    // Log initialization
+    console.log('AI Image Generator initialized');
+    console.log('AWS Region:', import.meta.env.VITE_AWS_REGION || 'us-east-1');
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <ThemeProvider>
+        <BedrockServiceProvider service={bedrockService}>
+          <AppContent />
+          <Toaster />
+        </BedrockServiceProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default App;
