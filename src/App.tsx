@@ -7,7 +7,6 @@ import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import { Sparkles } from 'lucide-react';
 import { migrateFromLocalStorage, needsMigration } from '@/utils/migrateFromLocalStorage';
 import './App.css';
 
@@ -153,33 +152,22 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary/10 p-2">
-                <Sparkles className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  AI Image Generator
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Powered by Amazon Bedrock Nova 2 Omni
-                </p>
-              </div>
-            </div>
-            <ResetDataButton />
-          </div>
+    <div className="min-h-screen bg-background flex">
+      {/* Left Sidebar */}
+      <aside className="w-64 border-r border-border bg-card flex flex-col">
+        <div className="flex-1"></div>
+        <div className="p-4">
+          <ResetDataButton />
         </div>
-      </header>
+      </aside>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 space-y-12">
-        {/* Prompt Input Area */}
-        <section aria-label="Image generation controls">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Fixed Prompt Input Area */}
+        <section
+          aria-label="Image generation controls"
+          className="fixed top-0 right-0 left-64 z-10 bg-background shadow-md"
+        >
           <PromptInputArea
             bedrockService={bedrockService}
             onSuccess={handleSuccess}
@@ -187,34 +175,27 @@ function AppContent() {
           />
         </section>
 
-        {/* Gallery Grid */}
-        <section aria-label="Generated images gallery">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-foreground">
-              Your Gallery
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {images.length === 0
-                ? 'No images yet. Generate your first image above!'
-                : `${images.length} ${images.length === 1 ? 'image' : 'images'}`}
-            </p>
-          </div>
-          <GalleryGrid
-            images={images}
-            onImageDelete={handleImageDelete}
-            onImageEdit={handleImageEdit}
-          />
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-card mt-12">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>
-            Built with React, TypeScript, Vite, and ShadCN UI
-          </p>
-        </div>
-      </footer>
+        {/* Scrollable Gallery */}
+        <main className="flex-1 overflow-y-auto pt-[280px]">
+          <section aria-label="Generated images gallery" className="container mx-auto px-4 py-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Your Gallery
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {images.length === 0
+                  ? 'No images yet. Generate your first image above!'
+                  : `${images.length} ${images.length === 1 ? 'image' : 'images'}`}
+              </p>
+            </div>
+            <GalleryGrid
+              images={images}
+              onImageDelete={handleImageDelete}
+              onImageEdit={handleImageEdit}
+            />
+          </section>
+        </main>
+      </div>
     </div>
   );
 }

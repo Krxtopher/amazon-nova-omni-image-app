@@ -138,8 +138,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                 onSuccess(editSource ? 'Image edited successfully!' : 'Image generated successfully!');
             }
 
-            // Clear prompt and edit source after successful generation
-            setPrompt('');
+            // Clear validation error
             setValidationError(null);
 
             // Clear edit source if it was used
@@ -377,7 +376,6 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                                 }
                             }}
                             onKeyDown={handleKeyDown}
-                            disabled={isGenerating}
                             className={`min-h-[100px] resize-none ${validationError ? 'border-destructive' : ''}`}
                             aria-label="Image generation prompt"
                             aria-invalid={!!validationError}
@@ -404,7 +402,6 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                     variant="outline"
                     size="lg"
                     onClick={handleUploadClick}
-                    disabled={isGenerating}
                     aria-label="Upload image"
                     title="Upload an image to edit"
                     className="sm:w-auto w-full"
@@ -421,7 +418,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                     <Select
                         value={selectedAspectRatio}
                         onValueChange={(value) => setAspectRatio(value as AspectRatio).catch(console.error)}
-                        disabled={isGenerating || !!editSource}
+                        disabled={!!editSource}
                     >
                         <SelectTrigger id="aspect-ratio-select" aria-label="Select aspect ratio">
                             <SelectValue placeholder="Select aspect ratio" />
@@ -439,12 +436,11 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                 {/* Submit Button */}
                 <Button
                     onClick={handleSubmit}
-                    disabled={isGenerating || !prompt.trim()}
+                    disabled={!prompt.trim()}
                     className="sm:w-auto w-full"
                     size="lg"
                 >
-                    {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-                    {isGenerating ? 'Generating...' : 'Generate Image'}
+                    Generate Image
                 </Button>
             </div>
         </div>
