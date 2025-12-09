@@ -28,6 +28,7 @@ interface PromptInputAreaProps {
  * Available aspect ratio options
  */
 const ASPECT_RATIOS: { value: AspectRatio; label: string }[] = [
+    { value: 'random', label: 'Random' },
     { value: '2:1', label: '2:1' },
     { value: '16:9', label: '16:9' },
     { value: '3:2', label: '3:2' },
@@ -38,6 +39,21 @@ const ASPECT_RATIOS: { value: AspectRatio; label: string }[] = [
     { value: '9:16', label: '9:16' },
     { value: '1:2', label: '1:2' },
 ];
+
+/**
+ * Concrete aspect ratios (excluding 'random')
+ */
+const CONCRETE_ASPECT_RATIOS: Exclude<AspectRatio, 'random'>[] = [
+    '2:1', '16:9', '3:2', '4:3', '1:1', '3:4', '2:3', '9:16', '1:2'
+];
+
+/**
+ * Get a random aspect ratio from the available options
+ */
+const getRandomAspectRatio = (): Exclude<AspectRatio, 'random'> => {
+    const randomIndex = Math.floor(Math.random() * CONCRETE_ASPECT_RATIOS.length);
+    return CONCRETE_ASPECT_RATIOS[randomIndex];
+};
 
 /**
  * PromptInputArea Component
@@ -107,7 +123,17 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
         const currentEditSource = editSource;
 
         // Determine aspect ratio to use
-        const aspectRatioToUse = currentEditSource ? currentEditSource.aspectRatio : selectedAspectRatio;
+        let aspectRatioToUse: Exclude<AspectRatio, 'random'>;
+        if (currentEditSource) {
+            // Use edit source's aspect ratio (edit sources always have concrete ratios)
+            aspectRatioToUse = currentEditSource.aspectRatio as Exclude<AspectRatio, 'random'>;
+        } else if (selectedAspectRatio === 'random') {
+            // Pick a random aspect ratio
+            aspectRatioToUse = getRandomAspectRatio();
+        } else {
+            // Use selected aspect ratio (already validated as concrete)
+            aspectRatioToUse = selectedAspectRatio as Exclude<AspectRatio, 'random'>;
+        }
         const dimensions = ASPECT_RATIO_DIMENSIONS[aspectRatioToUse];
 
         // Create placeholder image immediately (optimistic UI)
@@ -135,7 +161,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
             // Use editSource if present, otherwise generate from scratch
             const response = await bedrockService.generateContent({
                 prompt: prompt,
-                aspectRatio: currentEditSource ? undefined : selectedAspectRatio,
+                aspectRatio: currentEditSource ? undefined : aspectRatioToUse,
                 editSource: currentEditSource || undefined,
             });
 

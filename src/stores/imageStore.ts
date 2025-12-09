@@ -37,7 +37,7 @@ export type ImageStore = ImageStoreState & ImageStoreActions;
 /**
  * Default aspect ratio
  */
-const DEFAULT_ASPECT_RATIO: AspectRatio = '1:1';
+const DEFAULT_ASPECT_RATIO: AspectRatio = 'random';
 
 /**
  * Image store using Zustand with SQLite persistence

@@ -14,8 +14,9 @@ export interface BedrockServiceConfig {
 /**
  * Mapping of aspect ratios to their corresponding dimensions
  * Used for display purposes and placeholder sizing
+ * Note: 'random' is not included as it's resolved to a concrete ratio before use
  */
-export const ASPECT_RATIO_DIMENSIONS: Record<AspectRatio, { width: number; height: number }> = {
+export const ASPECT_RATIO_DIMENSIONS: Record<Exclude<AspectRatio, 'random'>, { width: number; height: number }> = {
     '2:1': { width: 1536, height: 768 },
     '16:9': { width: 1344, height: 768 },
     '3:2': { width: 1152, height: 768 },
@@ -68,10 +69,10 @@ export class BedrockImageService {
      * Note: Nova 2 Omni handles aspect ratios internally via prompt,
      * but these dimensions are useful for display purposes and placeholder sizing
      * 
-     * @param ratio - The aspect ratio to convert
+     * @param ratio - The aspect ratio to convert (must be a concrete ratio, not 'random')
      * @returns Object containing width and height in pixels
      */
-    getDimensionsForAspectRatio(ratio: AspectRatio): { width: number; height: number } {
+    getDimensionsForAspectRatio(ratio: Exclude<AspectRatio, 'random'>): { width: number; height: number } {
         return ASPECT_RATIO_DIMENSIONS[ratio];
     }
 
