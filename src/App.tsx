@@ -154,7 +154,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col">
+      <aside className="w-64 border-r border-border bg-card flex flex-col fixed left-0 top-0 bottom-0">
         <div className="flex-1"></div>
         <div className="p-4">
           <ResetDataButton />
@@ -162,11 +162,11 @@ function AppContent() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-64">
         {/* Fixed Prompt Input Area */}
         <section
           aria-label="Image generation controls"
-          className="fixed top-0 right-0 left-64 z-10 bg-background shadow-md"
+          className="fixed top-0 right-0 left-64 z-10 bg-background"
         >
           <PromptInputArea
             bedrockService={bedrockService}
@@ -176,18 +176,8 @@ function AppContent() {
         </section>
 
         {/* Scrollable Gallery */}
-        <main className="flex-1 overflow-y-auto pt-[280px]">
+        <main className="flex-1 overflow-y-auto pt-32">
           <section aria-label="Generated images gallery" className="container mx-auto px-4 py-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-foreground">
-                Your Gallery
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {images.length === 0
-                  ? 'No images yet. Generate your first image above!'
-                  : `${images.length} ${images.length === 1 ? 'image' : 'images'}`}
-              </p>
-            </div>
             <GalleryGrid
               images={images}
               onImageDelete={handleImageDelete}

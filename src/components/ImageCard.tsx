@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { GeneratedImage } from '../types';
 import { Button } from './ui/button';
-import { Trash2, Edit2, Loader2 } from 'lucide-react';
+import { Trash2, Edit2, Loader2, Download } from 'lucide-react';
 
 interface ImageCardProps {
     image: GeneratedImage;
@@ -77,6 +77,22 @@ export function ImageCard({ image, onDelete, onEdit }: ImageCardProps) {
             {/* Action buttons - shown on hover for complete images */}
             {isHovered && image.status === 'complete' && (
                 <div className="absolute top-2 right-2 flex gap-2">
+                    <Button
+                        size="icon"
+                        variant="secondary"
+                        onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = image.url!;
+                            link.download = `image-${image.id}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }}
+                        className="h-8 w-8 shadow-lg"
+                        aria-label="Download image"
+                    >
+                        <Download className="h-4 w-4" />
+                    </Button>
                     <Button
                         size="icon"
                         variant="secondary"
