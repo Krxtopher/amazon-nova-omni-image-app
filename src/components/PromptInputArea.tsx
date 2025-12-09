@@ -413,7 +413,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                 />
 
                 {/* Unified Compact Input Bar */}
-                <div className="unified-input-bar bg-black/40 backdrop-blur-md border border-border rounded-lg flex items-center gap-2 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+                <div className="unified-input-bar bg-neutral-900/30 backdrop-blur-md backdrop-saturate-150 border border-border rounded-2xl flex items-center gap-2 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.16)]">
                     {/* Menu Button with Options */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -475,7 +475,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                     {/* Text Input */}
                     <Textarea
                         id="prompt-input"
-                        placeholder="Describe the image you want to generate..."
+                        placeholder="What do you want to create?"
                         value={prompt}
                         onChange={(e) => {
                             setPrompt(e.target.value);
@@ -484,7 +484,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                             }
                         }}
                         onKeyDown={handleKeyDown}
-                        className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 [text-shadow:_0_1px_2px_rgb(0_0_0_/_0.3),_0_-1px_2px_rgb(255_255_255_/_0.3)]"
+                        className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200"
                         aria-label="Image generation prompt"
                         aria-invalid={!!validationError}
                         aria-describedby={validationError ? 'prompt-error' : undefined}
