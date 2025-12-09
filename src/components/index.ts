@@ -8,3 +8,4 @@ export { GalleryGrid } from './GalleryGrid';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ThemeProvider } from './ThemeProvider';
 export { ResetDataButton } from './ResetDataButton';
+export { TextResponseModal } from './TextResponseModal';

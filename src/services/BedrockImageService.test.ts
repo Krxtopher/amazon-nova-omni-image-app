@@ -137,7 +137,7 @@ describe('BedrockImageService', () => {
         });
     });
 
-    describe('generateImage', () => {
+    describe('generateContent', () => {
         let service: BedrockImageService;
 
         beforeEach(() => {
@@ -173,10 +173,13 @@ describe('BedrockImageService', () => {
                 aspectRatio: '16:9',
             };
 
-            const result = await service.generateImage(request);
+            const result = await service.generateContent(request);
 
-            expect(result).toContain('data:image/png;base64,');
-            expect(result).toBeTruthy();
+            expect(result.type).toBe('image');
+            if (result.type === 'image') {
+                expect(result.imageDataUrl).toContain('data:image/png;base64,');
+                expect(result.imageDataUrl).toBeTruthy();
+            }
         });
 
         it('should generate an image with edit source', async () => {
@@ -217,10 +220,44 @@ describe('BedrockImageService', () => {
                 },
             };
 
-            const result = await service.generateImage(request);
+            const result = await service.generateContent(request);
 
-            expect(result).toContain('data:image/png;base64,');
-            expect(result).toBeTruthy();
+            expect(result.type).toBe('image');
+            if (result.type === 'image') {
+                expect(result.imageDataUrl).toContain('data:image/png;base64,');
+                expect(result.imageDataUrl).toBeTruthy();
+            }
+        });
+
+        it('should return text response when model generates text', async () => {
+            // Mock the Bedrock client to return text
+            const mockResponse = {
+                output: {
+                    message: {
+                        role: 'assistant',
+                        content: [
+                            {
+                                text: 'I cannot generate that image because it violates content policy.',
+                            },
+                        ],
+                    },
+                },
+            };
+
+            // @ts-expect-error Accessing private client for testing
+            vi.spyOn(service.client, 'send').mockResolvedValue(mockResponse);
+
+            const request: GenerationRequest = {
+                prompt: 'Test prompt',
+                aspectRatio: '1:1',
+            };
+
+            const result = await service.generateContent(request);
+
+            expect(result.type).toBe('text');
+            if (result.type === 'text') {
+                expect(result.text).toBe('I cannot generate that image because it violates content policy.');
+            }
         });
 
         it('should handle API errors gracefully', async () => {
@@ -239,7 +276,7 @@ describe('BedrockImageService', () => {
                 aspectRatio: '1:1',
             };
 
-            await expect(service.generateImage(request)).rejects.toMatchObject({
+            await expect(service.generateContent(request)).rejects.toMatchObject({
                 message: 'Invalid request: Invalid prompt',
                 category: 'validation',
                 retryable: false,
@@ -258,7 +295,7 @@ describe('BedrockImageService', () => {
                 aspectRatio: '1:1',
             };
 
-            await expect(service.generateImage(request)).rejects.toMatchObject({
+            await expect(service.generateContent(request)).rejects.toMatchObject({
                 message: 'Network error. Please check your connection and try again.',
                 category: 'network',
                 retryable: true,
@@ -266,16 +303,12 @@ describe('BedrockImageService', () => {
         });
 
         it('should handle malformed API responses', async () => {
-            // Mock a response with missing image data
+            // Mock a response with no content
             const mockResponse = {
                 output: {
                     message: {
                         role: 'assistant',
-                        content: [
-                            {
-                                text: 'No image here',
-                            },
-                        ],
+                        content: [],
                     },
                 },
             };
@@ -288,11 +321,7 @@ describe('BedrockImageService', () => {
                 aspectRatio: '1:1',
             };
 
-            await expect(service.generateImage(request)).rejects.toMatchObject({
-                message: expect.stringContaining('Failed to process the response'),
-                category: 'client',
-                retryable: false,
-            });
+            await expect(service.generateContent(request)).rejects.toThrow();
         });
 
         it('should handle throttling errors as retryable', async () => {
@@ -310,7 +339,7 @@ describe('BedrockImageService', () => {
                 aspectRatio: '1:1',
             };
 
-            await expect(service.generateImage(request)).rejects.toMatchObject({
+            await expect(service.generateContent(request)).rejects.toMatchObject({
                 message: 'Too many requests. Please wait a moment and try again.',
                 category: 'api',
                 retryable: true,

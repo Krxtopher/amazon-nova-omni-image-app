@@ -7,6 +7,7 @@ export type {
     GeneratedImage,
     EditSource,
     GenerationRequest,
+    GenerationResponse,
 } from './image';
 
 export type {

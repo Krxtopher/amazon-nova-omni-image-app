@@ -9,6 +9,13 @@ export type ImageStatus = 'pending' | 'generating' | 'complete' | 'error';
 export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4' | '21:9';
 
 /**
+ * Generation response types
+ */
+export type GenerationResponse =
+    | { type: 'image'; imageDataUrl: string }
+    | { type: 'text'; text: string };
+
+/**
  * Image entry in the gallery
  */
 export interface GeneratedImage {

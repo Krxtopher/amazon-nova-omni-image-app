@@ -8,11 +8,12 @@ import {
     DropdownMenuTrigger,
     DropdownMenuSeparator,
     DropdownMenuLabel,
-} from '../../@/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { useImageStore } from '@/stores/imageStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
 import { X, Paperclip, Loader2, Menu, Send } from 'lucide-react';
+import { TextResponseModal } from './TextResponseModal';
 
 /**
  * Props for PromptInputArea component
@@ -52,6 +53,10 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
     const [validationError, setValidationError] = useState<string | null>(null);
     const [fileError, setFileError] = useState<string | null>(null);
     const [activeRequests, setActiveRequests] = useState(0);
+    const [textResponseModal, setTextResponseModal] = useState<{ isOpen: boolean; content: string }>({
+        isOpen: false,
+        content: '',
+    });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
@@ -94,80 +99,92 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
             return;
         }
 
-        // Determine aspect ratio to use
-        const aspectRatioToUse = editSource ? editSource.aspectRatio : selectedAspectRatio;
-        const dimensions = ASPECT_RATIO_DIMENSIONS[aspectRatioToUse];
-
-        // Create placeholder image immediately
-        // Requirements: 1.3
-        const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-        const placeholderImage: GeneratedImage = {
-            id: placeholderId,
-            url: '', // Empty URL for placeholder
-            prompt: prompt,
-            status: 'generating',
-            aspectRatio: aspectRatioToUse,
-            width: dimensions.width,
-            height: dimensions.height,
-            createdAt: new Date(),
-        };
+        // Store current edit source before clearing
+        const currentEditSource = editSource;
 
         // Track active request
         setActiveRequests(prev => prev + 1);
 
-        // Store current edit source before clearing
-        const currentEditSource = editSource;
-
         try {
-            // Add placeholder to gallery
-            await addImage(placeholderImage);
-
-            // Call BedrockImageService to generate image
+            // Call BedrockImageService to generate content
             // Use editSource if present, otherwise generate from scratch
-            const generatedImageUrl = await bedrockService.generateImage({
+            const response = await bedrockService.generateContent({
                 prompt: prompt,
                 aspectRatio: currentEditSource ? undefined : selectedAspectRatio,
                 editSource: currentEditSource || undefined,
             });
 
-            // Update placeholder with generated image
-            // Requirements: 1.4
-            await updateImage(placeholderId, {
-                url: generatedImageUrl,
-                status: 'complete',
-            });
+            // Handle the response based on type
+            if (response.type === 'text') {
+                // Model returned text content - show in modal
+                setTextResponseModal({
+                    isOpen: true,
+                    content: response.text,
+                });
 
-            // Show success notification
-            if (onSuccess) {
-                onSuccess(currentEditSource ? 'Image edited successfully!' : 'Image generated successfully!');
-            }
+                // Clear validation error
+                setValidationError(null);
 
-            // Clear validation error
-            setValidationError(null);
+                // Clear edit source if it was used
+                if (currentEditSource) {
+                    handleClearEditSource();
+                }
+            } else {
+                // Model returned an image - add to gallery
+                // Determine aspect ratio to use
+                const aspectRatioToUse = currentEditSource ? currentEditSource.aspectRatio : selectedAspectRatio;
+                const dimensions = ASPECT_RATIO_DIMENSIONS[aspectRatioToUse];
 
-            // Clear edit source if it was used
-            if (currentEditSource) {
-                handleClearEditSource();
+                // Create placeholder image
+                // Requirements: 1.3
+                const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+                const placeholderImage: GeneratedImage = {
+                    id: placeholderId,
+                    url: '', // Empty URL for placeholder
+                    prompt: prompt,
+                    status: 'generating',
+                    aspectRatio: aspectRatioToUse,
+                    width: dimensions.width,
+                    height: dimensions.height,
+                    createdAt: new Date(),
+                };
+
+                // Add placeholder to gallery
+                await addImage(placeholderImage);
+
+                // Update placeholder with generated image
+                // Requirements: 1.4
+                await updateImage(placeholderId, {
+                    url: response.imageDataUrl,
+                    status: 'complete',
+                });
+
+                // Show success notification
+                if (onSuccess) {
+                    onSuccess(currentEditSource ? 'Image edited successfully!' : 'Image generated successfully!');
+                }
+
+                // Clear validation error
+                setValidationError(null);
+
+                // Clear edit source if it was used
+                if (currentEditSource) {
+                    handleClearEditSource();
+                }
             }
         } catch (error) {
             // Handle errors
             // Requirements: 1.5
             const errorMessage = error && typeof error === 'object' && 'message' in error
                 ? (error as { message: string }).message
-                : 'Failed to generate image. Please try again.';
-
-            // Update placeholder with error status
-            await updateImage(placeholderId, {
-                status: 'error',
-                error: errorMessage,
-            });
+                : 'Failed to generate content. Please try again.';
 
             // Show error notification
             if (onError) {
                 onError(errorMessage);
             }
 
-            console.error('Image generation error:', error);
+            console.error('Content generation error:', error);
         } finally {
             // Decrement active requests
             setActiveRequests(prev => prev - 1);
@@ -316,132 +333,139 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto px-6 py-4">
-            {/* Loading Indicator */}
-            {activeRequests > 0 && (
-                <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center gap-3" role="status" aria-live="polite">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
-                    <p className="text-sm text-primary">
-                        Generating {activeRequests} {activeRequests === 1 ? 'image' : 'images'}...
-                    </p>
-                </div>
-            )}
-
-            {/* Error Messages */}
-            {(validationError || fileError) && (
-                <div className="mb-4">
-                    {validationError && (
-                        <p id="prompt-error" className="text-sm text-destructive" role="alert">
-                            {validationError}
-                        </p>
-                    )}
-                    {fileError && (
-                        <p className="text-sm text-destructive" role="alert">
-                            {fileError}
-                        </p>
-                    )}
-                </div>
-            )}
-
-            {/* Hidden file input */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={handleFileUpload}
-                className="hidden"
-                aria-label="File upload input"
+        <>
+            <TextResponseModal
+                isOpen={textResponseModal.isOpen}
+                onClose={() => setTextResponseModal({ isOpen: false, content: '' })}
+                content={textResponseModal.content}
             />
-
-            {/* Unified Compact Input Bar */}
-            <div className="unified-input-bar bg-black/40 backdrop-blur-md border border-border rounded-lg flex items-center gap-2 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-                {/* Menu Button with Options */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0 h-9 w-9"
-                            aria-label="Options menu"
-                        >
-                            <Menu className="h-5 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56">
-                        <DropdownMenuLabel>Options</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleUploadClick}>
-                            <Paperclip className="h-4 w-4 mr-2" />
-                            Upload Image to Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                            Aspect Ratio
-                        </DropdownMenuLabel>
-                        {ASPECT_RATIOS.map((ratio) => (
-                            <DropdownMenuItem
-                                key={ratio.value}
-                                onClick={() => !editSource && setAspectRatio(ratio.value as AspectRatio).catch(console.error)}
-                                disabled={!!editSource}
-                                className={selectedAspectRatio === ratio.value ? 'bg-accent' : ''}
-                            >
-                                {ratio.label}
-                                {selectedAspectRatio === ratio.value && ' ✓'}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Thumbnail preview (if image uploaded) */}
-                {editSource && (
-                    <div className="relative shrink-0 group">
-                        <img
-                            src={editSource.url}
-                            alt="Edit source"
-                            className="w-9 h-9 object-cover rounded border border-border"
-                        />
-                        <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute -top-1 -right-1 h-4 w-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
-                            onClick={handleClearEditSource}
-                            aria-label="Remove edit source"
-                            title="Remove edit source"
-                        >
-                            <X className="h-3 w-3" />
-                        </Button>
+            <div className="w-full max-w-4xl mx-auto px-6 py-4">
+                {/* Loading Indicator */}
+                {activeRequests > 0 && (
+                    <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center gap-3" role="status" aria-live="polite">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+                        <p className="text-sm text-primary">
+                            Generating {activeRequests} {activeRequests === 1 ? 'image' : 'images'}...
+                        </p>
                     </div>
                 )}
 
-                {/* Text Input */}
-                <Textarea
-                    id="prompt-input"
-                    placeholder="Describe the image you want to generate..."
-                    value={prompt}
-                    onChange={(e) => {
-                        setPrompt(e.target.value);
-                        if (validationError) {
-                            setValidationError(null);
-                        }
-                    }}
-                    onKeyDown={handleKeyDown}
-                    className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 [text-shadow:_0_1px_2px_rgb(0_0_0_/_0.3),_0_-1px_2px_rgb(255_255_255_/_0.3)]"
-                    aria-label="Image generation prompt"
-                    aria-invalid={!!validationError}
-                    aria-describedby={validationError ? 'prompt-error' : undefined}
+                {/* Error Messages */}
+                {(validationError || fileError) && (
+                    <div className="mb-4">
+                        {validationError && (
+                            <p id="prompt-error" className="text-sm text-destructive" role="alert">
+                                {validationError}
+                            </p>
+                        )}
+                        {fileError && (
+                            <p className="text-sm text-destructive" role="alert">
+                                {fileError}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Hidden file input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    aria-label="File upload input"
                 />
 
-                {/* Send Button */}
-                <Button
-                    onClick={handleSubmit}
-                    disabled={!prompt.trim()}
-                    size="icon"
-                    className="shrink-0 h-9 w-9"
-                    aria-label="Generate image"
-                >
-                    <Send className="h-4 w-4" />
-                </Button>
+                {/* Unified Compact Input Bar */}
+                <div className="unified-input-bar bg-black/40 backdrop-blur-md border border-border rounded-lg flex items-center gap-2 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+                    {/* Menu Button with Options */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 h-9 w-9"
+                                aria-label="Options menu"
+                            >
+                                <Menu className="h-5 w-5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                            <DropdownMenuLabel>Options</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleUploadClick}>
+                                <Paperclip className="h-4 w-4 mr-2" />
+                                Upload Image to Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                Aspect Ratio
+                            </DropdownMenuLabel>
+                            {ASPECT_RATIOS.map((ratio) => (
+                                <DropdownMenuItem
+                                    key={ratio.value}
+                                    onClick={() => !editSource && setAspectRatio(ratio.value as AspectRatio).catch(console.error)}
+                                    disabled={!!editSource}
+                                    className={selectedAspectRatio === ratio.value ? 'bg-accent' : ''}
+                                >
+                                    {ratio.label}
+                                    {selectedAspectRatio === ratio.value && ' ✓'}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Thumbnail preview (if image uploaded) */}
+                    {editSource && (
+                        <div className="relative shrink-0 group">
+                            <img
+                                src={editSource.url}
+                                alt="Edit source"
+                                className="w-9 h-9 object-cover rounded border border-border"
+                            />
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-1 -right-1 h-4 w-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
+                                onClick={handleClearEditSource}
+                                aria-label="Remove edit source"
+                                title="Remove edit source"
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Text Input */}
+                    <Textarea
+                        id="prompt-input"
+                        placeholder="Describe the image you want to generate..."
+                        value={prompt}
+                        onChange={(e) => {
+                            setPrompt(e.target.value);
+                            if (validationError) {
+                                setValidationError(null);
+                            }
+                        }}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 [text-shadow:_0_1px_2px_rgb(0_0_0_/_0.3),_0_-1px_2px_rgb(255_255_255_/_0.3)]"
+                        aria-label="Image generation prompt"
+                        aria-invalid={!!validationError}
+                        aria-describedby={validationError ? 'prompt-error' : undefined}
+                    />
+
+                    {/* Send Button */}
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={!prompt.trim()}
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        aria-label="Generate image"
+                    >
+                        <Send className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
-        </div>
+        </>
     );
 }

@@ -40,11 +40,14 @@ describe('PromptInputArea - Submit Handler', () => {
 
         // Mock Bedrock service
         mockBedrockService = {
-            generateImage: vi.fn().mockResolvedValue('data:image/png;base64,mockImageData'),
+            generateContent: vi.fn().mockResolvedValue({
+                type: 'image',
+                imageDataUrl: 'data:image/png;base64,mockImageData',
+            }),
         } as unknown as BedrockImageService;
     });
 
-    it('should create placeholder immediately when submitting', async () => {
+    it('should create placeholder after receiving image response', async () => {
         const user = userEvent.setup();
 
         render(
@@ -63,7 +66,7 @@ describe('PromptInputArea - Submit Handler', () => {
         const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
-        // Verify placeholder was added immediately
+        // Verify placeholder was added after response
         await waitFor(() => {
             expect(mockAddImage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -109,12 +112,12 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(mockOnSuccess).toHaveBeenCalledWith('Image generated successfully!');
     });
 
-    it('should update placeholder with error on failure', async () => {
+    it('should show error notification on failure', async () => {
         const user = userEvent.setup();
         const errorMessage = 'API error occurred';
 
         // Mock service to throw error
-        mockBedrockService.generateImage = vi.fn().mockRejectedValue(new Error(errorMessage));
+        mockBedrockService.generateContent = vi.fn().mockRejectedValue(new Error(errorMessage));
 
         render(
             <PromptInputArea
@@ -134,20 +137,15 @@ describe('PromptInputArea - Submit Handler', () => {
 
         // Wait for error handling
         await waitFor(() => {
-            expect(mockUpdateImage).toHaveBeenCalledWith(
-                expect.any(String),
-                expect.objectContaining({
-                    status: 'error',
-                    error: errorMessage,
-                })
-            );
+            expect(mockOnError).toHaveBeenCalledWith(errorMessage);
         });
 
-        // Verify error callback was called
-        expect(mockOnError).toHaveBeenCalledWith(errorMessage);
+        // Verify no placeholder was created for errors
+        expect(mockAddImage).not.toHaveBeenCalled();
+        expect(mockUpdateImage).not.toHaveBeenCalled();
     });
 
-    it('should call generateImage with correct parameters for new generation', async () => {
+    it('should call generateContent with correct parameters for new generation', async () => {
         const user = userEvent.setup();
 
         render(
@@ -168,7 +166,7 @@ describe('PromptInputArea - Submit Handler', () => {
 
         // Verify service was called with correct parameters
         await waitFor(() => {
-            expect(mockBedrockService.generateImage).toHaveBeenCalledWith(
+            expect(mockBedrockService.generateContent).toHaveBeenCalledWith(
                 expect.objectContaining({
                     prompt: 'A beautiful sunset',
                     aspectRatio: '1:1',
@@ -178,7 +176,7 @@ describe('PromptInputArea - Submit Handler', () => {
         });
     });
 
-    it('should call generateImage with editSource when editing', async () => {
+    it('should call generateContent with editSource when editing', async () => {
         const user = userEvent.setup();
         const mockEditSource = {
             url: 'data:image/png;base64,mockEditSource',
@@ -216,7 +214,7 @@ describe('PromptInputArea - Submit Handler', () => {
 
         // Verify service was called with edit source
         await waitFor(() => {
-            expect(mockBedrockService.generateImage).toHaveBeenCalledWith(
+            expect(mockBedrockService.generateContent).toHaveBeenCalledWith(
                 expect.objectContaining({
                     prompt: 'Make it more colorful',
                     aspectRatio: undefined, // Should not include aspectRatio when editing
@@ -259,16 +257,55 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(textarea.value).toBe('A beautiful sunset');
     });
 
+    it('should show modal when receiving text response', async () => {
+        const user = userEvent.setup();
+
+        // Mock service to return text response
+        mockBedrockService.generateContent = vi.fn().mockResolvedValue({
+            type: 'text',
+            text: 'This is a text response from the model',
+        });
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        // Enter a prompt
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        await user.type(textarea, 'A beautiful sunset');
+
+        // Submit
+        const submitButton = screen.getByLabelText(/generate image/i);
+        await user.click(submitButton);
+
+        // Wait for modal to appear
+        await waitFor(() => {
+            expect(screen.getByText('Model Response')).toBeInTheDocument();
+            expect(screen.getByText('This is a text response from the model')).toBeInTheDocument();
+        });
+
+        // Verify no placeholder was created for text responses
+        expect(mockAddImage).not.toHaveBeenCalled();
+        expect(mockUpdateImage).not.toHaveBeenCalled();
+
+        // Verify no error was shown
+        expect(mockOnError).not.toHaveBeenCalled();
+    });
+
     it('should allow multiple concurrent requests', async () => {
         const user = userEvent.setup();
 
         // Mock service with delayed response
-        let resolveFirst: (value: string) => void;
-        let resolveSecond: (value: string) => void;
-        const firstPromise = new Promise<string>((resolve) => { resolveFirst = resolve; });
-        const secondPromise = new Promise<string>((resolve) => { resolveSecond = resolve; });
+        let resolveFirst: (value: { type: 'image'; imageDataUrl: string }) => void;
+        let resolveSecond: (value: { type: 'image'; imageDataUrl: string }) => void;
+        const firstPromise = new Promise<{ type: 'image'; imageDataUrl: string }>((resolve) => { resolveFirst = resolve; });
+        const secondPromise = new Promise<{ type: 'image'; imageDataUrl: string }>((resolve) => { resolveSecond = resolve; });
 
-        mockBedrockService.generateImage = vi.fn()
+        mockBedrockService.generateContent = vi.fn()
             .mockReturnValueOnce(firstPromise)
             .mockReturnValueOnce(secondPromise);
 
@@ -288,37 +325,36 @@ describe('PromptInputArea - Submit Handler', () => {
         await user.type(textarea, 'First image');
         await user.click(submitButton);
 
-        // Verify first placeholder was added
-        await waitFor(() => {
-            expect(mockAddImage).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    prompt: 'First image',
-                    status: 'generating',
-                })
-            );
-        });
-
         // Submit second request while first is still generating
         await user.clear(textarea);
         await user.type(textarea, 'Second image');
         await user.click(submitButton);
 
-        // Verify second placeholder was added
-        await waitFor(() => {
-            expect(mockAddImage).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    prompt: 'Second image',
-                    status: 'generating',
-                })
-            );
-        });
-
         // Verify both requests were made
-        expect(mockBedrockService.generateImage).toHaveBeenCalledTimes(2);
+        expect(mockBedrockService.generateContent).toHaveBeenCalledTimes(2);
 
         // Resolve both requests
-        resolveFirst!('data:image/png;base64,firstImage');
-        resolveSecond!('data:image/png;base64,secondImage');
+        resolveFirst!({ type: 'image', imageDataUrl: 'data:image/png;base64,firstImage' });
+        resolveSecond!({ type: 'image', imageDataUrl: 'data:image/png;base64,secondImage' });
+
+        // Wait for both placeholders to be added
+        await waitFor(() => {
+            expect(mockAddImage).toHaveBeenCalledTimes(2);
+        });
+
+        // Verify both placeholders were added with correct prompts
+        expect(mockAddImage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                prompt: 'First image',
+                status: 'generating',
+            })
+        );
+        expect(mockAddImage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                prompt: 'Second image',
+                status: 'generating',
+            })
+        );
 
         // Wait for both to complete
         await waitFor(() => {

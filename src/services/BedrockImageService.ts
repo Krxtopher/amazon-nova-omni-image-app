@@ -1,7 +1,7 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
-import type { AspectRatio, GenerationRequest, AppError } from '../types';
+import type { AspectRatio, GenerationRequest, GenerationResponse, AppError } from '../types';
 
 /**
  * Configuration for BedrockImageService
@@ -170,14 +170,15 @@ export class BedrockImageService {
     }
 
     /**
-     * Generates an image using Amazon Bedrock's Nova 2 Omni model via the Converse API
+     * Generates content using Amazon Bedrock's Nova 2 Omni model via the Converse API
      * Supports both text-to-image generation and image editing scenarios
+     * The model may return either an image or text content
      * 
      * @param request - Generation request containing prompt, aspect ratio, and optional edit source
-     * @returns Promise resolving to a base64 data URL of the generated image
+     * @returns Promise resolving to either an image data URL or text content
      * @throws AppError with categorized error information for various failure scenarios
      */
-    async generateImage(request: GenerationRequest): Promise<string> {
+    async generateContent(request: GenerationRequest): Promise<GenerationResponse> {
         try {
             // Build the message content array
             // Using any[] to work with AWS SDK's complex ContentBlock union types
@@ -235,18 +236,30 @@ export class BedrockImageService {
     }
 
     /**
-     * Parses the Converse API response to extract the generated image
-     * Converts the image bytes to a base64 data URL for display
+     * Parses the Converse API response to extract either image or text content
      * 
      * @param response - The ConverseCommand output from Bedrock
-     * @returns Base64 data URL of the generated image
-     * @throws Error if response format is invalid or image data is missing
+     * @returns GenerationResponse with either image data URL or text content
+     * @throws Error if response format is invalid or no content is found
      */
-    private parseConverseResponse(response: ConverseCommandOutput): string {
+    private parseConverseResponse(response: ConverseCommandOutput): GenerationResponse {
         try {
             // Validate response structure
             if (!response.output?.message?.content) {
                 throw new Error('Invalid response structure: missing content');
+            }
+
+            // Check if the response contains text
+            const textContent = response.output.message.content.find(
+                (item) => item.text !== undefined
+            );
+
+            if (textContent?.text) {
+                // Model returned text content
+                return {
+                    type: 'text',
+                    text: textContent.text,
+                };
             }
 
             // Find the image in the response content
@@ -255,7 +268,7 @@ export class BedrockImageService {
             );
 
             if (!imageContent?.image?.source?.bytes) {
-                throw new Error('No image data found in response');
+                throw new Error('No image or text content found in response');
             }
 
             // Extract image bytes
@@ -265,8 +278,11 @@ export class BedrockImageService {
             // Convert Uint8Array to base64
             const base64 = this.uint8ArrayToBase64(imageBytes);
 
-            // Return as data URL
-            return `data:image/${format};base64,${base64}`;
+            // Return as image data URL
+            return {
+                type: 'image',
+                imageDataUrl: `data:image/${format};base64,${base64}`,
+            };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
             throw new Error(`Failed to parse response: ${errorMessage}`);
