@@ -91,7 +91,11 @@ export function MasonryImageRenderer({
                             link.click();
                             document.body.removeChild(link);
                         }}
-                        className="h-8 w-8 shadow-lg"
+                        className="h-8 w-8 shadow-lg backdrop-blur-sm"
+                        style={{
+                            backdropFilter: 'brightness(0.7) saturate(1.5)',
+                            WebkitBackdropFilter: 'brightness(0.7) saturate(1.5)'
+                        }}
                         aria-label="Download image"
                     >
                         <Download className="h-4 w-4" />
@@ -100,7 +104,11 @@ export function MasonryImageRenderer({
                         size="icon"
                         variant="secondary"
                         onClick={() => onEdit(item)}
-                        className="h-8 w-8 shadow-lg"
+                        className="h-8 w-8 shadow-lg backdrop-blur-sm"
+                        style={{
+                            backdropFilter: 'brightness(0.7) saturate(1.5)',
+                            WebkitBackdropFilter: 'brightness(0.7) saturate(1.5)'
+                        }}
                         aria-label="Edit image"
                     >
                         <Edit2 className="h-4 w-4" />
@@ -109,7 +117,11 @@ export function MasonryImageRenderer({
                         size="icon"
                         variant="destructive"
                         onClick={() => onDelete(item.id)}
-                        className="h-8 w-8 shadow-lg"
+                        className="h-8 w-8 shadow-lg backdrop-blur-sm"
+                        style={{
+                            backdropFilter: 'brightness(0.7) saturate(1.5)',
+                            WebkitBackdropFilter: 'brightness(0.7) saturate(1.5)'
+                        }}
                         aria-label="Delete image"
                     >
                         <Trash2 className="h-4 w-4" />
