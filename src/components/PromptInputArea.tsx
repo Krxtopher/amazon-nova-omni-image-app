@@ -67,6 +67,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
         clearEditSource,
         addImage,
         updateImage,
+        deleteImage,
     } = useImageStore();
 
     /**
@@ -86,9 +87,9 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
      * Handle form submission
      * Wires up the complete image generation flow:
      * 1. Validates prompt
-     * 2. Creates placeholder image immediately
+     * 2. Creates placeholder image immediately (optimistic UI)
      * 3. Calls BedrockImageService to generate/edit image
-     * 4. Updates store with results
+     * 4. Updates store with results or removes placeholder on error/text response
      * 5. Handles errors with notifications
      * 
      * Requirements: 1.1, 1.3, 1.4, 1.5
@@ -101,6 +102,27 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
 
         // Store current edit source before clearing
         const currentEditSource = editSource;
+
+        // Determine aspect ratio to use
+        const aspectRatioToUse = currentEditSource ? currentEditSource.aspectRatio : selectedAspectRatio;
+        const dimensions = ASPECT_RATIO_DIMENSIONS[aspectRatioToUse];
+
+        // Create placeholder image immediately (optimistic UI)
+        // Requirements: 1.3
+        const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        const placeholderImage: GeneratedImage = {
+            id: placeholderId,
+            url: '', // Empty URL for placeholder
+            prompt: prompt,
+            status: 'generating',
+            aspectRatio: aspectRatioToUse,
+            width: dimensions.width,
+            height: dimensions.height,
+            createdAt: new Date(),
+        };
+
+        // Add placeholder to gallery immediately
+        await addImage(placeholderImage);
 
         // Track active request
         setActiveRequests(prev => prev + 1);
@@ -116,7 +138,9 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
 
             // Handle the response based on type
             if (response.type === 'text') {
-                // Model returned text content - show in modal
+                // Model returned text content - remove placeholder and show in modal
+                await deleteImage(placeholderId);
+
                 setTextResponseModal({
                     isOpen: true,
                     content: response.text,
@@ -130,29 +154,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                     handleClearEditSource();
                 }
             } else {
-                // Model returned an image - add to gallery
-                // Determine aspect ratio to use
-                const aspectRatioToUse = currentEditSource ? currentEditSource.aspectRatio : selectedAspectRatio;
-                const dimensions = ASPECT_RATIO_DIMENSIONS[aspectRatioToUse];
-
-                // Create placeholder image
-                // Requirements: 1.3
-                const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-                const placeholderImage: GeneratedImage = {
-                    id: placeholderId,
-                    url: '', // Empty URL for placeholder
-                    prompt: prompt,
-                    status: 'generating',
-                    aspectRatio: aspectRatioToUse,
-                    width: dimensions.width,
-                    height: dimensions.height,
-                    createdAt: new Date(),
-                };
-
-                // Add placeholder to gallery
-                await addImage(placeholderImage);
-
-                // Update placeholder with generated image
+                // Model returned an image - update placeholder with actual image
                 // Requirements: 1.4
                 await updateImage(placeholderId, {
                     url: response.imageDataUrl,
@@ -173,8 +175,10 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                 }
             }
         } catch (error) {
-            // Handle errors
+            // Handle errors - remove placeholder
             // Requirements: 1.5
+            await deleteImage(placeholderId);
+
             const errorMessage = error && typeof error === 'object' && 'message' in error
                 ? (error as { message: string }).message
                 : 'Failed to generate content. Please try again.';

@@ -15,6 +15,7 @@ describe('PromptInputArea - Submit Handler', () => {
     let mockBedrockService: BedrockImageService;
     let mockAddImage: ReturnType<typeof vi.fn>;
     let mockUpdateImage: ReturnType<typeof vi.fn>;
+    let mockDeleteImage: ReturnType<typeof vi.fn>;
     let mockClearEditSource: ReturnType<typeof vi.fn>;
     let mockOnError: (error: string) => void;
     let mockOnSuccess: (message: string) => void;
@@ -23,6 +24,7 @@ describe('PromptInputArea - Submit Handler', () => {
         // Reset mocks
         mockAddImage = vi.fn();
         mockUpdateImage = vi.fn();
+        mockDeleteImage = vi.fn();
         mockClearEditSource = vi.fn();
         mockOnError = vi.fn();
         mockOnSuccess = vi.fn();
@@ -36,6 +38,7 @@ describe('PromptInputArea - Submit Handler', () => {
             clearEditSource: mockClearEditSource,
             addImage: mockAddImage,
             updateImage: mockUpdateImage,
+            deleteImage: mockDeleteImage,
         });
 
         // Mock Bedrock service
@@ -47,7 +50,7 @@ describe('PromptInputArea - Submit Handler', () => {
         } as unknown as BedrockImageService;
     });
 
-    it('should create placeholder after receiving image response', async () => {
+    it('should create placeholder immediately before API call (optimistic UI)', async () => {
         const user = userEvent.setup();
 
         render(
@@ -66,7 +69,7 @@ describe('PromptInputArea - Submit Handler', () => {
         const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
-        // Verify placeholder was added after response
+        // Verify placeholder was added immediately (optimistic UI)
         await waitFor(() => {
             expect(mockAddImage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -112,7 +115,7 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(mockOnSuccess).toHaveBeenCalledWith('Image generated successfully!');
     });
 
-    it('should show error notification on failure', async () => {
+    it('should remove placeholder on error', async () => {
         const user = userEvent.setup();
         const errorMessage = 'API error occurred';
 
@@ -135,13 +138,23 @@ describe('PromptInputArea - Submit Handler', () => {
         const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
-        // Wait for error handling
+        // Verify placeholder was created first
         await waitFor(() => {
-            expect(mockOnError).toHaveBeenCalledWith(errorMessage);
+            expect(mockAddImage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    prompt: 'A beautiful sunset',
+                    status: 'generating',
+                })
+            );
         });
 
-        // Verify no placeholder was created for errors
-        expect(mockAddImage).not.toHaveBeenCalled();
+        // Wait for error handling and placeholder removal
+        await waitFor(() => {
+            expect(mockOnError).toHaveBeenCalledWith(errorMessage);
+            expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
+        });
+
+        // Verify placeholder was not updated (it was deleted instead)
         expect(mockUpdateImage).not.toHaveBeenCalled();
     });
 
@@ -194,6 +207,7 @@ describe('PromptInputArea - Submit Handler', () => {
             clearEditSource: mockClearEditSource,
             addImage: mockAddImage,
             updateImage: mockUpdateImage,
+            deleteImage: mockDeleteImage,
         });
 
         render(
@@ -257,7 +271,7 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(textarea.value).toBe('A beautiful sunset');
     });
 
-    it('should show modal when receiving text response', async () => {
+    it('should remove placeholder when receiving text response', async () => {
         const user = userEvent.setup();
 
         // Mock service to return text response
@@ -282,14 +296,24 @@ describe('PromptInputArea - Submit Handler', () => {
         const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
-        // Wait for modal to appear
+        // Verify placeholder was created first
+        await waitFor(() => {
+            expect(mockAddImage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    prompt: 'A beautiful sunset',
+                    status: 'generating',
+                })
+            );
+        });
+
+        // Wait for modal to appear and placeholder to be removed
         await waitFor(() => {
             expect(screen.getByText('Model Response')).toBeInTheDocument();
             expect(screen.getByText('This is a text response from the model')).toBeInTheDocument();
+            expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
         });
 
-        // Verify no placeholder was created for text responses
-        expect(mockAddImage).not.toHaveBeenCalled();
+        // Verify placeholder was not updated (it was deleted instead)
         expect(mockUpdateImage).not.toHaveBeenCalled();
 
         // Verify no error was shown
