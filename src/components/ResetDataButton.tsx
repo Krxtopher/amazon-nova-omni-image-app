@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
 import { sqliteService } from '@/services/sqliteService';
@@ -57,10 +58,10 @@ export function ResetDataButton() {
                 Reset Data
             </Button>
 
-            {/* Confirmation Dialog */}
-            {showConfirm && (
+            {/* Confirmation Dialog - rendered via portal to escape stacking context */}
+            {showConfirm && createPortal(
                 <div
-                    className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+                    className="fixed inset-0 z-100 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
                     onClick={() => !isResetting && setShowConfirm(false)}
                 >
                     <div
@@ -106,7 +107,8 @@ export function ResetDataButton() {
                             </Button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
