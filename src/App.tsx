@@ -161,7 +161,7 @@ function AppContent() {
       {/* Fixed Prompt Input Area */}
       <section
         aria-label="Image generation controls"
-        className="fixed top-0 left-0 right-0 z-10 bg-background"
+        className="fixed top-0 left-0 right-0 z-10"
       >
         <PromptInputArea
           bedrockService={bedrockService}
@@ -171,8 +171,8 @@ function AppContent() {
       </section>
 
       {/* Scrollable Gallery */}
-      <main className="flex-1 overflow-y-auto pt-32">
-        <section aria-label="Generated images gallery" className="px-4 py-8">
+      <main className="flex-1 overflow-y-auto">
+        <section aria-label="Generated images gallery" className="px-4 pt-32 pb-8">
           <GalleryGrid
             images={images}
             onImageDelete={handleImageDelete}
