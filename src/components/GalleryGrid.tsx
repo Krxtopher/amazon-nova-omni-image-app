@@ -1,5 +1,6 @@
 import type { GeneratedImage } from '../types';
-import { ImageCard } from './ImageCard';
+import { VMasonryGrid } from './MasonryGrid';
+import { createImageRenderer } from './MasonryGridImageRenderer';
 
 interface GalleryGridProps {
     images: GeneratedImage[];
@@ -8,7 +9,7 @@ interface GalleryGridProps {
 }
 
 /**
- * GalleryGrid component displays generated images in a responsive grid layout
+ * GalleryGrid component displays generated images in a responsive masonry layout
  * Requirements: 3.1, 3.2, 3.3, 3.4, 8.4
  */
 export function GalleryGrid({ images, onImageDelete, onImageEdit }: GalleryGridProps) {
@@ -28,22 +29,15 @@ export function GalleryGrid({ images, onImageDelete, onImageEdit }: GalleryGridP
         );
     }
 
+    const renderer = createImageRenderer(onImageDelete, onImageEdit);
+
     return (
-        <div
-            className="grid gap-4 w-full"
-            style={{
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                maxWidth: '100%',
-            }}
-        >
-            {images.map((image) => (
-                <ImageCard
-                    key={image.id}
-                    image={image}
-                    onDelete={() => onImageDelete(image.id)}
-                    onEdit={() => onImageEdit(image)}
-                />
-            ))}
-        </div>
+        <VMasonryGrid
+            items={images}
+            renderer={renderer}
+            maxItemSize={300}
+            gap={8}
+            className="w-full"
+        />
     );
 }

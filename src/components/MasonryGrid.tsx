@@ -4,7 +4,7 @@ import {
   useRef,
   useEffect,
   useState,
-  HTMLAttributes,
+  type HTMLAttributes,
 } from "react";
 
 export interface MasonryItem {
@@ -20,7 +20,7 @@ export interface MasonryItemRendererProps {
   isVisible: boolean;
 }
 
-type MasonryItemRenderer = (props: MasonryItemRendererProps) => JSX.Element;
+type MasonryItemRenderer = (props: MasonryItemRendererProps) => React.JSX.Element;
 
 interface MasonryGridProps extends React.HTMLAttributes<HTMLDivElement> {
   items: MasonryItem[];
@@ -177,7 +177,7 @@ function HMasonryGrid({
 
   function renderGridItems() {
     let rowTop = 0;
-    const itemElements = new Array<JSX.Element>();
+    const itemElements = new Array<React.JSX.Element>();
     for (let i = 0; i < rows.length; i++) {
       if (rows[i].length === 0) continue;
       const rowHeight = rows[i][0].displayHeight;
