@@ -36,7 +36,7 @@ export function MasonryImageRenderer({
         // Show loading spinner for pending/generating states
         if (item.status === 'pending' || item.status === 'generating') {
             return (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                <div className="absolute inset-0 flex items-center justify-center bg-muted/50 border-2 border-dashed border-gray-400/20 rounded-lg">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
             );

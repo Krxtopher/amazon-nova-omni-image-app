@@ -152,40 +152,34 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col fixed left-0 top-0 bottom-0">
-        <div className="flex-1"></div>
-        <div className="p-4">
-          <ResetDataButton />
-        </div>
-      </aside>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Reset Data Button - Fixed in upper right */}
+      <div className="fixed top-4 right-4 z-20">
+        <ResetDataButton />
+      </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col ml-64">
-        {/* Fixed Prompt Input Area */}
-        <section
-          aria-label="Image generation controls"
-          className="fixed top-0 right-0 left-64 z-10 bg-background"
-        >
-          <PromptInputArea
-            bedrockService={bedrockService}
-            onSuccess={handleSuccess}
-            onError={handleError}
+      {/* Fixed Prompt Input Area */}
+      <section
+        aria-label="Image generation controls"
+        className="fixed top-0 left-0 right-0 z-10 bg-background"
+      >
+        <PromptInputArea
+          bedrockService={bedrockService}
+          onSuccess={handleSuccess}
+          onError={handleError}
+        />
+      </section>
+
+      {/* Scrollable Gallery */}
+      <main className="flex-1 overflow-y-auto pt-32">
+        <section aria-label="Generated images gallery" className="px-4 py-8">
+          <GalleryGrid
+            images={images}
+            onImageDelete={handleImageDelete}
+            onImageEdit={handleImageEdit}
           />
         </section>
-
-        {/* Scrollable Gallery */}
-        <main className="flex-1 overflow-y-auto pt-32">
-          <section aria-label="Generated images gallery" className="container mx-auto px-4 py-8">
-            <GalleryGrid
-              images={images}
-              onImageDelete={handleImageDelete}
-              onImageEdit={handleImageEdit}
-            />
-          </section>
-        </main>
-      </div>
+      </main>
     </div>
   );
 }
