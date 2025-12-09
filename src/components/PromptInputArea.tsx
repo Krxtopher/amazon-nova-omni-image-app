@@ -28,12 +28,15 @@ interface PromptInputAreaProps {
  * Available aspect ratio options
  */
 const ASPECT_RATIOS: { value: AspectRatio; label: string }[] = [
-    { value: '1:1', label: '1:1 (Square)' },
-    { value: '16:9', label: '16:9 (Landscape)' },
-    { value: '9:16', label: '9:16 (Portrait)' },
-    { value: '4:3', label: '4:3 (Standard)' },
-    { value: '3:4', label: '3:4 (Portrait)' },
-    { value: '21:9', label: '21:9 (Ultrawide)' },
+    { value: '2:1', label: '2:1' },
+    { value: '16:9', label: '16:9' },
+    { value: '3:2', label: '3:2' },
+    { value: '4:3', label: '4:3' },
+    { value: '1:1', label: '1:1' },
+    { value: '3:4', label: '3:4' },
+    { value: '2:3', label: '2:3' },
+    { value: '9:16', label: '9:16' },
+    { value: '1:2', label: '1:2' },
 ];
 
 /**
@@ -215,12 +218,15 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
 
         // Check against known aspect ratios
         const ratios: { value: AspectRatio; numeric: number }[] = [
-            { value: '1:1', numeric: 1 },
+            { value: '2:1', numeric: 2 / 1 },
             { value: '16:9', numeric: 16 / 9 },
-            { value: '9:16', numeric: 9 / 16 },
+            { value: '3:2', numeric: 3 / 2 },
             { value: '4:3', numeric: 4 / 3 },
+            { value: '1:1', numeric: 1 },
             { value: '3:4', numeric: 3 / 4 },
-            { value: '21:9', numeric: 21 / 9 },
+            { value: '2:3', numeric: 2 / 3 },
+            { value: '9:16', numeric: 9 / 16 },
+            { value: '1:2', numeric: 1 / 2 },
         ];
 
         for (const r of ratios) {

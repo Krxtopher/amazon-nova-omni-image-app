@@ -43,11 +43,11 @@ describe('ImageStore Persistence', () => {
 
     it('should persist selectedAspectRatio to database', async () => {
         // Set aspect ratio
-        await useImageStore.getState().setAspectRatio('21:9');
+        await useImageStore.getState().setAspectRatio('2:1');
 
         // Check database
         const stored = await sqliteService.getSetting('selectedAspectRatio');
-        expect(stored).toBe('21:9');
+        expect(stored).toBe('2:1');
     });
 
     it('should handle Date objects correctly', async () => {

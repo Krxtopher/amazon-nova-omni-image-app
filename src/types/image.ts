@@ -6,7 +6,7 @@ export type ImageStatus = 'pending' | 'generating' | 'complete' | 'error';
 /**
  * Aspect ratio options for image generation
  */
-export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4' | '21:9';
+export type AspectRatio = '2:1' | '16:9' | '3:2' | '4:3' | '1:1' | '3:4' | '2:3' | '9:16' | '1:2';
 
 /**
  * Generation response types

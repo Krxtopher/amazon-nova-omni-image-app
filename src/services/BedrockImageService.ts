@@ -16,12 +16,15 @@ export interface BedrockServiceConfig {
  * Used for display purposes and placeholder sizing
  */
 export const ASPECT_RATIO_DIMENSIONS: Record<AspectRatio, { width: number; height: number }> = {
-    '1:1': { width: 1024, height: 1024 },
+    '2:1': { width: 1536, height: 768 },
     '16:9': { width: 1344, height: 768 },
-    '9:16': { width: 768, height: 1344 },
+    '3:2': { width: 1152, height: 768 },
     '4:3': { width: 1152, height: 896 },
+    '1:1': { width: 1024, height: 1024 },
     '3:4': { width: 896, height: 1152 },
-    '21:9': { width: 1536, height: 640 },
+    '2:3': { width: 768, height: 1152 },
+    '9:16': { width: 768, height: 1344 },
+    '1:2': { width: 768, height: 1536 },
 };
 
 /**
