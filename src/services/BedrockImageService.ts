@@ -174,6 +174,82 @@ export class BedrockImageService {
     }
 
     /**
+     * Detects the image format from URL or by examining the image bytes
+     * @param imageSource - The image source (File, Blob, data URL, or blob URL)
+     * @param imageBytes - The image bytes to examine if URL detection fails
+     * @returns Promise resolving to the detected format
+     */
+    private async detectImageFormat(imageSource: File | Blob | string, imageBytes: Uint8Array): Promise<'png' | 'jpeg' | 'gif' | 'webp'> {
+        // First try to detect from the source if it's a File or has MIME type info
+        if (imageSource instanceof File) {
+            if (imageSource.type === 'image/jpeg') return 'jpeg';
+            if (imageSource.type === 'image/png') return 'png';
+            if (imageSource.type === 'image/gif') return 'gif';
+            if (imageSource.type === 'image/webp') return 'webp';
+        }
+
+        // Try to detect from data URL
+        if (typeof imageSource === 'string' && imageSource.startsWith('data:')) {
+            if (imageSource.includes('image/jpeg')) return 'jpeg';
+            if (imageSource.includes('image/png')) return 'png';
+            if (imageSource.includes('image/gif')) return 'gif';
+            if (imageSource.includes('image/webp')) return 'webp';
+        }
+
+        // Try to detect from blob URL by fetching and checking MIME type
+        if (typeof imageSource === 'string' && imageSource.startsWith('blob:')) {
+            try {
+                const response = await fetch(imageSource);
+                const contentType = response.headers.get('content-type');
+                if (contentType === 'image/jpeg') return 'jpeg';
+                if (contentType === 'image/png') return 'png';
+                if (contentType === 'image/gif') return 'gif';
+                if (contentType === 'image/webp') return 'webp';
+            } catch (error) {
+                // Fall through to byte detection
+            }
+        }
+
+        // Fall back to detecting from file signature (magic bytes)
+        return this.detectFormatFromBytes(imageBytes);
+    }
+
+    /**
+     * Detects image format by examining the file signature (magic bytes)
+     * @param bytes - The image bytes to examine
+     * @returns The detected format, defaults to 'png' if unable to detect
+     */
+    private detectFormatFromBytes(bytes: Uint8Array): 'png' | 'jpeg' | 'gif' | 'webp' {
+        // Check for PNG signature: 89 50 4E 47 0D 0A 1A 0A
+        if (bytes.length >= 8 &&
+            bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47 &&
+            bytes[4] === 0x0D && bytes[5] === 0x0A && bytes[6] === 0x1A && bytes[7] === 0x0A) {
+            return 'png';
+        }
+
+        // Check for JPEG signature: FF D8 FF
+        if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+            return 'jpeg';
+        }
+
+        // Check for GIF signature: 47 49 46 38 (GIF8)
+        if (bytes.length >= 4 &&
+            bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) {
+            return 'gif';
+        }
+
+        // Check for WebP signature: 52 49 46 46 ... 57 45 42 50 (RIFF...WEBP)
+        if (bytes.length >= 12 &&
+            bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+            bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+            return 'webp';
+        }
+
+        // Default to PNG if unable to detect
+        return 'png';
+    }
+
+    /**
      * Generates content using Amazon Bedrock's Nova 2 Omni model via the Converse API
      * Supports both text-to-image generation and image editing scenarios
      * The model may return either an image or text content
@@ -192,17 +268,8 @@ export class BedrockImageService {
             if (request.editSource) {
                 const imageBytes = await this.encodeImageToBytes(request.editSource.url);
 
-                // Determine image format from the URL or default to PNG
-                let format: 'png' | 'jpeg' | 'gif' | 'webp' = 'png';
-                if (typeof request.editSource.url === 'string') {
-                    if (request.editSource.url.includes('image/jpeg') || request.editSource.url.includes('.jpg') || request.editSource.url.includes('.jpeg')) {
-                        format = 'jpeg';
-                    } else if (request.editSource.url.includes('image/gif') || request.editSource.url.includes('.gif')) {
-                        format = 'gif';
-                    } else if (request.editSource.url.includes('image/webp') || request.editSource.url.includes('.webp')) {
-                        format = 'webp';
-                    }
-                }
+                // Determine image format from the URL or file type
+                const format = await this.detectImageFormat(request.editSource.url, imageBytes);
 
                 messageContent.push({
                     image: {

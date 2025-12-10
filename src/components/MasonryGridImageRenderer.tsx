@@ -58,10 +58,20 @@ export function MasonryImageRenderer({
         // Show error state
         if (item.status === 'error' || imageError) {
             return (
-                <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 p-4">
-                    <p className="text-sm text-destructive text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/10 p-4 gap-3">
+                    <p className="text-sm text-destructive text-center flex-1 flex items-center">
                         {item.error || 'Failed to load image'}
                     </p>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onDelete(item.id)}
+                        className="shrink-0"
+                        aria-label="Delete error message"
+                    >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                    </Button>
                 </div>
             );
         }
@@ -94,7 +104,7 @@ export function MasonryImageRenderer({
         <div
             className="relative group rounded-lg overflow-hidden bg-muted w-full h-full"
             style={{
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5), 0 10px 20px rgba(0, 0, 0, 0.4)'
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25), 0 10px 20px rgba(0, 0, 0, 0.4)'
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -115,9 +125,19 @@ export function MasonryImageRenderer({
                         size="icon"
                         variant="secondary"
                         onClick={() => {
+                            // Detect file extension from image format
+                            let extension = 'png'; // default
+                            if (item.url?.includes('image/jpeg') || item.url?.includes('data:image/jpeg')) {
+                                extension = 'jpg';
+                            } else if (item.url?.includes('image/gif') || item.url?.includes('data:image/gif')) {
+                                extension = 'gif';
+                            } else if (item.url?.includes('image/webp') || item.url?.includes('data:image/webp')) {
+                                extension = 'webp';
+                            }
+
                             const link = document.createElement('a');
                             link.href = item.url!;
-                            link.download = `image-${item.id}.png`;
+                            link.download = `image-${item.id}.${extension}`;
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);

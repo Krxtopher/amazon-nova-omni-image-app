@@ -36,7 +36,7 @@ export function GalleryGrid({ images, onImageDelete, onImageEdit }: GalleryGridP
             items={images}
             renderer={renderer}
             maxItemSize={350}
-            gap={16}
+            gap={22}
             className="w-full"
         />
     );

@@ -20,7 +20,7 @@ import { TextResponseModal } from './TextResponseModal';
  */
 interface PromptInputAreaProps {
     bedrockService: BedrockImageService;
-    onError?: (error: string) => void;
+    onError?: (error: string) => void; // Kept for compatibility, but generation errors now show in placeholders
     onSuccess?: (message: string) => void;
     onActiveRequestsChange?: (count: number) => void;
 }
@@ -68,7 +68,7 @@ const getRandomAspectRatio = (): Exclude<AspectRatio, 'random'> => {
  * 
  * Requirements: 1.1, 2.1, 9.3
  */
-export function PromptInputArea({ bedrockService, onError, onSuccess, onActiveRequestsChange }: PromptInputAreaProps) {
+export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, onActiveRequestsChange }: PromptInputAreaProps) {
     const [prompt, setPrompt] = useState('');
     const [validationError, setValidationError] = useState<string | null>(null);
     const [fileError, setFileError] = useState<string | null>(null);
@@ -204,18 +204,16 @@ export function PromptInputArea({ bedrockService, onError, onSuccess, onActiveRe
                 // Note: Keep edit source selected for additional requests
             }
         } catch (error) {
-            // Handle errors - remove placeholder
+            // Handle errors - update placeholder to show error instead of removing it
             // Requirements: 1.5
-            await deleteImage(placeholderId);
-
             const errorMessage = error && typeof error === 'object' && 'message' in error
                 ? (error as { message: string }).message
                 : 'Failed to generate content. Please try again.';
 
-            // Show error notification
-            if (onError) {
-                onError(errorMessage);
-            }
+            await updateImage(placeholderId, {
+                status: 'error',
+                error: errorMessage,
+            });
 
             console.error('Content generation error:', error);
         } finally {
@@ -405,7 +403,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess, onActiveRe
                 />
 
                 {/* Unified Compact Input Bar */}
-                <div className="unified-input-bar bg-neutral-900/30 backdrop-blur-md backdrop-saturate-150 border border-border rounded-2xl flex items-center gap-2 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.16)]">
+                <div className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl flex items-center gap-2 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.16)]">
                     {/* Menu Button with Options */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

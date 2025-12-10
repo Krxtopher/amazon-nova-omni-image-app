@@ -35,7 +35,7 @@
 
 .dark {
   @theme {
-    --color-background: #28273C;
+    --color-background: #352E50;
     --color-foreground: 0 0% 98%;
     --color-card: 0 0% 14%;
     --color-card-foreground: 0 0% 98%;

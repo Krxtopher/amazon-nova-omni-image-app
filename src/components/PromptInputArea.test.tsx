@@ -115,7 +115,7 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(mockOnSuccess).toHaveBeenCalledWith('Image generated successfully!');
     });
 
-    it('should remove placeholder on error', async () => {
+    it('should update placeholder with error on error', async () => {
         const user = userEvent.setup();
         const errorMessage = 'API error occurred';
 
@@ -148,14 +148,21 @@ describe('PromptInputArea - Submit Handler', () => {
             );
         });
 
-        // Wait for error handling and placeholder removal
+        // Wait for error handling and placeholder update
         await waitFor(() => {
-            expect(mockOnError).toHaveBeenCalledWith(errorMessage);
-            expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
+            expect(mockUpdateImage).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({
+                    status: 'error',
+                    error: errorMessage,
+                })
+            );
         });
 
-        // Verify placeholder was not updated (it was deleted instead)
-        expect(mockUpdateImage).not.toHaveBeenCalled();
+        // Verify placeholder was not deleted (it was updated instead)
+        expect(mockDeleteImage).not.toHaveBeenCalled();
+        // onError should not be called since errors are now shown in placeholders
+        expect(mockOnError).not.toHaveBeenCalled();
     });
 
     it('should call generateContent with correct parameters for new generation', async () => {

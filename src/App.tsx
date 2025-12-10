@@ -91,11 +91,12 @@ function AppContent() {
   /**
    * Handle image generation errors
    * Requirements: 1.5, 10.5
+   * Note: Errors are now shown in image placeholders instead of toasts
    */
   const handleError = (error: string) => {
-    toast.error(error, {
-      duration: 5000,
-    });
+    // Errors are now handled by showing them in image placeholders
+    // This function is kept for compatibility but no longer shows toasts
+    console.log('Error handled in placeholder:', error);
   };
 
   /**
@@ -155,7 +156,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Reset Data Button - Fixed in upper right */}
-      <div className="fixed top-4 right-4 z-30">
+      <div className="fixed top-4 right-4 z-50">
         <ResetDataButton />
       </div>
 
