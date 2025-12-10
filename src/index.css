@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 @theme {
   --color-background: 0 0% 100%;
   --color-foreground: 222.2 84% 4.9%;
@@ -25,7 +35,7 @@
 
 .dark {
   @theme {
-    --color-background: rgb(20, 20, 20);
+    --color-background: #28273C;
     --color-foreground: 0 0% 98%;
     --color-card: 0 0% 14%;
     --color-card-foreground: 0 0% 98%;

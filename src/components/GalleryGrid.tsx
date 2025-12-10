@@ -35,8 +35,8 @@ export function GalleryGrid({ images, onImageDelete, onImageEdit }: GalleryGridP
         <VMasonryGrid
             items={images}
             renderer={renderer}
-            maxItemSize={300}
-            gap={8}
+            maxItemSize={350}
+            gap={16}
             className="w-full"
         />
     );

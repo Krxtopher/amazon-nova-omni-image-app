@@ -178,10 +178,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                 // Clear validation error
                 setValidationError(null);
 
-                // Clear edit source if it was used
-                if (currentEditSource) {
-                    handleClearEditSource();
-                }
+                // Note: Keep edit source selected for additional requests
             } else {
                 // Model returned an image - update placeholder with actual image
                 // Requirements: 1.4
@@ -192,16 +189,13 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
 
                 // Show success notification
                 if (onSuccess) {
-                    onSuccess(currentEditSource ? 'Image edited successfully!' : 'Image generated successfully!');
+                    onSuccess(currentEditSource ? 'Image edited successfully! Image remains selected for more edits.' : 'Image generated successfully!');
                 }
 
                 // Clear validation error
                 setValidationError(null);
 
-                // Clear edit source if it was used
-                if (currentEditSource) {
-                    handleClearEditSource();
-                }
+                // Note: Keep edit source selected for additional requests
             }
         } catch (error) {
             // Handle errors - remove placeholder
@@ -454,11 +448,17 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                     {/* Thumbnail preview (if image uploaded) */}
                     {editSource && (
                         <div className="relative shrink-0 group">
-                            <img
-                                src={editSource.url}
-                                alt="Edit source"
-                                className="w-9 h-9 object-cover rounded border border-border"
-                            />
+                            <div className="relative">
+                                <img
+                                    src={editSource.url}
+                                    alt="Edit source"
+                                    className="w-9 h-9 object-cover rounded border-2 border-primary/50"
+                                />
+                                {/* Selected indicator */}
+                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border border-background flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
+                                </div>
+                            </div>
                             <Button
                                 variant="destructive"
                                 size="icon"
@@ -475,7 +475,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                     {/* Text Input */}
                     <Textarea
                         id="prompt-input"
-                        placeholder="What do you want to create?"
+                        placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
                         value={prompt}
                         onChange={(e) => {
                             setPrompt(e.target.value);

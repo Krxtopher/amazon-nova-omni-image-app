@@ -154,14 +154,14 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Reset Data Button - Fixed in upper right */}
-      <div className="fixed top-4 right-4 z-20">
+      <div className="fixed top-4 right-4 z-30">
         <ResetDataButton />
       </div>
 
       {/* Fixed Prompt Input Area */}
       <section
         aria-label="Image generation controls"
-        className="fixed top-0 left-0 right-0 z-10"
+        className="fixed top-0 left-0 right-0 z-40"
       >
         <PromptInputArea
           bedrockService={bedrockService}

@@ -239,8 +239,11 @@ describe('PromptInputArea - Submit Handler', () => {
 
         // Verify success message for editing
         await waitFor(() => {
-            expect(mockOnSuccess).toHaveBeenCalledWith('Image edited successfully!');
+            expect(mockOnSuccess).toHaveBeenCalledWith('Image edited successfully! Image remains selected for more edits.');
         });
+
+        // Verify edit source was NOT cleared after successful generation
+        expect(mockClearEditSource).not.toHaveBeenCalled();
     });
 
     it('should keep prompt after successful generation', async () => {
@@ -318,6 +321,58 @@ describe('PromptInputArea - Submit Handler', () => {
 
         // Verify no error was shown
         expect(mockOnError).not.toHaveBeenCalled();
+    });
+
+    it('should keep edit source selected after text response', async () => {
+        const user = userEvent.setup();
+        const mockEditSource = {
+            url: 'data:image/png;base64,mockEditSource',
+            aspectRatio: '16:9' as const,
+            width: 1344,
+            height: 768,
+        };
+
+        // Mock store with edit source
+        (useImageStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+            selectedAspectRatio: '1:1',
+            editSource: mockEditSource,
+            setAspectRatio: vi.fn(),
+            setEditSource: vi.fn(),
+            clearEditSource: mockClearEditSource,
+            addImage: mockAddImage,
+            updateImage: mockUpdateImage,
+            deleteImage: mockDeleteImage,
+        });
+
+        // Mock service to return text response
+        mockBedrockService.generateContent = vi.fn().mockResolvedValue({
+            type: 'text',
+            text: 'This is a text response from the model',
+        });
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        // Enter a prompt
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        await user.type(textarea, 'Make it more colorful');
+
+        // Submit
+        const submitButton = screen.getByLabelText(/generate image/i);
+        await user.click(submitButton);
+
+        // Wait for text response modal to appear
+        await waitFor(() => {
+            expect(screen.getByText('Model Response')).toBeInTheDocument();
+        });
+
+        // Verify edit source was NOT cleared after text response
+        expect(mockClearEditSource).not.toHaveBeenCalled();
     });
 
     it('should allow multiple concurrent requests', async () => {
