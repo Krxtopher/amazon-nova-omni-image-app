@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PromptInputArea, GalleryGrid, ResetDataButton } from '@/components';
+import { PromptInputArea, GalleryGrid, ResetDataButton, GeneratingStatus } from '@/components';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
@@ -49,6 +49,7 @@ function AppContent() {
   const bedrockService = useBedrockService();
   const { images, deleteImage, setEditSource, initialize, isLoading } = useImageStore();
   const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
+  const [activeRequests, setActiveRequests] = useState(0);
 
   // Initialize the store and run migration if needed
   useEffect(() => {
@@ -167,6 +168,7 @@ function AppContent() {
           bedrockService={bedrockService}
           onSuccess={handleSuccess}
           onError={handleError}
+          onActiveRequestsChange={setActiveRequests}
         />
       </section>
 
@@ -180,6 +182,9 @@ function AppContent() {
           />
         </section>
       </main>
+
+      {/* Generating Status - Fixed at bottom */}
+      <GeneratingStatus activeRequests={activeRequests} />
     </div>
   );
 }

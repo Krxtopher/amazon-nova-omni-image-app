@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +12,7 @@ import {
 import { useImageStore } from '@/stores/imageStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
-import { X, Paperclip, Loader2, Menu, Send } from 'lucide-react';
+import { X, Paperclip, Menu, Send } from 'lucide-react';
 import { TextResponseModal } from './TextResponseModal';
 
 /**
@@ -22,6 +22,7 @@ interface PromptInputAreaProps {
     bedrockService: BedrockImageService;
     onError?: (error: string) => void;
     onSuccess?: (message: string) => void;
+    onActiveRequestsChange?: (count: number) => void;
 }
 
 /**
@@ -67,7 +68,7 @@ const getRandomAspectRatio = (): Exclude<AspectRatio, 'random'> => {
  * 
  * Requirements: 1.1, 2.1, 9.3
  */
-export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptInputAreaProps) {
+export function PromptInputArea({ bedrockService, onError, onSuccess, onActiveRequestsChange }: PromptInputAreaProps) {
     const [prompt, setPrompt] = useState('');
     const [validationError, setValidationError] = useState<string | null>(null);
     const [fileError, setFileError] = useState<string | null>(null);
@@ -88,6 +89,11 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
         updateImage,
         deleteImage,
     } = useImageStore();
+
+    // Notify parent when activeRequests changes
+    useEffect(() => {
+        onActiveRequestsChange?.(activeRequests);
+    }, [activeRequests, onActiveRequestsChange]);
 
     /**
      * Validate prompt is non-empty and not just whitespace
@@ -370,15 +376,7 @@ export function PromptInputArea({ bedrockService, onError, onSuccess }: PromptIn
                 content={textResponseModal.content}
             />
             <div className="w-full max-w-4xl mx-auto px-6 py-4">
-                {/* Loading Indicator */}
-                {activeRequests > 0 && (
-                    <div className="mb-4 bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center gap-3" role="status" aria-live="polite">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
-                        <p className="text-sm text-primary">
-                            Generating {activeRequests} {activeRequests === 1 ? 'image' : 'images'}...
-                        </p>
-                    </div>
-                )}
+
 
                 {/* Error Messages */}
                 {(validationError || fileError) && (
