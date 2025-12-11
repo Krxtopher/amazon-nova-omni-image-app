@@ -163,10 +163,17 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         setActiveRequests(prev => prev + 1);
 
         try {
+            // Prepare the prompt with aspect ratio information for the model
+            let enhancedPrompt = prompt;
+            if (!currentEditSource) {
+                // Only append aspect ratio for new generation, not for edits
+                enhancedPrompt = `${prompt} --ar ${aspectRatioToUse}`;
+            }
+
             // Call BedrockImageService to generate content
             // Use editSource if present, otherwise generate from scratch
             const response = await bedrockService.generateContent({
-                prompt: prompt,
+                prompt: enhancedPrompt,
                 aspectRatio: currentEditSource ? undefined : aspectRatioToUse,
                 editSource: currentEditSource || undefined,
             });

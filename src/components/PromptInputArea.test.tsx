@@ -19,6 +19,7 @@ describe('PromptInputArea - Submit Handler', () => {
     let mockClearEditSource: ReturnType<typeof vi.fn>;
     let mockOnError: (error: string) => void;
     let mockOnSuccess: (message: string) => void;
+    let originalImage: typeof Image;
 
     beforeEach(() => {
         // Reset mocks
@@ -28,6 +29,26 @@ describe('PromptInputArea - Submit Handler', () => {
         mockClearEditSource = vi.fn();
         mockOnError = vi.fn();
         mockOnSuccess = vi.fn();
+
+        // Store original Image constructor
+        originalImage = global.Image;
+
+        // Mock Image constructor for all tests
+        global.Image = class MockImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 1024;
+            naturalHeight = 1024;
+
+            set src(_value: string) {
+                // Simulate successful image load
+                setTimeout(() => {
+                    if (this.onload) {
+                        this.onload();
+                    }
+                }, 0);
+            }
+        } as any;
 
         // Mock store
         (useImageStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -46,8 +67,14 @@ describe('PromptInputArea - Submit Handler', () => {
             generateContent: vi.fn().mockResolvedValue({
                 type: 'image',
                 imageDataUrl: 'data:image/png;base64,mockImageData',
+                converseParams: {},
             }),
         } as unknown as BedrockImageService;
+    });
+
+    afterEach(() => {
+        // Restore original Image constructor
+        global.Image = originalImage;
     });
 
     it('should create placeholder immediately before API call (optimistic UI)', async () => {
@@ -184,11 +211,11 @@ describe('PromptInputArea - Submit Handler', () => {
         const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
-        // Verify service was called with correct parameters
+        // Verify service was called with correct parameters including aspect ratio in prompt
         await waitFor(() => {
             expect(mockBedrockService.generateContent).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    prompt: 'A beautiful sunset',
+                    prompt: 'A beautiful sunset --ar 1:1',
                     aspectRatio: '1:1',
                     editSource: undefined,
                 })
@@ -471,15 +498,14 @@ describe('PromptInputArea - Submit Handler', () => {
             converseParams: {},
         });
 
-        // Mock Image constructor to simulate loading an image with 16:9 dimensions
-        const originalImage = global.Image;
+        // Override the default Image mock to simulate loading an image with 16:9 dimensions
         global.Image = class MockImage {
             onload: (() => void) | null = null;
             onerror: (() => void) | null = null;
             naturalWidth = 1920;
             naturalHeight = 1080;
 
-            set src(value: string) {
+            set src(_value: string) {
                 // Simulate successful image load
                 setTimeout(() => {
                     if (this.onload) {
@@ -528,11 +554,9 @@ describe('PromptInputArea - Submit Handler', () => {
                     aspectRatio: '16:9', // Should be corrected to actual aspect ratio
                     width: 1920, // Should be updated to actual dimensions
                     height: 1080,
+                    converseParams: {},
                 })
             );
         });
-
-        // Restore original Image constructor
-        global.Image = originalImage;
     });
 });
