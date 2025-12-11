@@ -39,6 +39,10 @@ class SQLiteService {
 
                 if (savedDb) {
                     this.db = new SQL.Database(savedDb);
+                    // Run migrations for existing databases
+                    this.runMigrations();
+                    // Save the migrated database back to IndexedDB
+                    await this.saveToIndexedDB();
                 } else {
                     this.db = new SQL.Database();
                     this.createTables();
@@ -70,7 +74,8 @@ class SQLiteService {
                 width INTEGER NOT NULL,
                 height INTEGER NOT NULL,
                 createdAt INTEGER NOT NULL,
-                error TEXT
+                error TEXT,
+                converseParams TEXT
             )
         `);
 
@@ -84,6 +89,60 @@ class SQLiteService {
         this.db.run(`
             CREATE INDEX IF NOT EXISTS idx_images_createdAt ON images(createdAt DESC)
         `);
+
+        // Run migrations for existing databases
+        this.runMigrations();
+    }
+
+    /**
+     * Run database migrations
+     */
+    private runMigrations(): void {
+        if (!this.db) return;
+
+        try {
+            // Ensure the images table exists first
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS images (
+                    id TEXT PRIMARY KEY,
+                    url TEXT NOT NULL,
+                    prompt TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    aspectRatio TEXT NOT NULL,
+                    width INTEGER NOT NULL,
+                    height INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    error TEXT
+                )
+            `);
+
+            // Check if converseParams column exists, if not add it
+            const result = this.db.exec("PRAGMA table_info(images)");
+            if (result.length > 0) {
+                const columns = result[0].values.map(row => row[1] as string);
+                if (!columns.includes('converseParams')) {
+                    console.log('Adding converseParams column to existing database');
+                    this.db.run('ALTER TABLE images ADD COLUMN converseParams TEXT');
+                    console.log('Successfully added converseParams column');
+                }
+            }
+
+            // Ensure settings table exists
+            this.db.run(`
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+            `);
+
+            // Ensure index exists
+            this.db.run(`
+                CREATE INDEX IF NOT EXISTS idx_images_createdAt ON images(createdAt DESC)
+            `);
+        } catch (error) {
+            console.error('Migration error:', error);
+            throw error;
+        }
     }
 
     /**
@@ -172,8 +231,8 @@ class SQLiteService {
         if (!this.db) throw new Error('Database not initialized');
 
         this.db.run(
-            `INSERT INTO images (id, url, prompt, status, aspectRatio, width, height, createdAt, error)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO images (id, url, prompt, status, aspectRatio, width, height, createdAt, error, converseParams)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 image.id,
                 image.url,
@@ -184,6 +243,7 @@ class SQLiteService {
                 image.height,
                 image.createdAt.getTime(),
                 image.error || null,
+                image.converseParams ? JSON.stringify(image.converseParams) : null,
             ]
         );
 
@@ -227,6 +287,10 @@ class SQLiteService {
         if (updates.error !== undefined) {
             setClauses.push('error = ?');
             values.push(updates.error);
+        }
+        if (updates.converseParams !== undefined) {
+            setClauses.push('converseParams = ?');
+            values.push(updates.converseParams ? JSON.stringify(updates.converseParams) : null);
         }
 
         if (setClauses.length === 0) return;
@@ -283,6 +347,7 @@ class SQLiteService {
                 height: image.height,
                 createdAt: new Date(image.createdAt),
                 error: image.error || undefined,
+                converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
             });
         }
 

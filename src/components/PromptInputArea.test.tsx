@@ -447,4 +447,92 @@ describe('PromptInputArea - Submit Handler', () => {
             expect(mockUpdateImage).toHaveBeenCalledTimes(2);
         });
     });
+
+    it('should update aspect ratio when actual image dimensions differ from prospective ratio', async () => {
+        const user = userEvent.setup();
+
+        // Mock store with 1:1 aspect ratio selected
+        (useImageStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+            selectedAspectRatio: '1:1',
+            editSource: null,
+            setAspectRatio: vi.fn(),
+            setEditSource: vi.fn(),
+            clearEditSource: mockClearEditSource,
+            addImage: mockAddImage,
+            updateImage: mockUpdateImage,
+            deleteImage: mockDeleteImage,
+        });
+
+        // Create a mock image that will have 16:9 dimensions when loaded
+        const mockImageDataUrl = 'data:image/png;base64,mockImageData';
+        mockBedrockService.generateContent = vi.fn().mockResolvedValue({
+            type: 'image',
+            imageDataUrl: mockImageDataUrl,
+            converseParams: {},
+        });
+
+        // Mock Image constructor to simulate loading an image with 16:9 dimensions
+        const originalImage = global.Image;
+        global.Image = class MockImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 1920;
+            naturalHeight = 1080;
+
+            set src(value: string) {
+                // Simulate successful image load
+                setTimeout(() => {
+                    if (this.onload) {
+                        this.onload();
+                    }
+                }, 0);
+            }
+        } as any;
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        // Enter a prompt
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        await user.type(textarea, 'A beautiful sunset');
+
+        // Submit
+        const submitButton = screen.getByLabelText(/generate image/i);
+        await user.click(submitButton);
+
+        // Verify placeholder was created with prospective 1:1 aspect ratio
+        await waitFor(() => {
+            expect(mockAddImage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    prompt: 'A beautiful sunset',
+                    status: 'generating',
+                    aspectRatio: '1:1',
+                    width: 1024,
+                    height: 1024,
+                })
+            );
+        });
+
+        // Wait for generation to complete and aspect ratio to be corrected
+        await waitFor(() => {
+            expect(mockUpdateImage).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({
+                    url: mockImageDataUrl,
+                    status: 'complete',
+                    aspectRatio: '16:9', // Should be corrected to actual aspect ratio
+                    width: 1920, // Should be updated to actual dimensions
+                    height: 1080,
+                })
+            );
+        });
+
+        // Restore original Image constructor
+        global.Image = originalImage;
+    });
 });

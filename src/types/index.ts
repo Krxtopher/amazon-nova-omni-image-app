@@ -8,6 +8,7 @@ export type {
     EditSource,
     GenerationRequest,
     GenerationResponse,
+    ConverseRequestParams,
 } from './image';
 
 export type {

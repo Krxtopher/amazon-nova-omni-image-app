@@ -135,12 +135,32 @@ export function MasonryImageRenderer({
                                 extension = 'webp';
                             }
 
-                            const link = document.createElement('a');
-                            link.href = item.url!;
-                            link.download = `image-${item.id}.${extension}`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            const baseFilename = `image-${item.id}`;
+
+                            // Download the image
+                            const imageLink = document.createElement('a');
+                            imageLink.href = item.url!;
+                            imageLink.download = `${baseFilename}.${extension}`;
+                            document.body.appendChild(imageLink);
+                            imageLink.click();
+                            document.body.removeChild(imageLink);
+
+                            // Download the JSON file with Converse API parameters if available
+                            if (item.converseParams) {
+                                const jsonData = JSON.stringify(item.converseParams, null, 2);
+                                const jsonBlob = new Blob([jsonData], { type: 'application/json' });
+                                const jsonUrl = URL.createObjectURL(jsonBlob);
+
+                                const jsonLink = document.createElement('a');
+                                jsonLink.href = jsonUrl;
+                                jsonLink.download = `${baseFilename}-converse-params.json`;
+                                document.body.appendChild(jsonLink);
+                                jsonLink.click();
+                                document.body.removeChild(jsonLink);
+
+                                // Clean up the blob URL
+                                URL.revokeObjectURL(jsonUrl);
+                            }
                         }}
                         className="h-8 w-8 shadow-lg backdrop-blur-sm"
                         style={{

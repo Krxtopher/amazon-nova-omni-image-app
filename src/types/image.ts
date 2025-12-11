@@ -12,8 +12,28 @@ export type AspectRatio = 'random' | '2:1' | '16:9' | '3:2' | '4:3' | '1:1' | '3
  * Generation response types
  */
 export type GenerationResponse =
-    | { type: 'image'; imageDataUrl: string }
-    | { type: 'text'; text: string };
+    | { type: 'image'; imageDataUrl: string; converseParams: ConverseRequestParams }
+    | { type: 'text'; text: string; converseParams: ConverseRequestParams };
+
+/**
+ * Converse API request parameters for image generation
+ */
+export interface ConverseRequestParams {
+    modelId: string;
+    messages: Array<{
+        role: 'user';
+        content: Array<{
+            text?: string;
+            image?: {
+                format: 'png' | 'jpeg' | 'gif' | 'webp';
+                source: {
+                    bytes?: Uint8Array;
+                    _base64?: string; // Base64 encoded source image for editing
+                };
+            };
+        }>;
+    }>;
+}
 
 /**
  * Image entry in the gallery
@@ -28,6 +48,7 @@ export interface GeneratedImage {
     height: number;
     createdAt: Date;
     error?: string;
+    converseParams?: ConverseRequestParams; // Original API request parameters
 }
 
 /**

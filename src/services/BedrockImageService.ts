@@ -1,7 +1,7 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
-import type { AspectRatio, GenerationRequest, GenerationResponse, AppError } from '../types';
+import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams } from '../types';
 
 /**
  * Configuration for BedrockImageService
@@ -263,6 +263,7 @@ export class BedrockImageService {
             // Build the message content array
             // Using any[] to work with AWS SDK's complex ContentBlock union types
             const messageContent: any[] = [];
+            let sourceImageBase64: string | undefined;
 
             // If there's an edit source, include the input image
             if (request.editSource) {
@@ -270,6 +271,9 @@ export class BedrockImageService {
 
                 // Determine image format from the URL or file type
                 const format = await this.detectImageFormat(request.editSource.url, imageBytes);
+
+                // Convert to base64 for storage in converseParams
+                sourceImageBase64 = this.uint8ArrayToBase64(imageBytes);
 
                 messageContent.push({
                     image: {
@@ -295,11 +299,34 @@ export class BedrockImageService {
                 ],
             });
 
+            // Create the converseParams for storage (without the actual bytes, but with base64)
+            const converseParams: ConverseRequestParams = {
+                modelId: this.modelId,
+                messages: [
+                    {
+                        role: 'user',
+                        content: messageContent.map(item => {
+                            if (item.image) {
+                                return {
+                                    image: {
+                                        format: item.image.format,
+                                        source: {
+                                            _base64: sourceImageBase64
+                                        }
+                                    }
+                                };
+                            }
+                            return item;
+                        }),
+                    },
+                ],
+            };
+
             // Call the Bedrock API
             const response = await this.client.send(command);
 
             // Parse and return the generated image
-            return this.parseConverseResponse(response);
+            return this.parseConverseResponse(response, converseParams);
         } catch (error) {
             // Handle and categorize errors
             throw this.handleError(error);
@@ -310,10 +337,11 @@ export class BedrockImageService {
      * Parses the Converse API response to extract either image or text content
      * 
      * @param response - The ConverseCommand output from Bedrock
+     * @param converseParams - The original request parameters to include in the response
      * @returns GenerationResponse with either image data URL or text content
      * @throws Error if response format is invalid or no content is found
      */
-    private parseConverseResponse(response: ConverseCommandOutput): GenerationResponse {
+    private parseConverseResponse(response: ConverseCommandOutput, converseParams: ConverseRequestParams): GenerationResponse {
         try {
             // Validate response structure
             if (!response.output?.message?.content) {
@@ -330,6 +358,7 @@ export class BedrockImageService {
                 return {
                     type: 'text',
                     text: textContent.text,
+                    converseParams,
                 };
             }
 
@@ -353,6 +382,7 @@ export class BedrockImageService {
             return {
                 type: 'image',
                 imageDataUrl: `data:image/${format};base64,${base64}`,
+                converseParams,
             };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';

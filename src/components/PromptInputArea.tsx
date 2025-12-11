@@ -186,11 +186,18 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 // Note: Keep edit source selected for additional requests
             } else {
-                // Model returned an image - update placeholder with actual image
+                // Model returned an image - check actual aspect ratio and update placeholder
                 // Requirements: 1.4
+                const actualDimensions = await getImageDimensions(response.imageDataUrl);
+                const actualAspectRatio = calculateAspectRatio(actualDimensions.width, actualDimensions.height);
+
                 await updateImage(placeholderId, {
                     url: response.imageDataUrl,
                     status: 'complete',
+                    aspectRatio: actualAspectRatio,
+                    width: actualDimensions.width,
+                    height: actualDimensions.height,
+                    converseParams: response.converseParams,
                 });
 
                 // Show success notification
@@ -230,6 +237,26 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             e.preventDefault();
             handleSubmit();
         }
+    };
+
+    /**
+     * Get actual dimensions from an image data URL
+     * Returns a promise that resolves with the image's actual width and height
+     */
+    const getImageDimensions = (dataUrl: string): Promise<{ width: number; height: number }> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                resolve({
+                    width: img.naturalWidth,
+                    height: img.naturalHeight,
+                });
+            };
+            img.onerror = () => {
+                reject(new Error('Failed to load image for dimension checking'));
+            };
+            img.src = dataUrl;
+        });
     };
 
     /**

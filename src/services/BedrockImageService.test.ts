@@ -179,6 +179,11 @@ describe('BedrockImageService', () => {
             if (result.type === 'image') {
                 expect(result.imageDataUrl).toContain('data:image/png;base64,');
                 expect(result.imageDataUrl).toBeTruthy();
+                expect(result.converseParams).toBeDefined();
+                expect(result.converseParams.modelId).toBe('us.amazon.nova-2-omni-v1:0');
+                expect(result.converseParams.messages).toHaveLength(1);
+                expect(result.converseParams.messages[0].content).toHaveLength(1);
+                expect(result.converseParams.messages[0].content[0].text).toBe('A beautiful sunset over mountains');
             }
         });
 
@@ -226,6 +231,13 @@ describe('BedrockImageService', () => {
             if (result.type === 'image') {
                 expect(result.imageDataUrl).toContain('data:image/png;base64,');
                 expect(result.imageDataUrl).toBeTruthy();
+                expect(result.converseParams).toBeDefined();
+                expect(result.converseParams.modelId).toBe('us.amazon.nova-2-omni-v1:0');
+                expect(result.converseParams.messages).toHaveLength(1);
+                expect(result.converseParams.messages[0].content).toHaveLength(2); // image + text
+                expect(result.converseParams.messages[0].content[0].image).toBeDefined();
+                expect(result.converseParams.messages[0].content[0].image?.source._base64).toBeDefined();
+                expect(result.converseParams.messages[0].content[1].text).toBe('Make it more colorful');
             }
         });
 
@@ -257,6 +269,11 @@ describe('BedrockImageService', () => {
             expect(result.type).toBe('text');
             if (result.type === 'text') {
                 expect(result.text).toBe('I cannot generate that image because it violates content policy.');
+                expect(result.converseParams).toBeDefined();
+                expect(result.converseParams.modelId).toBe('us.amazon.nova-2-omni-v1:0');
+                expect(result.converseParams.messages).toHaveLength(1);
+                expect(result.converseParams.messages[0].content).toHaveLength(1);
+                expect(result.converseParams.messages[0].content[0].text).toBe('Test prompt');
             }
         });
 
