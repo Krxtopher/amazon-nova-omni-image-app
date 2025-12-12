@@ -277,6 +277,48 @@ describe('BedrockImageService', () => {
             }
         });
 
+        it('should handle unexpected stopReason values', async () => {
+            // Mock a response with unexpected stopReason
+            const mockResponse = {
+                output: {
+                    message: {
+                        role: 'assistant',
+                        content: [
+                            {
+                                image: {
+                                    format: 'png',
+                                    source: {
+                                        bytes: new Uint8Array([137, 80, 78, 71]), // PNG header
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+                stopReason: 'content_filtered', // Unexpected stopReason
+            };
+
+            // @ts-expect-error Accessing private client for testing
+            vi.spyOn(service.client, 'send').mockResolvedValue(mockResponse);
+
+            const request: GenerationRequest = {
+                prompt: 'Test prompt',
+                aspectRatio: '1:1',
+            };
+
+            const result = await service.generateContent(request);
+
+            expect(result.type).toBe('error');
+            if (result.type === 'error') {
+                expect(result.error).toBe('Unexpected stop reason: content_filtered');
+                expect(result.converseParams).toBeDefined();
+                expect(result.converseParams.modelId).toBe('us.amazon.nova-2-omni-v1:0');
+                expect(result.converseParams.messages).toHaveLength(1);
+                expect(result.converseParams.messages[0].content).toHaveLength(1);
+                expect(result.converseParams.messages[0].content[0].text).toBe('Test prompt');
+            }
+        });
+
         it('should handle API errors gracefully', async () => {
             // Mock an API error
             const mockError = {

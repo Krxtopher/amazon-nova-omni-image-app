@@ -343,6 +343,15 @@ export class BedrockImageService {
      */
     private parseConverseResponse(response: ConverseCommandOutput, converseParams: ConverseRequestParams): GenerationResponse {
         try {
+            // Check for unexpected stopReason values
+            if (response.stopReason && response.stopReason !== 'end_turn') {
+                return {
+                    type: 'error',
+                    error: `Unexpected stop reason: ${response.stopReason}`,
+                    converseParams,
+                };
+            }
+
             // Validate response structure
             if (!response.output?.message?.content) {
                 throw new Error('Invalid response structure: missing content');

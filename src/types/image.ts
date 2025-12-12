@@ -13,7 +13,8 @@ export type AspectRatio = 'random' | '2:1' | '16:9' | '3:2' | '4:3' | '1:1' | '3
  */
 export type GenerationResponse =
     | { type: 'image'; imageDataUrl: string; converseParams: ConverseRequestParams }
-    | { type: 'text'; text: string; converseParams: ConverseRequestParams };
+    | { type: 'text'; text: string; converseParams: ConverseRequestParams }
+    | { type: 'error'; error: string; converseParams: ConverseRequestParams };
 
 /**
  * Converse API request parameters for image generation

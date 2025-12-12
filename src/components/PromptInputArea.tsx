@@ -167,7 +167,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             let enhancedPrompt = prompt;
             if (!currentEditSource) {
                 // Only append aspect ratio for new generation, not for edits
-                enhancedPrompt = `${prompt} --ar ${aspectRatioToUse}`;
+                enhancedPrompt = `${prompt}  (aspect ratio ${aspectRatioToUse})`;
             }
 
             // Call BedrockImageService to generate content
@@ -186,6 +186,18 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 setTextResponseModal({
                     isOpen: true,
                     content: response.text,
+                });
+
+                // Clear validation error
+                setValidationError(null);
+
+                // Note: Keep edit source selected for additional requests
+            } else if (response.type === 'error') {
+                // Model returned an error (e.g., unexpected stopReason) - update placeholder to show error
+                await updateImage(placeholderId, {
+                    status: 'error',
+                    error: response.error,
+                    converseParams: response.converseParams,
                 });
 
                 // Clear validation error

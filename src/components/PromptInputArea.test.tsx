@@ -215,7 +215,7 @@ describe('PromptInputArea - Submit Handler', () => {
         await waitFor(() => {
             expect(mockBedrockService.generateContent).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    prompt: 'A beautiful sunset --ar 1:1',
+                    prompt: 'A beautiful sunset (aspect ratio 1:1)',
                     aspectRatio: '1:1',
                     editSource: undefined,
                 })
@@ -406,6 +406,51 @@ describe('PromptInputArea - Submit Handler', () => {
         });
 
         // Verify edit source was NOT cleared after text response
+        expect(mockClearEditSource).not.toHaveBeenCalled();
+    });
+
+    it('should handle error response type (e.g., unexpected stopReason)', async () => {
+        const user = userEvent.setup();
+
+        // Mock service to return error response
+        mockBedrockService.generateContent = vi.fn().mockResolvedValue({
+            type: 'error',
+            error: 'Unexpected stop reason: content_filtered',
+            converseParams: {
+                modelId: 'us.amazon.nova-2-omni-v1:0',
+                messages: [{ role: 'user', content: [{ text: 'Test prompt' }] }],
+            },
+        });
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        // Enter a prompt
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        await user.type(textarea, 'Test prompt');
+
+        // Submit
+        const submitButton = screen.getByLabelText(/generate image/i);
+        await user.click(submitButton);
+
+        // Wait for the error to be processed
+        await waitFor(() => {
+            expect(mockUpdateImage).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({
+                    status: 'error',
+                    error: 'Unexpected stop reason: content_filtered',
+                    converseParams: expect.any(Object),
+                })
+            );
+        });
+
+        // Verify edit source was NOT cleared after error response
         expect(mockClearEditSource).not.toHaveBeenCalled();
     });
 

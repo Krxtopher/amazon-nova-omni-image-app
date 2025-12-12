@@ -37,6 +37,7 @@ export interface ConverseResponse {
             }>;
         };
     };
+    stopReason?: string;
     usage?: {
         inputTokens: number;
         outputTokens: number;
