@@ -107,7 +107,7 @@ export function MasonryImageRenderer({
         <div
             className="relative group rounded-lg overflow-hidden bg-muted w-full h-full"
             style={{
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25), 0 10px 20px rgba(0, 0, 0, 0.4)'
+                boxShadow: '0 10px 20px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.3)'
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
