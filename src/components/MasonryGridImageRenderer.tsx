@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage } from '../types';
 import type { MasonryItemRendererProps } from './MasonryGrid';
 import { Button } from './ui/button';
@@ -25,6 +26,7 @@ export function MasonryImageRenderer({
     onDelete,
     onEdit
 }: ImageRendererProps) {
+    const navigate = useNavigate();
     const [isHovered, setIsHovered] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
@@ -83,9 +85,10 @@ export function MasonryImageRenderer({
                     <img
                         src={item.url}
                         alt={item.prompt}
-                        className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-107"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-107 cursor-pointer"
                         onError={handleImageError}
                         loading={isVisible ? 'eager' : 'lazy'}
+                        onClick={() => navigate(`/image/${item.id}`)}
                     />
                     {/* Vignette overlay - fades in on hover */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-in-out pointer-events-none"
