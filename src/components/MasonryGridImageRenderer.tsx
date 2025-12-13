@@ -206,10 +206,10 @@ export function MasonryImageRenderer({
             {/* Prompt overlay - always present but controlled by opacity */}
             {item.status === 'complete' && item.prompt && (
                 <div
-                    className={`absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-neutral-800/80 via-black/40 to-transparent p-4 pt-8 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'
+                    className={`absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-neutral-800/80 via-black/40 to-transparent p-4 pt-8 transition-opacity duration-200 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'
                         }`}
                 >
-                    <p className="text-white text-sm leading-relaxed flex items-start gap-2">
+                    <p className="text-white text-sm leading-relaxed flex items-start gap-2 select-none">
                         <span className="flex-1">{item.prompt}</span>
                         <button
                             onClick={handleCopyPrompt}
