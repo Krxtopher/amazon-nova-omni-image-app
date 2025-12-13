@@ -463,7 +463,13 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
 
                 {/* Unified Compact Input Bar */}
-                <div ref={inputBarRef} className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.16)] transition-all duration-200">
+                <div
+                    ref={inputBarRef}
+                    className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl transition-all duration-200"
+                    style={{
+                        boxShadow: '0 30px 80px rgba(0, 0, 0, 0.15)'
+                    }}
+                >
                     {/* Top row with thumbnail, text input, and send button */}
                     <div className="flex items-start gap-2 p-2">
                         {/* Thumbnail preview (if image uploaded) */}
