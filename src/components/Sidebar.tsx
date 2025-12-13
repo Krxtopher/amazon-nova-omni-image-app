@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { SettingsModal } from '@/components/SettingsModal';
 import {
     Home,
     Settings,
@@ -18,6 +19,7 @@ interface SidebarProps {
  */
 export function Sidebar({ className = '' }: SidebarProps) {
     const [activeButton, setActiveButton] = useState<string | null>(null);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const sidebarButtons = [
         {
@@ -60,8 +62,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
             icon: Settings,
             label: 'Settings',
             action: () => {
-                // Future: Open settings modal
-                console.log('Settings clicked - feature coming soon');
+                setIsSettingsOpen(true);
             }
         },
         {
@@ -115,6 +116,12 @@ export function Sidebar({ className = '' }: SidebarProps) {
                     );
                 })}
             </nav>
+
+            {/* Settings Modal */}
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+            />
         </aside>
     );
 }

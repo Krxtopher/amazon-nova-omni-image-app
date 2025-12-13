@@ -61,11 +61,14 @@ export function ResetDataButton() {
             {/* Confirmation Dialog - rendered via portal to escape stacking context */}
             {showConfirm && createPortal(
                 <div
-                    className="fixed inset-0 z-100 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+                    className="fixed inset-0 z-100 bg-[#352E50]/60 flex items-center justify-center p-4"
                     onClick={() => !isResetting && setShowConfirm(false)}
                 >
                     <div
-                        className="bg-card border border-border rounded-lg shadow-lg max-w-md w-full p-6 space-y-4"
+                        className="bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl max-w-md w-full p-6 space-y-4 transition-all duration-200"
+                        style={{
+                            boxShadow: '0 30px 80px rgba(0, 0, 0, 0.15)'
+                        }}
                         onClick={(e) => e.stopPropagation()}
                         role="dialog"
                         aria-labelledby="reset-dialog-title"

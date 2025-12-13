@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { PromptInputArea, GalleryGrid, ResetDataButton, GeneratingStatus, Sidebar } from '@/components';
+import { PromptInputArea, GalleryGrid, GeneratingStatus, Sidebar } from '@/components';
 import { Lightbox } from '@/components/Lightbox';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -163,11 +163,6 @@ function AppContent() {
 
         {/* Main Content Area */}
         <div className="flex-1 ml-16 flex flex-col">
-          {/* Reset Data Button - Fixed in upper right */}
-          <div className="fixed top-4 right-4 z-50">
-            <ResetDataButton />
-          </div>
-
           {/* Fixed Prompt Input Area */}
           <section
             aria-label="Image generation controls"

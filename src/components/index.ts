@@ -15,3 +15,4 @@ export { Lightbox } from './Lightbox';
 export { ColorPicker } from './ColorPicker';
 export { AspectRatioSelector } from './AspectRatioSelector';
 export { Sidebar } from './Sidebar';
+export { SettingsModal } from './SettingsModal';

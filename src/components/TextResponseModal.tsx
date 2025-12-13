@@ -20,7 +20,7 @@ interface TextResponseModalProps {
 export function TextResponseModal({ isOpen, onClose, content }: TextResponseModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-black/40 backdrop-blur-md border-border shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Model Response</DialogTitle>
                     <DialogDescription>
