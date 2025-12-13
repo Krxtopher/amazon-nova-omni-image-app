@@ -1,19 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator,
-    DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
 import { useImageStore } from '@/stores/imageStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
-import { X, Paperclip, Menu, Send } from 'lucide-react';
+import { X, Paperclip, Send, Dice5 } from 'lucide-react';
 import { TextResponseModal } from './TextResponseModal';
+import { AspectRatioSelector } from './AspectRatioSelector';
 
 /**
  * Props for PromptInputArea component
@@ -25,27 +18,29 @@ interface PromptInputAreaProps {
     onActiveRequestsChange?: (count: number) => void;
 }
 
-/**
- * Available aspect ratio options
- */
-const ASPECT_RATIOS: { value: AspectRatio; label: string }[] = [
-    { value: 'random', label: 'Random' },
-    { value: '2:1', label: '2:1' },
-    { value: '16:9', label: '16:9' },
-    { value: '3:2', label: '3:2' },
-    { value: '4:3', label: '4:3' },
-    { value: '1:1', label: '1:1' },
-    { value: '3:4', label: '3:4' },
-    { value: '2:3', label: '2:3' },
-    { value: '9:16', label: '9:16' },
-    { value: '1:2', label: '1:2' },
-];
+
 
 /**
  * Concrete aspect ratios (excluding 'random')
  */
 const CONCRETE_ASPECT_RATIOS: Exclude<AspectRatio, 'random'>[] = [
     '2:1', '16:9', '3:2', '4:3', '1:1', '3:4', '2:3', '9:16', '1:2'
+];
+
+/**
+ * Available aspect ratio options with their visual representations
+ */
+const ASPECT_RATIOS: { value: AspectRatio; label: string; width: number; height: number }[] = [
+    { value: 'random', label: 'Any', width: 20, height: 20 },
+    { value: '2:1', label: '2:1', width: 24, height: 12 },
+    { value: '16:9', label: '16:9', width: 24, height: 13.5 },
+    { value: '3:2', label: '3:2', width: 24, height: 16 },
+    { value: '4:3', label: '4:3', width: 24, height: 18 },
+    { value: '1:1', label: '1:1', width: 20, height: 20 },
+    { value: '3:4', label: '3:4', width: 18, height: 24 },
+    { value: '2:3', label: '2:3', width: 16, height: 24 },
+    { value: '9:16', label: '9:16', width: 13.5, height: 24 },
+    { value: '1:2', label: '1:2', width: 12, height: 24 },
 ];
 
 /**
@@ -73,11 +68,13 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const [validationError, setValidationError] = useState<string | null>(null);
     const [fileError, setFileError] = useState<string | null>(null);
     const [activeRequests, setActiveRequests] = useState(0);
+    const [aspectRatioExpanded, setAspectRatioExpanded] = useState(false);
     const [textResponseModal, setTextResponseModal] = useState<{ isOpen: boolean; content: string }>({
         isOpen: false,
         content: '',
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const inputBarRef = useRef<HTMLDivElement>(null);
 
     const {
         selectedAspectRatio,
@@ -94,6 +91,20 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     useEffect(() => {
         onActiveRequestsChange?.(activeRequests);
     }, [activeRequests, onActiveRequestsChange]);
+
+    // Handle clicking outside to close aspect ratio tray
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (inputBarRef.current && !inputBarRef.current.contains(event.target as Node)) {
+                setAspectRatioExpanded(false);
+            }
+        };
+
+        if (aspectRatioExpanded) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [aspectRatioExpanded]);
 
     /**
      * Validate prompt is non-empty and not just whitespace
@@ -426,12 +437,12 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 {(validationError || fileError) && (
                     <div className="mb-4">
                         {validationError && (
-                            <p id="prompt-error" className="text-sm text-destructive" role="alert">
+                            <p id="prompt-error" className="text-base text-destructive" role="alert">
                                 {validationError}
                             </p>
                         )}
                         {fileError && (
-                            <p className="text-sm text-destructive" role="alert">
+                            <p className="text-base text-destructive" role="alert">
                                 {fileError}
                             </p>
                         )}
@@ -448,100 +459,135 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     aria-label="File upload input"
                 />
 
-                {/* Unified Compact Input Bar */}
-                <div className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl flex items-center gap-2 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.16)]">
-                    {/* Menu Button with Options */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="shrink-0 h-9 w-9"
-                                aria-label="Options menu"
-                            >
-                                <Menu className="h-5 w-5" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-56">
-                            <DropdownMenuLabel>Options</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleUploadClick}>
-                                <Paperclip className="h-4 w-4 mr-2" />
-                                Upload Image to Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                                Aspect Ratio
-                            </DropdownMenuLabel>
-                            {ASPECT_RATIOS.map((ratio) => (
-                                <DropdownMenuItem
-                                    key={ratio.value}
-                                    onClick={() => !editSource && setAspectRatio(ratio.value as AspectRatio).catch(console.error)}
-                                    disabled={!!editSource}
-                                    className={selectedAspectRatio === ratio.value ? 'bg-accent' : ''}
-                                >
-                                    {ratio.label}
-                                    {selectedAspectRatio === ratio.value && ' ✓'}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
 
-                    {/* Thumbnail preview (if image uploaded) */}
-                    {editSource && (
-                        <div className="relative shrink-0 group">
-                            <div className="relative">
-                                <img
-                                    src={editSource.url}
-                                    alt="Edit source"
-                                    className="w-9 h-9 object-cover rounded border-2 border-primary/50"
-                                />
-                                {/* Selected indicator */}
-                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border border-background flex items-center justify-center">
-                                    <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
+
+                {/* Unified Compact Input Bar */}
+                <div ref={inputBarRef} className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.16)] transition-all duration-200">
+                    {/* Top row with thumbnail, text input, and send button */}
+                    <div className="flex items-center gap-2 p-2">
+                        {/* Thumbnail preview (if image uploaded) */}
+                        {editSource && (
+                            <div className="relative shrink-0 group">
+                                <div className="relative">
+                                    <img
+                                        src={editSource.url}
+                                        alt="Edit source"
+                                        className="w-9 h-9 object-cover rounded border-2 border-primary/50"
+                                    />
+                                    {/* Selected indicator */}
+                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border border-background flex items-center justify-center">
+                                        <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
+                                    </div>
                                 </div>
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
+                                    onClick={handleClearEditSource}
+                                    aria-label="Remove edit source"
+                                    title="Remove edit source"
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
                             </div>
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute -top-1 -right-1 h-4 w-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
-                                onClick={handleClearEditSource}
-                                aria-label="Remove edit source"
-                                title="Remove edit source"
-                            >
-                                <X className="h-3 w-3" />
-                            </Button>
+                        )}
+
+                        {/* Text Input */}
+                        <Textarea
+                            id="prompt-input"
+                            placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
+                            value={prompt}
+                            onChange={(e) => {
+                                setPrompt(e.target.value);
+                                if (validationError) {
+                                    setValidationError(null);
+                                }
+                            }}
+                            onKeyDown={handleKeyDown}
+                            className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200"
+                            aria-label="Image generation prompt"
+                            aria-invalid={!!validationError}
+                            aria-describedby={validationError ? 'prompt-error' : undefined}
+                        />
+
+                        {/* Send Button */}
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={!prompt.trim()}
+                            size="icon"
+                            className="shrink-0 h-9 w-9"
+                            aria-label="Generate image"
+                        >
+                            <Send className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {/* Bottom row with paper clip icon and aspect ratio selector */}
+                    <div className="flex items-center gap-2 px-2 pb-2 relative">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleUploadClick}
+                            className="h-8 w-8"
+                            aria-label="Upload image to edit"
+                            title="Upload image to edit"
+                        >
+                            <Paperclip className="h-4 w-4" />
+                        </Button>
+
+                        <AspectRatioSelector
+                            selectedAspectRatio={selectedAspectRatio}
+                            onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio).catch(console.error)}
+                            disabled={!!editSource}
+                            isExpanded={aspectRatioExpanded}
+                            onExpandedChange={setAspectRatioExpanded}
+                        />
+                    </div>
+
+                    {/* Expanded aspect ratio tray - integrated within the input bar */}
+                    {aspectRatioExpanded && (
+                        <div className="px-2 pb-3 border-t border-border/30 mt-2">
+                            <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
+                                {ASPECT_RATIOS.map((ratio) => (
+                                    <button
+                                        key={ratio.value}
+                                        onClick={() => {
+                                            if (!editSource) {
+                                                setAspectRatio(ratio.value).catch(console.error);
+                                                setAspectRatioExpanded(false);
+                                            }
+                                        }}
+                                        disabled={!!editSource}
+                                        className={`flex flex-col items-center gap-2 p-3 min-w-[60px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedAspectRatio === ratio.value
+                                            ? 'bg-accent/50 border border-primary'
+                                            : 'border border-transparent hover:border-border/50'
+                                            } ${editSource ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        aria-label={`Select aspect ratio ${ratio.label}`}
+                                    >
+                                        {/* Visual representation */}
+                                        <div className="flex items-center justify-center h-8">
+                                            {ratio.value === 'random' ? (
+                                                <Dice5 className="h-5 w-5" />
+                                            ) : (
+                                                <div
+                                                    className="border-2 border-current rounded-sm bg-current/20"
+                                                    style={{
+                                                        width: `${ratio.width}px`,
+                                                        height: `${ratio.height}px`,
+                                                        minWidth: '16px',
+                                                        minHeight: '16px',
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Label */}
+                                        <span className="text-xs font-medium whitespace-nowrap">{ratio.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
-
-                    {/* Text Input */}
-                    <Textarea
-                        id="prompt-input"
-                        placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
-                        value={prompt}
-                        onChange={(e) => {
-                            setPrompt(e.target.value);
-                            if (validationError) {
-                                setValidationError(null);
-                            }
-                        }}
-                        onKeyDown={handleKeyDown}
-                        className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200"
-                        aria-label="Image generation prompt"
-                        aria-invalid={!!validationError}
-                        aria-describedby={validationError ? 'prompt-error' : undefined}
-                    />
-
-                    {/* Send Button */}
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={!prompt.trim()}
-                        size="icon"
-                        className="shrink-0 h-9 w-9"
-                        aria-label="Generate image"
-                    >
-                        <Send className="h-4 w-4" />
-                    </Button>
                 </div>
             </div>
         </>

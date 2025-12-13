@@ -13,3 +13,4 @@ export { MasonryImageRenderer, createImageRenderer } from './MasonryGridImageRen
 export { GeneratingStatus } from './GeneratingStatus';
 export { Lightbox } from './Lightbox';
 export { ColorPicker } from './ColorPicker';
+export { AspectRatioSelector } from './AspectRatioSelector';
