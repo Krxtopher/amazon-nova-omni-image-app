@@ -115,7 +115,7 @@ export function ShaderMagicalEffect({
                 
                 // Multiple noise layers for more active color mixing
                 float f1 = fbm(p * 0.7 + 2.0 * r);
-                float f2 = fbm(p * 0.8 + 1.0 * q + time * 0.6);
+                float f2 = fbm(p * 0.8 + 1.0 * q + time * 0.3);
                 float f3 = fbm(p * 0.5 + 1.5 * r + time * 0.4);
                 
                 // Create magical color palette with configurable intensity
