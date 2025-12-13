@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage } from '../types';
 import type { MasonryItemRendererProps } from './MasonryGrid';
 import { Button } from './ui/button';
-import { Trash2, Edit2, Loader2, Download, Copy, Check } from 'lucide-react';
+import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
+import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';
 
 interface ImageMasonryItem extends GeneratedImage {
     // MasonryGrid expects id, width, height which GeneratedImage already has
@@ -48,12 +49,10 @@ export function MasonryImageRenderer({
     };
 
     const renderContent = () => {
-        // Show loading spinner for pending/generating states
+        // Show magical loading effect for pending/generating states
         if (item.status === 'pending' || item.status === 'generating') {
             return (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted/50 border-2 border-dashed border-gray-400/20 rounded-lg">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
+                <MagicalImagePlaceholder className="absolute inset-0" />
             );
         }
 

@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/SettingsModal';
+import { useNavigate } from 'react-router-dom';
 import {
     Home,
     Settings,
     HelpCircle,
     Image,
     Palette,
-    Download
+    Download,
+    TestTube
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -20,6 +22,7 @@ interface SidebarProps {
 export function Sidebar({ className = '' }: SidebarProps) {
     const [activeButton, setActiveButton] = useState<string | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const navigate = useNavigate();
 
     const sidebarButtons = [
         {
@@ -72,6 +75,14 @@ export function Sidebar({ className = '' }: SidebarProps) {
             action: () => {
                 // Future: Open help modal or documentation
                 console.log('Help clicked - feature coming soon');
+            }
+        },
+        {
+            id: 'demo',
+            icon: TestTube,
+            label: 'Demo Effects',
+            action: () => {
+                navigate('/demo');
             }
         },
     ];
