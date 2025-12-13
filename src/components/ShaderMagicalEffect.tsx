@@ -33,6 +33,8 @@ export function ShaderMagicalEffect({
             return;
         }
 
+
+
         // Vertex shader
         const vertexShaderSource = `
             attribute vec2 a_position;
@@ -132,11 +134,7 @@ export function ShaderMagicalEffect({
                 float sparkle2 = smoothstep(0.8, 1.0, fbm(p * 6.0 + time * 0.8));
                 color += (sparkle1 * 0.4 + sparkle2 * 0.2) * u_sparkleIntensity;
                 
-                // Softer vignette to keep more of the active mixing visible
-                float vignette = 1.0 - length(p * 0.4);
-                vignette = smoothstep(0.2, 1.0, vignette);
-                
-                gl_FragColor = vec4(color * vignette, 0.8);
+                gl_FragColor = vec4(color, 0.8);
             }
         `;
 
@@ -199,13 +197,60 @@ export function ShaderMagicalEffect({
         function resizeCanvas() {
             if (!canvas || !gl) return;
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * window.devicePixelRatio;
-            canvas.height = rect.height * window.devicePixelRatio;
+
+            // Ensure we have valid dimensions
+            if (rect.width === 0 || rect.height === 0) {
+                // Fallback to parent container size if canvas rect is invalid
+                const parent = canvas.parentElement;
+                if (parent) {
+                    const parentRect = parent.getBoundingClientRect();
+                    canvas.width = parentRect.width * window.devicePixelRatio;
+                    canvas.height = parentRect.height * window.devicePixelRatio;
+
+                } else {
+                    // Final fallback
+                    canvas.width = 300 * window.devicePixelRatio;
+                    canvas.height = 300 * window.devicePixelRatio;
+
+                }
+            } else {
+                canvas.width = rect.width * window.devicePixelRatio;
+                canvas.height = rect.height * window.devicePixelRatio;
+
+            }
+
             gl.viewport(0, 0, canvas.width, canvas.height);
         }
 
+        // Initial resize
         resizeCanvas();
+
+        // Delayed resize to handle masonry layout timing
+        const delayedResize = setTimeout(() => {
+            resizeCanvas();
+        }, 100);
+
+        // Listen for window resize
         window.addEventListener('resize', resizeCanvas);
+
+        // Use ResizeObserver to detect when the canvas container changes size
+        let resizeObserver: ResizeObserver | null = null;
+        if (window.ResizeObserver) {
+            resizeObserver = new ResizeObserver(() => {
+                // Use requestAnimationFrame to avoid excessive calls
+                requestAnimationFrame(resizeCanvas);
+            });
+            resizeObserver.observe(canvas);
+        }
+
+        // Also observe parent container changes (for masonry grid)
+        let parentObserver: ResizeObserver | null = null;
+        if (window.ResizeObserver && canvas.parentElement) {
+            parentObserver = new ResizeObserver(() => {
+                requestAnimationFrame(resizeCanvas);
+            });
+            parentObserver.observe(canvas.parentElement);
+        }
 
         // Animation loop
         function animate(time: number) {
@@ -236,7 +281,14 @@ export function ShaderMagicalEffect({
         animationRef.current = requestAnimationFrame(animate);
 
         return () => {
+            clearTimeout(delayedResize);
             window.removeEventListener('resize', resizeCanvas);
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+            }
+            if (parentObserver) {
+                parentObserver.disconnect();
+            }
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
@@ -248,8 +300,14 @@ export function ShaderMagicalEffect({
             ref={canvasRef}
             className={`w-full h-full ${className}`}
             style={{
-                mixBlendMode: 'screen',
-                opacity: 0.7
+                mixBlendMode: 'normal',
+                opacity: 0.9,
+                display: 'block',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%'
             }}
         />
     );

@@ -17,15 +17,18 @@ export function MagicalImagePlaceholder({
     className = "",
     variant = 'basic'
 }: MagicalImagePlaceholderProps) {
-    const [webglSupported, setWebglSupported] = useState(false);
+    // Check WebGL support immediately for shader variant
+    const getWebGLSupport = () => {
+        if (variant !== 'shader') return false;
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        return !!gl;
+    };
+
+    const [webglSupported, setWebglSupported] = useState(() => getWebGLSupport());
 
     useEffect(() => {
-        if (variant === 'shader') {
-            // Check WebGL support only when needed
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            setWebglSupported(!!gl);
-        }
+        setWebglSupported(getWebGLSupport());
     }, [variant]);
 
     // Choose effect based on variant
@@ -53,7 +56,7 @@ export function MagicalImagePlaceholder({
     };
 
     return (
-        <div className={`relative overflow-hidden ${className}`}>
+        <div className={`relative overflow-hidden w-full h-full ${className}`}>
             {renderEffect()}
         </div>
     );

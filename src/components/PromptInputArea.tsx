@@ -169,6 +169,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         };
 
         // Add placeholder to gallery immediately
+        console.log('Adding placeholder image with status:', placeholderImage.status);
         await addImage(placeholderImage);
 
         // Track active request
@@ -222,6 +223,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 const actualDimensions = await getImageDimensions(response.imageDataUrl);
                 const actualAspectRatio = calculateAspectRatio(actualDimensions.width, actualDimensions.height);
 
+                console.log('Updating image to complete status for:', placeholderId);
                 await updateImage(placeholderId, {
                     url: response.imageDataUrl,
                     status: 'complete',
@@ -527,6 +529,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         >
                             <Send className="h-4 w-4" />
                         </Button>
+
+
                     </div>
 
                     {/* Bottom row with paper clip icon and aspect ratio selector */}
