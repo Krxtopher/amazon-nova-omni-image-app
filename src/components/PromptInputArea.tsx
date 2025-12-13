@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Textarea } from '@/components/ui/textarea';
+import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
@@ -179,7 +179,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             let enhancedPrompt = prompt;
             if (!currentEditSource) {
                 // Only append aspect ratio for new generation, not for edits
-                enhancedPrompt = `${prompt}  (aspect ratio ${aspectRatioToUse})`;
+                enhancedPrompt = `${prompt} (aspect ratio ${aspectRatioToUse})`;
             }
 
             // Call BedrockImageService to generate content
@@ -465,10 +465,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 {/* Unified Compact Input Bar */}
                 <div ref={inputBarRef} className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.16)] transition-all duration-200">
                     {/* Top row with thumbnail, text input, and send button */}
-                    <div className="flex items-center gap-2 p-2">
+                    <div className="flex items-start gap-2 p-2">
                         {/* Thumbnail preview (if image uploaded) */}
                         {editSource && (
-                            <div className="relative shrink-0 group">
+                            <div className="relative shrink-0 group mt-0.5">
                                 <div className="relative">
                                     <img
                                         src={editSource.url}
@@ -494,7 +494,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         )}
 
                         {/* Text Input */}
-                        <Textarea
+                        <AutoExpandingTextarea
                             id="prompt-input"
                             placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
                             value={prompt}
@@ -505,7 +505,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                 }
                             }}
                             onKeyDown={handleKeyDown}
-                            className="flex-1 min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200"
+                            className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200"
                             aria-label="Image generation prompt"
                             aria-invalid={!!validationError}
                             aria-describedby={validationError ? 'prompt-error' : undefined}
@@ -516,7 +516,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                             onClick={handleSubmit}
                             disabled={!prompt.trim()}
                             size="icon"
-                            className="shrink-0 h-9 w-9"
+                            className="shrink-0 h-9 w-9 mt-0.5"
                             aria-label="Generate image"
                         >
                             <Send className="h-4 w-4" />
