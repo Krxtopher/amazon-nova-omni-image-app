@@ -30,6 +30,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             // Clear all data from SQLite
             await sqliteService.clearAll();
 
+            // Clear text items from localStorage
+            localStorage.removeItem('textItems');
+
             // Reinitialize the store with empty data
             await initialize();
 

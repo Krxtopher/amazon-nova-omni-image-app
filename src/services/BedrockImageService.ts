@@ -9,6 +9,7 @@ import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, Conv
 export interface BedrockServiceConfig {
     region: string;
     credentials: AwsCredentialIdentity;
+    systemPrompt?: string;
 }
 
 /**
@@ -35,16 +36,18 @@ export const ASPECT_RATIO_DIMENSIONS: Record<Exclude<AspectRatio, 'random'>, { w
 export class BedrockImageService {
     private client: BedrockRuntimeClient;
     private readonly modelId = 'us.amazon.nova-2-omni-v1:0';
+    private readonly systemPrompt?: string;
 
     /**
      * Creates a new BedrockImageService instance
-     * @param config - Configuration object containing AWS region and credentials
+     * @param config - Configuration object containing AWS region, credentials, and optional system prompt
      */
     constructor(config: BedrockServiceConfig) {
         this.client = new BedrockRuntimeClient({
             region: config.region,
             credentials: config.credentials,
         });
+        this.systemPrompt = config.systemPrompt;
     }
 
     /**
@@ -289,7 +292,7 @@ export class BedrockImageService {
             messageContent.push({ text: request.prompt });
 
             // Build the Converse API command
-            const command = new ConverseCommand({
+            const commandParams: any = {
                 modelId: this.modelId,
                 messages: [
                     {
@@ -297,7 +300,18 @@ export class BedrockImageService {
                         content: messageContent,
                     },
                 ],
-            });
+            };
+
+            // Add system prompt if configured
+            if (this.systemPrompt) {
+                commandParams.system = [
+                    {
+                        text: this.systemPrompt
+                    }
+                ];
+            }
+
+            const command = new ConverseCommand(commandParams);
 
             // Create the converseParams for storage (without the actual bytes, but with base64)
             const converseParams: ConverseRequestParams = {
