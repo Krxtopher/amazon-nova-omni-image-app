@@ -12,3 +12,4 @@ export { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
 export { MasonryImageRenderer, createImageRenderer } from './MasonryGridImageRenderer';
 export { GeneratingStatus } from './GeneratingStatus';
 export { Lightbox } from './Lightbox';
+export { ColorPicker } from './ColorPicker';
