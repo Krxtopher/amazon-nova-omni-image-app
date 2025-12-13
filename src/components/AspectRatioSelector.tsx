@@ -12,18 +12,19 @@ interface AspectRatioSelectorProps {
 
 /**
  * Available aspect ratio options with their visual representations
+ * Dimensions calculated to accurately reflect proportions with a max dimension of 32px
  */
 const ASPECT_RATIOS: { value: AspectRatio; label: string; width: number; height: number }[] = [
-    { value: 'random', label: 'Any', width: 20, height: 20 },
-    { value: '2:1', label: '2:1', width: 24, height: 12 },
-    { value: '16:9', label: '16:9', width: 24, height: 13.5 },
-    { value: '3:2', label: '3:2', width: 24, height: 16 },
-    { value: '4:3', label: '4:3', width: 24, height: 18 },
-    { value: '1:1', label: '1:1', width: 20, height: 20 },
-    { value: '3:4', label: '3:4', width: 18, height: 24 },
-    { value: '2:3', label: '2:3', width: 16, height: 24 },
-    { value: '9:16', label: '9:16', width: 13.5, height: 24 },
-    { value: '1:2', label: '1:2', width: 12, height: 24 },
+    { value: 'random', label: 'Any', width: 24, height: 24 },
+    { value: '2:1', label: '2:1', width: 32, height: 16 },
+    { value: '16:9', label: '16:9', width: 32, height: 18 },
+    { value: '3:2', label: '3:2', width: 30, height: 20 },
+    { value: '4:3', label: '4:3', width: 28, height: 21 },
+    { value: '1:1', label: '1:1', width: 24, height: 24 },
+    { value: '3:4', label: '3:4', width: 21, height: 28 },
+    { value: '2:3', label: '2:3', width: 20, height: 30 },
+    { value: '9:16', label: '9:16', width: 18, height: 32 },
+    { value: '1:2', label: '1:2', width: 16, height: 32 },
 ];
 
 /**
@@ -71,7 +72,7 @@ export function AspectRatioSelector({
                     <Dice5 className="h-4 w-4" />
                 ) : (
                     <div
-                        className="border border-current rounded-sm bg-current/20"
+                        className="border-2 border-current rounded-xs bg-current/20"
                         style={{
                             width: `${Math.max(currentRatio.width * 0.75, 12)}px`,
                             height: `${Math.max(currentRatio.height * 0.75, 12)}px`,
