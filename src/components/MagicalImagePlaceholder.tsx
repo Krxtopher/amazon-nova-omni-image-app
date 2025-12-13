@@ -33,7 +33,12 @@ export function MagicalImagePlaceholder({
         switch (variant) {
             case 'shader':
                 return webglSupported ? (
-                    <ShaderMagicalEffect className="absolute inset-0" />
+                    <ShaderMagicalEffect
+                        className="absolute inset-0"
+                        speed={1.2}
+                        colorIntensity={1.3}
+                        sparkleIntensity={1.5}
+                    />
                 ) : (
                     <MagicalLoadingEffect className="absolute inset-0" />
                 );
