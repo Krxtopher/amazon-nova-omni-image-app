@@ -22,6 +22,7 @@ export function ShaderMagicalEffect({
 }: ShaderMagicalEffectProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number>(0);
+    const timeOffsetRef = useRef<number>(Math.random() * 1000); // Random time offset for uniqueness
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -55,6 +56,7 @@ export function ShaderMagicalEffect({
             uniform float u_speed;
             uniform float u_colorIntensity;
             uniform float u_sparkleIntensity;
+            uniform float u_timeOffset;
             
             // Noise function for organic patterns
             float noise(vec2 p) {
@@ -93,7 +95,7 @@ export function ShaderMagicalEffect({
                 vec2 p = uv * 2.0 - 1.0;
                 p.x *= u_resolution.x / u_resolution.y;
                 
-                float time = u_time * 0.5 * u_speed; // Configurable animation speed
+                float time = (u_time + u_timeOffset) * 0.5 * u_speed; // Configurable animation speed with unique offset
                 
                 // Create swirling patterns without directional motion
                 // Use rotating/circular motion instead of linear time progression
@@ -189,6 +191,7 @@ export function ShaderMagicalEffect({
         const speedLocation = gl.getUniformLocation(program, 'u_speed');
         const colorIntensityLocation = gl.getUniformLocation(program, 'u_colorIntensity');
         const sparkleIntensityLocation = gl.getUniformLocation(program, 'u_sparkleIntensity');
+        const timeOffsetLocation = gl.getUniformLocation(program, 'u_timeOffset');
         const positionLocation = gl.getAttribLocation(program, 'a_position');
 
         // Resize canvas to match display size
@@ -262,6 +265,7 @@ export function ShaderMagicalEffect({
             gl.uniform1f(speedLocation, speed);
             gl.uniform1f(colorIntensityLocation, colorIntensity);
             gl.uniform1f(sparkleIntensityLocation, sparkleIntensity);
+            gl.uniform1f(timeOffsetLocation, timeOffsetRef.current);
 
             // Set up attributes
             gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
