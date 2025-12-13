@@ -93,7 +93,7 @@ export function ShaderMagicalEffect({
                 vec2 p = uv * 2.0 - 1.0;
                 p.x *= u_resolution.x / u_resolution.y;
                 
-                float time = u_time * 0.8 * u_speed; // Configurable animation speed
+                float time = u_time * 0.5 * u_speed; // Configurable animation speed
                 
                 // Create swirling patterns without directional motion
                 // Use rotating/circular motion instead of linear time progression
@@ -102,37 +102,35 @@ export function ShaderMagicalEffect({
                 float angle3 = time * 0.5;
                 
                 vec2 q = vec2(
-                    fbm(p + vec2(cos(angle1), sin(angle1)) * 0.5),
-                    fbm(p + vec2(cos(angle2), sin(angle2)) * 0.7 + vec2(5.2, 0.0))
+                    fbm(p * 0.5 + vec2(cos(angle1), sin(angle1)) * 0.3),
+                    fbm(p * 0.5 + vec2(cos(angle2), sin(angle2)) * 0.4 + vec2(2.6, 0.0))
                 );
                 
                 vec2 r = vec2(
-                    fbm(p + 4.0 * q + vec2(cos(angle3), sin(angle3)) * 0.3 + vec2(1.7, 0.0)),
-                    fbm(p + 4.0 * q + vec2(cos(angle1 * 1.3), sin(angle1 * 1.3)) * 0.4 + vec2(8.3, 0.0))
+                    fbm(p * 0.6 + 2.0 * q + vec2(cos(angle3), sin(angle3)) * 0.2 + vec2(0.8, 0.0)),
+                    fbm(p * 0.6 + 2.0 * q + vec2(cos(angle1 * 1.3), sin(angle1 * 1.3)) * 0.25 + vec2(4.1, 0.0))
                 );
                 
                 // Multiple noise layers for more active color mixing
-                float f1 = fbm(p + 4.0 * r);
-                float f2 = fbm(p * 1.5 + 2.0 * q + time * 0.6);
-                float f3 = fbm(p * 0.8 + 3.0 * r + time * 0.4);
+                float f1 = fbm(p * 0.7 + 2.0 * r);
+                float f2 = fbm(p * 0.8 + 1.0 * q + time * 0.6);
+                float f3 = fbm(p * 0.5 + 1.5 * r + time * 0.4);
                 
                 // Create magical color palette with configurable intensity
                 vec3 color1 = vec3(0.7, 0.1, 1.0) * u_colorIntensity; // Bright Purple
                 vec3 color2 = vec3(0.1, 0.8, 1.0) * u_colorIntensity; // Bright Cyan
                 vec3 color3 = vec3(1.0, 0.2, 0.7) * u_colorIntensity; // Hot Pink
-                vec3 color4 = vec3(1.0, 0.8, 0.1) * u_colorIntensity; // Bright Gold
-                vec3 color5 = vec3(0.2, 1.0, 0.4) * u_colorIntensity; // Bright Green
+                vec3 color4 = vec3(0.4, 0.1, 0.8) * u_colorIntensity; // Deep Purple
                 
                 // More active color mixing with multiple blend layers
                 vec3 color = mix(color1, color2, smoothstep(0.0, 0.6, f1));
                 color = mix(color, color3, smoothstep(0.2, 0.9, f2));
                 color = mix(color, color4, smoothstep(0.4, 1.0, length(q) * 1.2));
-                color = mix(color, color5, smoothstep(0.3, 0.8, f3));
                 
                 // Enhanced sparkle with configurable intensity
-                float sparkle1 = smoothstep(0.7, 1.0, fbm(p * 12.0 + time * 1.2));
-                float sparkle2 = smoothstep(0.8, 1.0, fbm(p * 6.0 + time * 0.8));
-                color += (sparkle1 * 0.4 + sparkle2 * 0.2) * u_sparkleIntensity;
+                float sparkle1 = smoothstep(0.85, 1.0, fbm(p * 15.0 + time * 1.2));
+                float sparkle2 = smoothstep(0.9, 1.0, fbm(p * 10.0 + time * 0.8));
+                color += (sparkle1 * 0.2 + sparkle2 * 0.1) * u_sparkleIntensity;
                 
                 gl_FragColor = vec4(color, 0.8);
             }
