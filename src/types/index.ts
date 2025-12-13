@@ -5,6 +5,8 @@
 // Image types
 export type {
     GeneratedImage,
+    GeneratedText,
+    GalleryItem,
     EditSource,
     GenerationRequest,
     GenerationResponse,

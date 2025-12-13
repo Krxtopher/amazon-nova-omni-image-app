@@ -14,6 +14,7 @@ vi.mock('@/stores/imageStore', () => ({
 describe('PromptInputArea - Submit Handler', () => {
     let mockBedrockService: BedrockImageService;
     let mockAddImage: ReturnType<typeof vi.fn>;
+    let mockAddTextItem: ReturnType<typeof vi.fn>;
     let mockUpdateImage: ReturnType<typeof vi.fn>;
     let mockDeleteImage: ReturnType<typeof vi.fn>;
     let mockClearEditSource: ReturnType<typeof vi.fn>;
@@ -24,6 +25,7 @@ describe('PromptInputArea - Submit Handler', () => {
     beforeEach(() => {
         // Reset mocks
         mockAddImage = vi.fn();
+        mockAddTextItem = vi.fn();
         mockUpdateImage = vi.fn();
         mockDeleteImage = vi.fn();
         mockClearEditSource = vi.fn();
@@ -58,6 +60,7 @@ describe('PromptInputArea - Submit Handler', () => {
             setEditSource: vi.fn(),
             clearEditSource: mockClearEditSource,
             addImage: mockAddImage,
+            addTextItem: mockAddTextItem,
             updateImage: mockUpdateImage,
             deleteImage: mockDeleteImage,
         });
@@ -240,6 +243,7 @@ describe('PromptInputArea - Submit Handler', () => {
             setEditSource: vi.fn(),
             clearEditSource: mockClearEditSource,
             addImage: mockAddImage,
+            addTextItem: mockAddTextItem,
             updateImage: mockUpdateImage,
             deleteImage: mockDeleteImage,
         });
@@ -343,10 +347,13 @@ describe('PromptInputArea - Submit Handler', () => {
             );
         });
 
-        // Wait for modal to appear and placeholder to be removed
+        // Wait for text item to be added and placeholder to be removed
         await waitFor(() => {
-            expect(screen.getByText('Model Response')).toBeInTheDocument();
-            expect(screen.getByText('This is a text response from the model')).toBeInTheDocument();
+            expect(mockAddTextItem).toHaveBeenCalledWith(expect.objectContaining({
+                content: 'This is a text response from the model',
+                prompt: 'A beautiful sunset',
+                status: 'complete',
+            }));
             expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
         });
 
@@ -374,6 +381,7 @@ describe('PromptInputArea - Submit Handler', () => {
             setEditSource: vi.fn(),
             clearEditSource: mockClearEditSource,
             addImage: mockAddImage,
+            addTextItem: mockAddTextItem,
             updateImage: mockUpdateImage,
             deleteImage: mockDeleteImage,
         });
@@ -400,9 +408,13 @@ describe('PromptInputArea - Submit Handler', () => {
         const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
-        // Wait for text response modal to appear
+        // Wait for text item to be added
         await waitFor(() => {
-            expect(screen.getByText('Model Response')).toBeInTheDocument();
+            expect(mockAddTextItem).toHaveBeenCalledWith(expect.objectContaining({
+                content: 'This is a text response from the model',
+                prompt: 'Make it more colorful',
+                status: 'complete',
+            }));
         });
 
         // Verify edit source was NOT cleared after text response
@@ -531,6 +543,7 @@ describe('PromptInputArea - Submit Handler', () => {
             setEditSource: vi.fn(),
             clearEditSource: mockClearEditSource,
             addImage: mockAddImage,
+            addTextItem: mockAddTextItem,
             updateImage: mockUpdateImage,
             deleteImage: mockDeleteImage,
         });

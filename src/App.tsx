@@ -50,7 +50,7 @@ function createBedrockService(): BedrockImageService {
  */
 function AppContent() {
   const bedrockService = useBedrockService();
-  const { images, deleteImage, setEditSource, initialize, isLoading } = useImageStore();
+  const { deleteImage, deleteTextItem, setEditSource, initialize, isLoading, getAllItems } = useImageStore();
   const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState(0);
 
@@ -114,6 +114,22 @@ function AppContent() {
       });
     } catch (error) {
       toast.error('Failed to delete image', {
+        duration: 2000,
+      });
+    }
+  };
+
+  /**
+   * Handle text item deletion
+   */
+  const handleTextDelete = async (id: string) => {
+    try {
+      await deleteTextItem(id);
+      toast.success('Text deleted', {
+        duration: 2000,
+      });
+    } catch (error) {
+      toast.error('Failed to delete text', {
         duration: 2000,
       });
     }
@@ -187,8 +203,9 @@ function AppContent() {
               <main className="flex-1 overflow-y-auto">
                 <section aria-label="Generated images gallery" className="px-4 pt-32 pb-8">
                   <GalleryGrid
-                    images={images}
+                    items={getAllItems()}
                     onImageDelete={handleImageDelete}
+                    onTextDelete={handleTextDelete}
                     onImageEdit={handleImageEdit}
                   />
                 </section>

@@ -53,6 +53,23 @@ export interface GeneratedImage {
 }
 
 /**
+ * Text response entry in the gallery
+ */
+export interface GeneratedText {
+    id: string;
+    content: string;
+    prompt: string;
+    status: ImageStatus;
+    createdAt: Date;
+    converseParams?: ConverseRequestParams; // Original API request parameters
+}
+
+/**
+ * Union type for gallery items (images or text)
+ */
+export type GalleryItem = GeneratedImage | GeneratedText;
+
+/**
  * Edit source image
  */
 export interface EditSource {

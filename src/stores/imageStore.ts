@@ -1,13 +1,14 @@
 import { create } from 'zustand';
-import type { GeneratedImage, EditSource, AspectRatio } from '../types';
+import type { GeneratedImage, GeneratedText, GalleryItem, EditSource, AspectRatio } from '../types';
 import { sqliteService } from '../services/sqliteService';
 
 /**
- * Image store state interface
+ * Gallery store state interface
  */
 interface ImageStoreState {
     // State
     images: GeneratedImage[];
+    textItems: GeneratedText[];
     selectedAspectRatio: AspectRatio;
     editSource: EditSource | null;
     isGenerating: boolean;
@@ -15,17 +16,20 @@ interface ImageStoreState {
 }
 
 /**
- * Image store actions interface
+ * Gallery store actions interface
  */
 interface ImageStoreActions {
     // Actions
     addImage: (image: GeneratedImage) => Promise<void>;
+    addTextItem: (textItem: GeneratedText) => Promise<void>;
     updateImage: (id: string, updates: Partial<GeneratedImage>) => Promise<void>;
     deleteImage: (id: string) => Promise<void>;
+    deleteTextItem: (id: string) => Promise<void>;
     setAspectRatio: (ratio: AspectRatio) => Promise<void>;
     setEditSource: (source: EditSource | null) => void;
     clearEditSource: () => void;
     loadImages: () => Promise<void>;
+    getAllItems: () => GalleryItem[];
     initialize: () => Promise<void>;
 }
 
@@ -47,6 +51,7 @@ const DEFAULT_ASPECT_RATIO: AspectRatio = 'random';
 export const useImageStore = create<ImageStore>()((set) => ({
     // Initial state
     images: [],
+    textItems: [],
     selectedAspectRatio: DEFAULT_ASPECT_RATIO,
     editSource: null,
     isGenerating: false,
@@ -65,12 +70,21 @@ export const useImageStore = create<ImageStore>()((set) => ({
             // Load images
             const images = await sqliteService.getAllImages();
 
+            // Load text items from localStorage (temporary solution)
+            const textItemsJson = localStorage.getItem('textItems');
+            const textItems: GeneratedText[] = textItemsJson ?
+                JSON.parse(textItemsJson).map((item: any) => ({
+                    ...item,
+                    createdAt: new Date(item.createdAt)
+                })) : [];
+
             // Load aspect ratio setting
             const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
             const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
 
             set({
                 images,
+                textItems,
                 selectedAspectRatio: aspectRatio,
                 isLoading: false
             });
@@ -105,6 +119,27 @@ export const useImageStore = create<ImageStore>()((set) => ({
             }));
         } catch (error) {
             console.error('Failed to add image:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Add a new text item to the gallery
+     * New text items are added at the beginning of the array (newest first)
+     */
+    addTextItem: async (textItem: GeneratedText) => {
+        try {
+            // For now, we'll store text items in localStorage since SQLite service doesn't support them yet
+            // In a production app, you'd extend the SQLite service to handle text items
+            const existingTextItems = JSON.parse(localStorage.getItem('textItems') || '[]');
+            const updatedTextItems = [textItem, ...existingTextItems];
+            localStorage.setItem('textItems', JSON.stringify(updatedTextItems));
+
+            set((state) => ({
+                textItems: [textItem, ...state.textItems],
+            }));
+        } catch (error) {
+            console.error('Failed to add text item:', error);
             throw error;
         }
     },
@@ -145,6 +180,25 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
+     * Delete a text item from the gallery by ID
+     */
+    deleteTextItem: async (id: string) => {
+        try {
+            // Remove from localStorage
+            const existingTextItems = JSON.parse(localStorage.getItem('textItems') || '[]');
+            const updatedTextItems = existingTextItems.filter((item: GeneratedText) => item.id !== id);
+            localStorage.setItem('textItems', JSON.stringify(updatedTextItems));
+
+            set((state) => ({
+                textItems: state.textItems.filter((item) => item.id !== id),
+            }));
+        } catch (error) {
+            console.error('Failed to delete text item:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Set the selected aspect ratio for new image generation
      * Requirements: 2.1, 2.5
      */
@@ -172,5 +226,14 @@ export const useImageStore = create<ImageStore>()((set) => ({
      */
     clearEditSource: () => {
         set({ editSource: null });
+    },
+
+    /**
+     * Get all gallery items (images and text) sorted by creation date (newest first)
+     */
+    getAllItems: () => {
+        const state = useImageStore.getState();
+        const allItems: GalleryItem[] = [...state.images, ...state.textItems];
+        return allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     },
 }));

@@ -10,13 +10,14 @@ describe('GalleryGrid', () => {
     it('should render empty state when no images', () => {
         render(
             <GalleryGrid
-                images={[]}
+                items={[]}
                 onImageDelete={mockOnDelete}
+                onTextDelete={vi.fn()}
                 onImageEdit={mockOnEdit}
             />
         );
 
-        expect(screen.getByText('No images yet')).toBeInTheDocument();
+        expect(screen.getByText('No content yet')).toBeInTheDocument();
         expect(screen.getByText('Enter a prompt above to generate your first image')).toBeInTheDocument();
     });
 
@@ -46,8 +47,9 @@ describe('GalleryGrid', () => {
 
         render(
             <GalleryGrid
-                images={images}
+                items={images}
                 onImageDelete={mockOnDelete}
+                onTextDelete={vi.fn()}
                 onImageEdit={mockOnEdit}
             />
         );
@@ -84,8 +86,9 @@ describe('GalleryGrid', () => {
 
         const { container } = render(
             <GalleryGrid
-                images={images}
+                items={images}
                 onImageDelete={mockOnDelete}
+                onTextDelete={vi.fn()}
                 onImageEdit={mockOnEdit}
             />
         );
