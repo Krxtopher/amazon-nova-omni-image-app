@@ -1,0 +1,120 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+    Home,
+    Settings,
+    HelpCircle,
+    Image,
+    Palette,
+    Download
+} from 'lucide-react';
+
+interface SidebarProps {
+    className?: string;
+}
+
+/**
+ * Left sidebar with Amazon Nova logo and icon-based navigation buttons
+ */
+export function Sidebar({ className = '' }: SidebarProps) {
+    const [activeButton, setActiveButton] = useState<string | null>(null);
+
+    const sidebarButtons = [
+        {
+            id: 'home',
+            icon: Home,
+            label: 'Home',
+            action: () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        },
+        {
+            id: 'gallery',
+            icon: Image,
+            label: 'Gallery',
+            action: () => {
+                const gallery = document.querySelector('[aria-label="Generated images gallery"]');
+                gallery?.scrollIntoView({ behavior: 'smooth' });
+            }
+        },
+        {
+            id: 'palette',
+            icon: Palette,
+            label: 'Colors',
+            action: () => {
+                // Future: Open color picker modal
+                console.log('Colors clicked - feature coming soon');
+            }
+        },
+        {
+            id: 'download',
+            icon: Download,
+            label: 'Download',
+            action: () => {
+                // Future: Open download options
+                console.log('Download clicked - feature coming soon');
+            }
+        },
+        {
+            id: 'settings',
+            icon: Settings,
+            label: 'Settings',
+            action: () => {
+                // Future: Open settings modal
+                console.log('Settings clicked - feature coming soon');
+            }
+        },
+        {
+            id: 'help',
+            icon: HelpCircle,
+            label: 'Help',
+            action: () => {
+                // Future: Open help modal or documentation
+                console.log('Help clicked - feature coming soon');
+            }
+        },
+    ];
+
+    const handleButtonClick = (buttonId: string, action: () => void) => {
+        setActiveButton(buttonId);
+        action();
+    };
+
+    return (
+        <aside
+            className={`fixed left-0 top-0 h-full w-16 bg-background border-r border-border flex flex-col items-center py-4 z-30 ${className}`}
+            aria-label="Main navigation"
+        >
+            {/* Amazon Nova Logo */}
+            <div className="mb-8 flex items-center justify-center">
+                <img
+                    src="/AmazonNova_Symbol_Gradient_RGB.svg"
+                    alt="Amazon Nova"
+                    className="w-8 h-8"
+                />
+            </div>
+
+            {/* Navigation Buttons */}
+            <nav className="flex flex-col gap-2 flex-1">
+                {sidebarButtons.map((button) => {
+                    const Icon = button.icon;
+                    const isActive = activeButton === button.id;
+
+                    return (
+                        <Button
+                            key={button.id}
+                            variant={isActive ? "default" : "ghost"}
+                            size="icon"
+                            className={`w-10 h-10 ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                            onClick={() => handleButtonClick(button.id, button.action)}
+                            title={button.label}
+                            aria-label={button.label}
+                        >
+                            <Icon className="w-5 h-5" />
+                        </Button>
+                    );
+                })}
+            </nav>
+        </aside>
+    );
+}

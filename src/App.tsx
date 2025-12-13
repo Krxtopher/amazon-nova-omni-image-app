@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { PromptInputArea, GalleryGrid, ResetDataButton, GeneratingStatus } from '@/components';
+import { PromptInputArea, GalleryGrid, ResetDataButton, GeneratingStatus, Sidebar } from '@/components';
 import { Lightbox } from '@/components/Lightbox';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -157,38 +157,44 @@ function AppContent() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-background flex flex-col">
-        {/* Reset Data Button - Fixed in upper right */}
-        <div className="fixed top-4 right-4 z-50">
-          <ResetDataButton />
-        </div>
+      <div className="min-h-screen bg-background flex">
+        {/* Left Sidebar */}
+        <Sidebar />
 
-        {/* Fixed Prompt Input Area */}
-        <section
-          aria-label="Image generation controls"
-          className="fixed top-0 left-0 right-0 z-40"
-        >
-          <PromptInputArea
-            bedrockService={bedrockService}
-            onSuccess={handleSuccess}
-            onError={handleError}
-            onActiveRequestsChange={setActiveRequests}
-          />
-        </section>
+        {/* Main Content Area */}
+        <div className="flex-1 ml-16 flex flex-col">
+          {/* Reset Data Button - Fixed in upper right */}
+          <div className="fixed top-4 right-4 z-50">
+            <ResetDataButton />
+          </div>
 
-        {/* Scrollable Gallery */}
-        <main className="flex-1 overflow-y-auto">
-          <section aria-label="Generated images gallery" className="px-4 pt-32 pb-8">
-            <GalleryGrid
-              images={images}
-              onImageDelete={handleImageDelete}
-              onImageEdit={handleImageEdit}
+          {/* Fixed Prompt Input Area */}
+          <section
+            aria-label="Image generation controls"
+            className="fixed top-0 left-16 right-0 z-40"
+          >
+            <PromptInputArea
+              bedrockService={bedrockService}
+              onSuccess={handleSuccess}
+              onError={handleError}
+              onActiveRequestsChange={setActiveRequests}
             />
           </section>
-        </main>
 
-        {/* Generating Status - Fixed at bottom */}
-        <GeneratingStatus activeRequests={activeRequests} />
+          {/* Scrollable Gallery */}
+          <main className="flex-1 overflow-y-auto">
+            <section aria-label="Generated images gallery" className="px-4 pt-32 pb-8">
+              <GalleryGrid
+                images={images}
+                onImageDelete={handleImageDelete}
+                onImageEdit={handleImageEdit}
+              />
+            </section>
+          </main>
+
+          {/* Generating Status - Fixed at bottom */}
+          <GeneratingStatus activeRequests={activeRequests} />
+        </div>
 
         {/* Routes for lightbox */}
         <Routes>
