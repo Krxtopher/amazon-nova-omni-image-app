@@ -316,9 +316,7 @@ export function MasonryImageRenderer({
                                 WebkitBoxOrient: 'vertical',
                                 textOverflow: 'ellipsis'
                             }}
-                        >
-                            Prompt: {item.prompt}
-                        </span>
+                        >{item.prompt}</span>
                         <button
                             onClick={handleCopyPrompt}
                             className="shrink-0 pointer-events-auto hover:bg-white/20 rounded p-1 transition-colors"
