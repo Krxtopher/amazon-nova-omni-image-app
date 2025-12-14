@@ -169,7 +169,7 @@ function AppContent() {
 
               {/* Scrollable Gallery */}
               <main className="flex-1 overflow-y-auto">
-                <section aria-label="Generated images gallery" className="px-4 pt-32 pb-8">
+                <section aria-label="Generated images gallery" className="px-4 pt-40 pb-8">
                   <SimpleVirtualizedGallery
                     onImageDelete={handleImageDelete}
                     onTextDelete={handleTextDelete}
