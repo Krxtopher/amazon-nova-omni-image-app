@@ -319,7 +319,7 @@ export function MasonryImageRenderer({
                         >{item.prompt}</span>
                         <button
                             onClick={handleCopyPrompt}
-                            className="shrink-0 pointer-events-auto hover:bg-white/20 rounded p-1 transition-colors"
+                            className="shrink-0 pointer-events-auto hover:bg-white/20 rounded p-1 transition-colors cursor-pointer"
                             aria-label="Copy prompt to clipboard"
                         >
                             {isCopied ? (

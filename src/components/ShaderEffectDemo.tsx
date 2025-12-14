@@ -66,7 +66,7 @@ export function ShaderEffectDemo() {
                         setColorIntensity(1.3);
                         setSparkleIntensity(1.5);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer transition-colors"
                 >
                     Reset to Defaults
                 </button>

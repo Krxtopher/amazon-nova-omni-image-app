@@ -239,7 +239,7 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
                         }
                     }}
                     className={`
-            p-3 rounded-full shadow-lg transition-all duration-200 relative
+            p-3 rounded-full shadow-lg transition-all duration-200 relative cursor-pointer
             ${isActive
                             ? 'bg-red-500 hover:bg-red-600 text-white'
                             : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'
@@ -273,7 +273,7 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
                                     console.error('Failed to copy color to clipboard:', error);
                                 }
                             }}
-                            className="text-xs text-blue-600 hover:text-blue-800 ml-1"
+                            className="text-xs text-blue-600 hover:text-blue-800 ml-1 cursor-pointer"
                             title="Copy to clipboard"
                         >
                             Copy
