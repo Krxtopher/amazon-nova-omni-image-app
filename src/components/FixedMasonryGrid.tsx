@@ -70,9 +70,7 @@ export function FixedMasonryGrid({
         let element = containerRef.current.parentElement;
         while (element) {
             const styles = window.getComputedStyle(element);
-            if (process.env.NODE_ENV === 'development') {
-                console.log('Checking element:', element.tagName, element.className, 'overflowY:', styles.overflowY);
-            }
+
             if (styles.overflowY === 'auto' || styles.overflowY === 'scroll') {
                 setScrollContainer(element);
                 break;
@@ -85,24 +83,7 @@ export function FixedMasonryGrid({
             setScrollContainer(document.documentElement);
         }
 
-        // Debug logging
-        if (process.env.NODE_ENV === 'development') {
-            const detectedContainer = element || document.documentElement;
-            console.log('=== SCROLL CONTAINER DETECTION ===');
-            console.log('Scroll container detected:', detectedContainer);
-            console.log('Scroll container tag:', detectedContainer.tagName);
-            console.log('Scroll container clientHeight:', detectedContainer.clientHeight);
-            console.log('Scroll container scrollHeight:', detectedContainer.scrollHeight);
-            console.log('Window innerHeight:', window.innerHeight);
-            console.log('Is document.documentElement?', detectedContainer === document.documentElement);
 
-            // Check if we found a proper scroll container
-            if (element) {
-                console.log('Found explicit scroll container:', element.tagName, element.className);
-            } else {
-                console.log('No explicit scroll container found, using document.documentElement');
-            }
-        }
     }, []);
 
     // Calculate layout when items or container width changes
@@ -189,33 +170,13 @@ export function FixedMasonryGrid({
                 calculatedViewportHeight = Math.max(0, availableHeight);
             }
 
-            // Debug logging
-            if (process.env.NODE_ENV === 'development') {
-                console.log('updateViewport called');
-                console.log('scrollContainer:', scrollContainer);
-                console.log('scrollContainer === document.documentElement:', scrollContainer === document.documentElement);
-                console.log('scrollContainer.tagName:', scrollContainer.tagName);
-                console.log('scrollContainer.clientHeight (content height):', scrollContainer.clientHeight);
-                console.log('scrollContainer.scrollTop:', scrollContainer.scrollTop);
-                console.log('window.scrollY:', window.scrollY);
-                console.log('currentScrollTop (final):', currentScrollTop);
-                console.log('window.innerHeight:', window.innerHeight);
-                if (scrollContainer !== document.documentElement) {
-                    const containerRect = scrollContainer.getBoundingClientRect();
-                    console.log('containerRect.top:', containerRect.top);
-                    console.log('availableHeight (window.innerHeight - containerRect.top):', window.innerHeight - containerRect.top);
-                }
-                console.log('calculatedViewportHeight:', calculatedViewportHeight);
-            }
+
 
             setScrollTop(currentScrollTop);
             setViewportHeight(calculatedViewportHeight);
         };
 
         const scrollHandler = () => {
-            if (process.env.NODE_ENV === 'development') {
-                console.log('SCROLL EVENT DETECTED on:', scrollContainer.tagName, 'scrollTop:', scrollContainer.scrollTop);
-            }
             updateViewport();
         };
 
@@ -223,9 +184,6 @@ export function FixedMasonryGrid({
 
         // Also listen to window scroll as a fallback
         const windowScrollHandler = () => {
-            if (process.env.NODE_ENV === 'development') {
-                console.log('WINDOW SCROLL EVENT DETECTED, window.scrollY:', window.scrollY);
-            }
             updateViewport();
         };
         window.addEventListener('scroll', windowScrollHandler, { passive: true });
@@ -234,10 +192,8 @@ export function FixedMasonryGrid({
         const resizeObserver = new ResizeObserver(updateViewport);
         resizeObserver.observe(scrollContainer);
 
-        // Initial update - try multiple times to ensure it works
+        // Initial update
         setTimeout(updateViewport, 0);
-        setTimeout(updateViewport, 100);
-        setTimeout(updateViewport, 500);
 
         window.addEventListener('resize', updateViewport);
 
@@ -314,32 +270,7 @@ export function FixedMasonryGrid({
         >
             {renderItems()}
 
-            {/* Debug info */}
-            {process.env.NODE_ENV === 'development' && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 10,
-                        right: 10,
-                        background: 'rgba(0,0,0,0.8)',
-                        color: 'white',
-                        padding: '10px',
-                        fontSize: '12px',
-                        zIndex: 9999,
-                        borderRadius: '4px',
-                    }}
-                >
-                    <div>Total Items: {items.length}</div>
-                    <div>Visible Items: {visibleItems.length}</div>
-                    <div>Scroll Top: {scrollTop.toFixed(0)}</div>
-                    <div>Viewport Height: {viewportHeight}</div>
-                    <div>Total Height: {totalHeight.toFixed(0)}</div>
-                    <div>Container Width: {containerWidth}</div>
-                    <div>Scroll Container: {scrollContainer?.tagName || 'None'}</div>
-                    <div>Window Height: {window.innerHeight}</div>
-                    <div>Doc Client Height: {document.documentElement.clientHeight}</div>
-                </div>
-            )}
+
         </div>
     );
 }
