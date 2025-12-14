@@ -507,6 +507,20 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         </div>
                     )}
 
+                    {/* Paper clip button - only show when no edit source is selected */}
+                    {!editSource && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleUploadClick}
+                            className="h-9 w-9 mt-0.5 shrink-0"
+                            aria-label="Upload image to edit"
+                            title="Upload image to edit"
+                        >
+                            <Paperclip className="h-4 w-4" />
+                        </Button>
+                    )}
+
                     {/* Text Input */}
                     <AutoExpandingTextarea
                         ref={textareaRef}
@@ -540,19 +554,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 </div>
 
-                {/* Bottom row with paper clip icon and aspect ratio selector */}
+                {/* Bottom row with aspect ratio selector */}
                 <div className="flex items-center gap-2 px-2 pb-2 relative">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleUploadClick}
-                        className="h-8 w-8"
-                        aria-label="Upload image to edit"
-                        title="Upload image to edit"
-                    >
-                        <Paperclip className="h-4 w-4" />
-                    </Button>
-
                     <AspectRatioSelector
                         selectedAspectRatio={selectedAspectRatio}
                         onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
