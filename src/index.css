@@ -8,6 +8,7 @@
 
 /* Override button font to use system font instead of Lato */
 button,
+button *,
 input[type="button"],
 input[type="submit"],
 input[type="reset"],
