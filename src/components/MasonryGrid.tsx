@@ -244,6 +244,7 @@ function MasonryItemContainer({
 }: MasonryItemContainerProps) {
   const { elementRef, isVisible } = useViewportVisibility<HTMLDivElement>({
     threshold: 0,
+    rootMargin: '100px', // Start loading images 100px before they enter the viewport
   });
 
   const rendererProps = {

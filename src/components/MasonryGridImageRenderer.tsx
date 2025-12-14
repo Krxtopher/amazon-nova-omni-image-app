@@ -81,6 +81,22 @@ export function MasonryImageRenderer({
 
         // Show completed image
         if (item.status === 'complete' && item.url) {
+            // Only render the actual image when it's visible in the viewport
+            if (!isVisible) {
+                // Show a subtle magical placeholder when not visible to maintain layout
+                return (
+                    <div
+                        className="w-full h-full cursor-pointer relative"
+                        onClick={() => navigate(`/image/${item.id}`)}
+                    >
+                        <MagicalImagePlaceholder className="absolute inset-0" variant="basic" />
+                        <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
+                            <div className="text-muted-foreground text-xs opacity-70">Loading...</div>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
                 <>
                     <img
@@ -88,7 +104,7 @@ export function MasonryImageRenderer({
                         alt={item.prompt}
                         className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-107 cursor-pointer"
                         onError={handleImageError}
-                        loading={isVisible ? 'eager' : 'lazy'}
+                        loading="eager"
                         onClick={() => navigate(`/image/${item.id}`)}
                     />
                     {/* Vignette overlay - fades in on hover */}
