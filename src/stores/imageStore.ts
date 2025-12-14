@@ -109,107 +109,124 @@ export const useImageStore = create<ImageStore>()((set) => ({
     /**
      * Add a new image to the gallery
      * New images are added at the beginning of the array (newest first)
+     * UI update is immediate, database persistence happens asynchronously
      * Requirements: 2.1, 3.3
      */
     addImage: async (image: GeneratedImage) => {
-        try {
-            await sqliteService.addImage(image);
-            set((state) => ({
-                images: [image, ...state.images],
-            }));
-        } catch (error) {
-            console.error('Failed to add image:', error);
-            throw error;
-        }
+        // Update UI immediately for responsive feel
+        set((state) => ({
+            images: [image, ...state.images],
+        }));
+
+        // Persist to database asynchronously (don't block UI)
+        sqliteService.addImage(image).catch((error) => {
+            console.error('Failed to persist image to database:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
+        });
     },
 
     /**
      * Add a new text item to the gallery
      * New text items are added at the beginning of the array (newest first)
+     * UI update is immediate, localStorage persistence happens asynchronously
      */
     addTextItem: async (textItem: GeneratedText) => {
+        // Update UI immediately for responsive feel
+        set((state) => ({
+            textItems: [textItem, ...state.textItems],
+        }));
+
+        // Persist to localStorage asynchronously (don't block UI)
         try {
-            // For now, we'll store text items in localStorage since SQLite service doesn't support them yet
-            // In a production app, you'd extend the SQLite service to handle text items
             const existingTextItems = JSON.parse(localStorage.getItem('textItems') || '[]');
             const updatedTextItems = [textItem, ...existingTextItems];
             localStorage.setItem('textItems', JSON.stringify(updatedTextItems));
-
-            set((state) => ({
-                textItems: [textItem, ...state.textItems],
-            }));
         } catch (error) {
-            console.error('Failed to add text item:', error);
-            throw error;
+            console.error('Failed to persist text item to localStorage:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
         }
     },
 
     /**
      * Update an existing image by ID
      * Used to update status, URL, or error information
+     * UI update is immediate, database persistence happens asynchronously
      * Requirements: 1.4, 1.5
      */
     updateImage: async (id: string, updates: Partial<GeneratedImage>) => {
-        try {
-            await sqliteService.updateImage(id, updates);
-            set((state) => ({
-                images: state.images.map((img) =>
-                    img.id === id ? { ...img, ...updates } : img
-                ),
-            }));
-        } catch (error) {
-            console.error('Failed to update image:', error);
-            throw error;
-        }
+        // Update UI immediately for responsive feel
+        set((state) => ({
+            images: state.images.map((img) =>
+                img.id === id ? { ...img, ...updates } : img
+            ),
+        }));
+
+        // Persist to database asynchronously (don't block UI)
+        sqliteService.updateImage(id, updates).catch((error) => {
+            console.error('Failed to persist image update to database:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
+        });
     },
 
     /**
      * Delete an image from the gallery by ID
+     * UI update is immediate, database persistence happens asynchronously
      * Requirements: 4.2
      */
     deleteImage: async (id: string) => {
-        try {
-            await sqliteService.deleteImage(id);
-            set((state) => ({
-                images: state.images.filter((img) => img.id !== id),
-            }));
-        } catch (error) {
-            console.error('Failed to delete image:', error);
-            throw error;
-        }
+        // Update UI immediately for responsive feel
+        set((state) => ({
+            images: state.images.filter((img) => img.id !== id),
+        }));
+
+        // Persist to database asynchronously (don't block UI)
+        sqliteService.deleteImage(id).catch((error) => {
+            console.error('Failed to persist image deletion to database:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
+        });
     },
 
     /**
      * Delete a text item from the gallery by ID
+     * UI update is immediate, localStorage persistence happens asynchronously
      */
     deleteTextItem: async (id: string) => {
+        // Update UI immediately for responsive feel
+        set((state) => ({
+            textItems: state.textItems.filter((item) => item.id !== id),
+        }));
+
+        // Persist to localStorage asynchronously (don't block UI)
         try {
-            // Remove from localStorage
             const existingTextItems = JSON.parse(localStorage.getItem('textItems') || '[]');
             const updatedTextItems = existingTextItems.filter((item: GeneratedText) => item.id !== id);
             localStorage.setItem('textItems', JSON.stringify(updatedTextItems));
-
-            set((state) => ({
-                textItems: state.textItems.filter((item) => item.id !== id),
-            }));
         } catch (error) {
-            console.error('Failed to delete text item:', error);
-            throw error;
+            console.error('Failed to persist text item deletion to localStorage:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
         }
     },
 
     /**
      * Set the selected aspect ratio for new image generation
+     * UI update is immediate, database persistence happens asynchronously
      * Requirements: 2.1, 2.5
      */
     setAspectRatio: async (ratio: AspectRatio) => {
-        try {
-            await sqliteService.setSetting('selectedAspectRatio', ratio);
-            set({ selectedAspectRatio: ratio });
-        } catch (error) {
-            console.error('Failed to set aspect ratio:', error);
-            throw error;
-        }
+        // Update UI immediately for responsive feel
+        set({ selectedAspectRatio: ratio });
+
+        // Persist to database asynchronously (don't block UI)
+        sqliteService.setSetting('selectedAspectRatio', ratio).catch((error) => {
+            console.error('Failed to persist aspect ratio setting to database:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
+        });
     },
 
     /**

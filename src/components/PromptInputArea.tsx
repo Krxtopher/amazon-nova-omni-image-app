@@ -166,7 +166,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
         // Add placeholder to gallery immediately
         console.log('Adding placeholder image with status:', placeholderImage.status);
-        await addImage(placeholderImage);
+        addImage(placeholderImage);
 
         // Track active request
         setActiveRequests(prev => prev + 1);
@@ -190,7 +190,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             // Handle the response based on type
             if (response.type === 'text') {
                 // Model returned text content - remove placeholder and add text item to gallery
-                await deleteImage(placeholderId);
+                deleteImage(placeholderId);
 
                 // Create text item for the gallery
                 const textItem: GeneratedText = {
@@ -202,7 +202,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     converseParams: response.converseParams,
                 };
 
-                await addTextItem(textItem);
+                addTextItem(textItem);
 
                 // Clear validation error
                 setValidationError(null);
@@ -210,7 +210,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 // Note: Keep edit source selected for additional requests
             } else if (response.type === 'error') {
                 // Model returned an error (e.g., unexpected stopReason) - update placeholder to show error
-                await updateImage(placeholderId, {
+                updateImage(placeholderId, {
                     status: 'error',
                     error: response.error,
                     converseParams: response.converseParams,
@@ -227,7 +227,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 const actualAspectRatio = calculateAspectRatio(actualDimensions.width, actualDimensions.height);
 
                 console.log('Updating image to complete status for:', placeholderId);
-                await updateImage(placeholderId, {
+                updateImage(placeholderId, {
                     url: response.imageDataUrl,
                     status: 'complete',
                     aspectRatio: actualAspectRatio,
@@ -253,7 +253,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 ? (error as { message: string }).message
                 : 'Failed to generate content. Please try again.';
 
-            await updateImage(placeholderId, {
+            updateImage(placeholderId, {
                 status: 'error',
                 error: errorMessage,
             });
@@ -545,7 +545,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                     <AspectRatioSelector
                         selectedAspectRatio={selectedAspectRatio}
-                        onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio).catch(console.error)}
+                        onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
                         disabled={!!editSource}
                         isExpanded={aspectRatioExpanded}
                         onExpandedChange={setAspectRatioExpanded}
@@ -561,7 +561,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                     key={ratio.value}
                                     onClick={() => {
                                         if (!editSource) {
-                                            setAspectRatio(ratio.value).catch(console.error);
+                                            setAspectRatio(ratio.value);
                                             setAspectRatioExpanded(false);
                                         }
                                     }}

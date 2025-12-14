@@ -108,32 +108,20 @@ function AppContent() {
    * Requirements: 4.2
    */
   const handleImageDelete = async (id: string) => {
-    try {
-      await deleteImage(id);
-      toast.success('Image deleted', {
-        duration: 2000,
-      });
-    } catch (error) {
-      toast.error('Failed to delete image', {
-        duration: 2000,
-      });
-    }
+    deleteImage(id);
+    toast.success('Image deleted', {
+      duration: 2000,
+    });
   };
 
   /**
    * Handle text item deletion
    */
   const handleTextDelete = async (id: string) => {
-    try {
-      await deleteTextItem(id);
-      toast.success('Text deleted', {
-        duration: 2000,
-      });
-    } catch (error) {
-      toast.error('Failed to delete text', {
-        duration: 2000,
-      });
-    }
+    deleteTextItem(id);
+    toast.success('Text deleted', {
+      duration: 2000,
+    });
   };
 
   /**
