@@ -534,7 +534,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                             }
                         }}
                         onKeyDown={handleKeyDown}
-                        className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200"
+                        className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200/60 placeholder:italic"
                         aria-label="Image generation prompt"
                         aria-invalid={!!validationError}
                         aria-describedby={validationError ? 'prompt-error' : undefined}
@@ -555,7 +555,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 </div>
 
                 {/* Bottom row with aspect ratio selector */}
-                <div className="flex items-center gap-2 px-2 pb-2 relative">
+                <div className="flex items-center gap-2 px-2 pb-2 relative justify-center">
                     <AspectRatioSelector
                         selectedAspectRatio={selectedAspectRatio}
                         onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
