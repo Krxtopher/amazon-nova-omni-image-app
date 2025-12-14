@@ -153,15 +153,15 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
         };
     }, [onImageDelete, onImageEdit, onTextDelete]);
 
-    // Transform text items for masonry grid
+    // Transform text items for masonry grid - use all sorted items, not just visible ones
     const masonryItems = useMemo(() => {
-        return visibleItems.map(item => {
+        return sortedItems.map(item => {
             if (isGeneratedText(item)) {
                 return { ...item, width: 350, height: 350 };
             }
             return item;
         });
-    }, [visibleItems]);
+    }, [sortedItems]);
 
     // Handle empty state
     if (sortedItems.length === 0) {

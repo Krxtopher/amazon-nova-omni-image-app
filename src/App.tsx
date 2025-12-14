@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { PromptInputArea, GeneratingStatus, Sidebar } from '@/components';
-import { VirtualizedGallery } from '@/components/VirtualizedGallery';
+import { SimpleVirtualizedGallery } from '@/components/SimpleVirtualizedGallery';
 import { Lightbox } from '@/components/Lightbox';
 import { MagicalEffectsDemo } from '@/components/MagicalEffectsDemo';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -192,7 +192,7 @@ function AppContent() {
               {/* Scrollable Gallery */}
               <main className="flex-1 overflow-y-auto">
                 <section aria-label="Generated images gallery" className="px-4 pt-32 pb-8">
-                  <VirtualizedGallery
+                  <SimpleVirtualizedGallery
                     onImageDelete={handleImageDelete}
                     onTextDelete={handleTextDelete}
                     onImageEdit={handleImageEdit}
