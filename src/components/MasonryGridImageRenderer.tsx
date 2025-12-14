@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage } from '../types';
-import type { MasonryItemRendererProps } from './MasonryGrid';
+import type { MasonryItemRendererProps } from './FixedMasonryGrid';
 import { Button } from './ui/button';
 import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
 import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';

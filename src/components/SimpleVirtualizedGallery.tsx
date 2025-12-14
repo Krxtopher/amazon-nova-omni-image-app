@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { useImageStore } from '@/stores/imageStore';
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
 import { FixedMasonryGrid } from './FixedMasonryGrid';
-import { createVirtualizedImageRenderer } from './VirtualizedMasonryImageRenderer';
+import { createImageRenderer } from './MasonryGridImageRenderer';
 import { TextCard } from './TextCard';
 import type { MasonryItemRendererProps } from './FixedMasonryGrid';
 
@@ -42,7 +42,7 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
 
     // Memoized renderer
     const renderer = useMemo(() => {
-        const imageRenderer = createVirtualizedImageRenderer(onImageDelete, onImageEdit);
+        const imageRenderer = createImageRenderer(onImageDelete, onImageEdit);
 
         return (props: MasonryItemRendererProps) => {
             const item = props.item as GalleryItem;

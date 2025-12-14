@@ -9,7 +9,7 @@ export { ErrorBoundary } from './ErrorBoundary';
 export { ThemeProvider } from './ThemeProvider';
 export { ResetDataButton } from './ResetDataButton';
 export { TextCard } from './TextCard';
-export { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
+export { FixedMasonryGrid } from './FixedMasonryGrid';
 export { MasonryImageRenderer, createImageRenderer } from './MasonryGridImageRenderer';
 export { GeneratingStatus } from './GeneratingStatus';
 export { Lightbox } from './Lightbox';
