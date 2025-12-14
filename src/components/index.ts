@@ -4,6 +4,7 @@
 
 export { PromptInputArea } from './PromptInputArea';
 export { GalleryGrid } from './GalleryGrid';
+export { VirtualizedGallery } from './VirtualizedGallery';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ThemeProvider } from './ThemeProvider';
 export { ResetDataButton } from './ResetDataButton';

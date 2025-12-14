@@ -30,6 +30,8 @@ interface ImageStoreActions {
     clearEditSource: () => void;
     loadImages: () => Promise<void>;
     getAllItems: () => GalleryItem[];
+    getItemsPaginated: (offset: number, limit: number) => Promise<GalleryItem[]>;
+    getTotalItemCount: () => number;
     initialize: () => Promise<void>;
 }
 
@@ -259,5 +261,24 @@ export const useImageStore = create<ImageStore>()((set) => ({
         const state = useImageStore.getState();
         const allItems: GalleryItem[] = [...state.images, ...state.textItems];
         return allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    },
+
+    /**
+     * Get paginated gallery items for virtualized rendering
+     * Future enhancement: This could query the database directly for true pagination
+     */
+    getItemsPaginated: async (offset: number, limit: number) => {
+        const state = useImageStore.getState();
+        const allItems: GalleryItem[] = [...state.images, ...state.textItems];
+        const sortedItems = allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return sortedItems.slice(offset, offset + limit);
+    },
+
+    /**
+     * Get total count of all items
+     */
+    getTotalItemCount: () => {
+        const state = useImageStore.getState();
+        return state.images.length + state.textItems.length;
     },
 }));

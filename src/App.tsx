@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { PromptInputArea, GalleryGrid, GeneratingStatus, Sidebar } from '@/components';
+import { PromptInputArea, GeneratingStatus, Sidebar } from '@/components';
+import { VirtualizedGallery } from '@/components/VirtualizedGallery';
 import { Lightbox } from '@/components/Lightbox';
 import { MagicalEffectsDemo } from '@/components/MagicalEffectsDemo';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -51,7 +52,7 @@ function createBedrockService(): BedrockImageService {
  */
 function AppContent() {
   const bedrockService = useBedrockService();
-  const { deleteImage, deleteTextItem, setEditSource, initialize, isLoading, getAllItems } = useImageStore();
+  const { deleteImage, deleteTextItem, setEditSource, initialize, isLoading } = useImageStore();
   const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
   const [activeRequests, setActiveRequests] = useState(0);
 
@@ -191,8 +192,7 @@ function AppContent() {
               {/* Scrollable Gallery */}
               <main className="flex-1 overflow-y-auto">
                 <section aria-label="Generated images gallery" className="px-4 pt-32 pb-8">
-                  <GalleryGrid
-                    items={getAllItems()}
+                  <VirtualizedGallery
                     onImageDelete={handleImageDelete}
                     onTextDelete={handleTextDelete}
                     onImageEdit={handleImageEdit}
