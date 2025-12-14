@@ -53,6 +53,7 @@ function VMasonryGrid({
 }: MasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [itemsLayout, setItemsLayout] = useState<ItemBounds[]>([]);
+  const [containerHeight, setContainerHeight] = useState<number>(0);
   const [forceRerender, setForceRerender] = useState(false);
 
   useEffect(() => {
@@ -91,6 +92,12 @@ function VMasonryGrid({
       itemInfo.top = columnHeights[columnIndex];
       columnHeights[columnIndex] = itemInfo.top + itemInfo.displayHeight + gap;
     });
+
+    // Calculate container height based on tallest column plus extra bottom spacing
+    const maxColumnHeight = Math.max(...columnHeights, 0);
+    const bottomSpacing = 64; // 4rem equivalent to pb-16
+    setContainerHeight(maxColumnHeight + bottomSpacing);
+
     setItemsLayout(newItemsLayout);
     setForceRerender(false);
   }, [containerRef, gap, items, forceRerender, maxItemSize]);
@@ -99,7 +106,7 @@ function VMasonryGrid({
     <div
       {...props}
       className={"masonry-grid " + props.className || ""}
-      style={{ position: "relative", ...props.style }}
+      style={{ position: "relative", height: containerHeight, ...props.style }}
       ref={containerRef}
     >
       {itemsLayout.map((itemLayout) => (
