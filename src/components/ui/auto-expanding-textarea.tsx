@@ -5,8 +5,12 @@ interface AutoExpandingTextareaProps extends React.ComponentProps<"textarea"> {
     maxHeight?: number;
 }
 
+interface AutoExpandingTextareaRef extends HTMLTextAreaElement {
+    collapseTextarea: () => void;
+}
+
 const AutoExpandingTextarea = React.forwardRef<
-    HTMLTextAreaElement,
+    AutoExpandingTextareaRef,
     AutoExpandingTextareaProps
 >(({ className, maxHeight, ...props }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -14,8 +18,11 @@ const AutoExpandingTextarea = React.forwardRef<
     const [isFocused, setIsFocused] = React.useState(false);
     const [twoLineHeight, setTwoLineHeight] = React.useState<number>(48); // Default 2-line height
 
-    // Combine refs
-    React.useImperativeHandle(ref, () => textareaRef.current!);
+    // Combine refs and expose collapseTextarea method
+    React.useImperativeHandle(ref, () => ({
+        ...textareaRef.current!,
+        collapseTextarea
+    }));
 
     // Calculate max height based on viewport if not provided
     React.useEffect(() => {
@@ -126,6 +133,11 @@ const AutoExpandingTextarea = React.forwardRef<
         props.onBlur?.(e);
     };
 
+    // Function to manually collapse the textarea (for use after form submission)
+    const collapseTextarea = React.useCallback(() => {
+        setIsFocused(false);
+    }, []);
+
     // Check if content needs truncation (more than 2 lines when not focused)
     const needsTruncation = React.useMemo(() => {
         if (!textareaRef.current || isFocused) return false;
@@ -157,19 +169,17 @@ const AutoExpandingTextarea = React.forwardRef<
             return text;
         }
 
-        // Take first two lines and add ellipsis to the second line if needed
+        // Take first two lines
         let firstTwoLines = lines.slice(0, 2).join('\n');
 
-        // If the second line is very long, we might need to truncate it too
-        // This is a simple approximation - in a real implementation you might want
-        // to measure character width more precisely
-        const secondLine = lines[1] || '';
-        if (secondLine.length > 50) { // Approximate character limit for second line
-            const truncatedSecondLine = secondLine.substring(0, 47) + '...';
-            firstTwoLines = lines[0] + '\n' + truncatedSecondLine;
-        } else if (lines.length > 2) {
-            // Add ellipsis to indicate more content
-            firstTwoLines += '...';
+        // Add ellipsis to indicate more content if there are more than 2 lines
+        if (lines.length > 2) {
+            // If the second line exists, add ellipsis to it
+            if (lines[1] !== undefined) {
+                firstTwoLines = lines[0] + '\n' + lines[1] + '...';
+            } else {
+                firstTwoLines += '...';
+            }
         }
 
         return firstTwoLines;
@@ -218,11 +228,12 @@ const AutoExpandingTextarea = React.forwardRef<
             {needsTruncation && (
                 <div
                     className={cn(
-                        "absolute inset-0 flex w-full rounded-md bg-background px-3 py-2 text-base md:text-sm pointer-events-none whitespace-pre-wrap",
+                        "absolute inset-0 flex w-full rounded-md bg-background px-3 py-2 text-base md:text-sm pointer-events-none whitespace-pre-wrap overflow-hidden",
                         textareaClassName
                     )}
                     style={{
                         color: props.value ? 'inherit' : 'var(--muted-foreground)',
+                        height: `${twoLineHeight}px`,
                         ...props.style
                     }}
                 >

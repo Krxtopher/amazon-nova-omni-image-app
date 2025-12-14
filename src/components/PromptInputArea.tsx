@@ -71,6 +71,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const [aspectRatioExpanded, setAspectRatioExpanded] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputBarRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<any>(null);
 
     const {
         selectedAspectRatio,
@@ -128,6 +129,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
      * Requirements: 1.1, 1.3, 1.4, 1.5
      */
     const handleSubmit = async () => {
+        // Collapse the textarea when submitting via button click
+        if (textareaRef.current?.collapseTextarea) {
+            textareaRef.current.collapseTextarea();
+        }
         // Validate prompt
         if (!validatePrompt(prompt)) {
             return;
@@ -272,6 +277,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSubmit();
+            // Collapse the textarea after submission
+            if (textareaRef.current?.collapseTextarea) {
+                textareaRef.current.collapseTextarea();
+            }
         }
     };
 
@@ -500,6 +509,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                     {/* Text Input */}
                     <AutoExpandingTextarea
+                        ref={textareaRef}
                         id="prompt-input"
                         placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
                         value={prompt}
