@@ -150,7 +150,7 @@ input[type="reset"]:disabled,
 
 .dark {
   @theme {
-    --color-background: #352E50;
+    --color-background: 252 27% 25%;
     --color-foreground: 0 0% 98%;
     --color-card: 0 0% 14%;
     --color-card-foreground: 0 0% 98%;
@@ -249,7 +249,7 @@ input[type="reset"]:disabled,
 }
 
 ::-webkit-scrollbar-track {
-  background: #453a66;
+  background: #ffffff30;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -265,13 +265,13 @@ input[type="reset"]:disabled,
 }
 
 ::-webkit-scrollbar-corner {
-  background: #453a66;
+  background: #ffffff08;
 }
 
 /* Modern CSS scrollbar properties (Firefox and newer browsers) */
 * {
   scrollbar-width: auto;
-  scrollbar-color: rgba(255, 255, 255, 0.85) #453a66;
+  scrollbar-color: rgba(255, 255, 255, 0.85) #ffffff08;
 }
 
 /* Light mode scrollbar override */
