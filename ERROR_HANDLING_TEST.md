@@ -14,7 +14,7 @@
 
 3. **Updated `App.tsx`**:
    - Modified error handler to no longer show toast notifications for generation errors
-   - Kept error toasts for other types of errors (migration, deletion, etc.)
+   - Kept error toasts for other types of errors (deletion, etc.)
 
 4. **Updated tests**:
    - Modified `PromptInputArea.test.tsx` to reflect new error handling behavior

@@ -11,7 +11,7 @@ import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import { migrateFromLocalStorage, needsMigration } from '@/utils/migrateFromLocalStorage';
+
 import './App.css';
 
 /**
@@ -53,34 +53,12 @@ function createBedrockService(): BedrockImageService {
 function AppContent() {
   const bedrockService = useBedrockService();
   const { deleteImage, deleteTextItem, setEditSource, initialize, isLoading } = useImageStore();
-  const [migrationStatus, setMigrationStatus] = useState<string | null>(null);
+
   const [activeRequests, setActiveRequests] = useState(0);
 
-  // Initialize the store and run migration if needed
+  // Initialize the store
   useEffect(() => {
-    const initializeApp = async () => {
-      // Check if migration is needed
-      if (needsMigration()) {
-        setMigrationStatus('Migrating your data to new storage...');
-        const result = await migrateFromLocalStorage();
-
-        if (result.success && result.migratedImages > 0) {
-          toast.success(`Successfully migrated ${result.migratedImages} images to new storage`, {
-            duration: 5000,
-          });
-        } else if (!result.success) {
-          toast.error('Failed to migrate data. Please contact support.', {
-            duration: 5000,
-          });
-        }
-        setMigrationStatus(null);
-      }
-
-      // Initialize the store
-      await initialize();
-    };
-
-    initializeApp();
+    initialize();
   }, [initialize]);
 
   /**
@@ -150,13 +128,13 @@ function AppContent() {
     });
   };
 
-  // Show loading state while initializing or migrating
-  if (isLoading || migrationStatus) {
+  // Show loading state while initializing
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{migrationStatus || 'Loading...'}</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );

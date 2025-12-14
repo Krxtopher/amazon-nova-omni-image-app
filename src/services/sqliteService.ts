@@ -41,7 +41,7 @@ class SQLiteService {
                     this.db = new SQL.Database(savedDb);
                     // Ensure new tables exist first
                     this.createTables();
-                    // Save the migrated database back to IndexedDB
+                    // Save the database back to IndexedDB
                     await this.saveToIndexedDB();
                 } else {
                     this.db = new SQL.Database();
@@ -98,85 +98,10 @@ class SQLiteService {
             CREATE INDEX IF NOT EXISTS idx_image_metadata_createdAt ON image_metadata(createdAt DESC)
         `);
 
-        // Run migrations after creating new tables
-        this.runMigrations();
+
     }
 
-    /**
-     * Run database migrations to handle schema changes
-     */
-    private runMigrations(): void {
-        if (!this.db) return;
 
-        try {
-            // Check if old 'images' table exists
-            const tablesResult = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='images'");
-            const hasOldImagesTable = tablesResult.length > 0 && tablesResult[0].values.length > 0;
-
-            console.log('Migration check - old images table exists:', hasOldImagesTable);
-
-            // Debug: Show all tables
-            const allTablesResult = this.db.exec("SELECT name FROM sqlite_master WHERE type='table'");
-            const tableNames = allTablesResult.length > 0 ? allTablesResult[0].values.map(row => row[0]) : [];
-            console.log('All existing tables:', tableNames);
-
-            if (hasOldImagesTable) {
-                console.log('Migrating existing images from old schema to new lazy loading schema');
-
-                // Get all existing images from old table
-                const existingImagesResult = this.db.exec('SELECT * FROM images');
-
-                if (existingImagesResult.length > 0) {
-                    const columns = existingImagesResult[0].columns;
-                    const rows = existingImagesResult[0].values;
-
-                    console.log(`Found ${rows.length} existing images to migrate`);
-
-                    // Migrate each image to new schema
-                    for (const row of rows) {
-                        const imageData: Record<string, any> = {};
-                        columns.forEach((col: string, idx: number) => {
-                            imageData[col] = row[idx];
-                        });
-
-                        // Insert metadata into new table
-                        this.db.run(
-                            `INSERT OR IGNORE INTO image_metadata (id, prompt, status, aspectRatio, width, height, createdAt, error, converseParams)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                            [
-                                imageData.id,
-                                imageData.prompt,
-                                imageData.status,
-                                imageData.aspectRatio,
-                                imageData.width,
-                                imageData.height,
-                                imageData.createdAt,
-                                imageData.error || null,
-                                imageData.converseParams || null,
-                            ]
-                        );
-
-                        // Insert image data into new table if URL exists
-                        if (imageData.url) {
-                            this.db.run(
-                                `INSERT OR IGNORE INTO image_data (id, url) VALUES (?, ?)`,
-                                [imageData.id, imageData.url]
-                            );
-                        }
-                    }
-
-                    console.log(`Successfully migrated ${rows.length} images to new schema`);
-                }
-
-                // Drop the old table after successful migration
-                this.db.run('DROP TABLE images');
-                console.log('Dropped old images table after migration');
-            }
-        } catch (error) {
-            console.error('Migration error:', error);
-            // Don't throw - let the app continue with new schema
-        }
-    }
 
     /**
      * Save database to IndexedDB

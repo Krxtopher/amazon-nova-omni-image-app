@@ -101,7 +101,7 @@ npm run test:ui
 - Manage images in a responsive gallery grid
 - Aspect ratio selection for generated images
 - Real-time loading indicators and error handling
-- **Enhanced Storage**: SQLite-based storage with much larger capacity than localStorage (see [STORAGE_MIGRATION.md](STORAGE_MIGRATION.md))
+- **Enhanced Storage**: SQLite-based storage with much larger capacity than localStorage
 
 ## Requirements
 

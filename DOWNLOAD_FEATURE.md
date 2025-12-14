@@ -69,8 +69,7 @@ The JSON file contains the exact parameters that were sent to the Amazon Bedrock
 - **Type Safety**: New `ConverseRequestParams` type ensures proper structure
 - **Database Storage**: Parameters are stored in SQLite alongside image metadata
 - **Memory Efficient**: Source images are converted to base64 only when needed for storage
-- **Migration Support**: Existing databases are automatically updated with the new schema
-- **Automatic Migration**: When you first load the app after this update, the database will automatically add the new `converseParams` column to existing images table
+
 
 ## Use Cases
 
@@ -89,13 +88,7 @@ Both files use the same unique ID, making it easy to match them together.
 
 ## Troubleshooting
 
-### Database Migration Issues
 
-If you encounter errors related to "converseParams column not found":
-
-1. **Clear Browser Data**: The migration should happen automatically, but if it fails, you can clear the browser's IndexedDB data for this site
-2. **Check Console**: Look for migration messages in the browser console - you should see "Adding converseParams column to existing database" and "Successfully added converseParams column"
-3. **Refresh the Page**: Sometimes a simple page refresh after the first load will resolve migration issues
 
 ### Missing JSON Downloads
 
@@ -105,5 +98,5 @@ If you encounter errors related to "converseParams column not found":
 
 ### Performance
 
-- **Large Databases**: The migration adds a new column which may take a moment for databases with many images
+
 - **Storage**: JSON files are small (typically 1-5KB) but will increase overall storage usage slightly
