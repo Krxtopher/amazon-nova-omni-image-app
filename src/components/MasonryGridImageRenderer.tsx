@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage } from '../types';
 import type { MasonryItemRendererProps } from './MasonryGrid';
@@ -17,46 +17,15 @@ interface ImageRendererProps extends MasonryItemRendererProps {
 }
 
 /**
- * Custom hook to dynamically calculate the optimal number of lines for text truncation
+ * Calculate the optimal number of lines for text truncation based on available height
  */
-function useDynamicLineClamp(containerRef: React.RefObject<HTMLElement>, text: string, fontSize: number = 14, lineHeight: number = 1.5) {
-    const [lineClamp, setLineClamp] = useState(3);
+function calculateLineClamp(availableHeight: number, fontSize: number = 14, lineHeight: number = 1.5, padding: number = 32): number {
+    const adjustedHeight = availableHeight - padding;
+    const lineHeightPx = fontSize * lineHeight;
+    const maxLines = Math.floor(adjustedHeight / lineHeightPx);
 
-    const calculateLineClamp = useCallback(() => {
-        if (!containerRef.current || !text) return;
-
-        const container = containerRef.current;
-        const containerHeight = container.clientHeight;
-        const padding = 32; // Account for padding (16px top + 16px bottom)
-        const availableHeight = containerHeight - padding;
-
-        const lineHeightPx = fontSize * lineHeight;
-        const maxLines = Math.floor(availableHeight / lineHeightPx);
-
-        // Ensure we have at least 1 line and cap at a reasonable maximum
-        const clampValue = Math.max(1, Math.min(maxLines, 8));
-        setLineClamp(clampValue);
-    }, [text, fontSize, lineHeight]);
-
-    useEffect(() => {
-        calculateLineClamp();
-    }, [calculateLineClamp]);
-
-    useEffect(() => {
-        if (!containerRef.current) return;
-
-        const resizeObserver = new ResizeObserver(() => {
-            calculateLineClamp();
-        });
-
-        resizeObserver.observe(containerRef.current);
-
-        return () => {
-            resizeObserver.disconnect();
-        };
-    }, [calculateLineClamp]);
-
-    return lineClamp;
+    // Ensure we have at least 1 line and cap at a reasonable maximum
+    return Math.max(1, Math.min(maxLines, 8));
 }
 
 /**
@@ -65,7 +34,7 @@ function useDynamicLineClamp(containerRef: React.RefObject<HTMLElement>, text: s
 export function MasonryImageRenderer({
     item,
     displayWidth: _displayWidth,
-    displayHeight: _displayHeight,
+    displayHeight,
     isVisible,
     onDelete,
     onEdit
@@ -76,13 +45,17 @@ export function MasonryImageRenderer({
     const [isCopied, setIsCopied] = useState(false);
     const [shouldFadeIn, setShouldFadeIn] = useState(false);
 
-    // Refs for dynamic line clamping
-    const generatingPromptRef = useRef<HTMLDivElement>(null);
-    const hoverPromptRef = useRef<HTMLDivElement>(null);
+    // Calculate dynamic line clamps based on actual display height
+    const generatingLineClamp = useMemo(() => {
+        // For generating state, use the full display height
+        return calculateLineClamp(displayHeight, 14, 1.5, 32);
+    }, [displayHeight]);
 
-    // Dynamic line clamps
-    const generatingLineClamp = useDynamicLineClamp(generatingPromptRef, item.prompt || '', 14, 1.5);
-    const hoverLineClamp = useDynamicLineClamp(hoverPromptRef, item.prompt || '', 14, 1.5);
+    const hoverLineClamp = useMemo(() => {
+        // For hover overlay, account for the gradient overlay space (roughly 30% of height)
+        const overlayHeight = displayHeight * 0.4; // Conservative estimate for bottom overlay
+        return calculateLineClamp(overlayHeight, 14, 1.5, 32);
+    }, [displayHeight]);
 
     const handleImageError = () => {
         setImageError(true);
@@ -120,10 +93,7 @@ export function MasonryImageRenderer({
                     <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
                     {/* Prompt overlay during generation */}
                     {item.prompt && (
-                        <div
-                            ref={generatingPromptRef}
-                            className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay"
-                        >
+                        <div className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay">
                             <div
                                 className="text-white text-center text-sm leading-relaxed max-w-full overflow-hidden"
                                 style={{
@@ -319,7 +289,6 @@ export function MasonryImageRenderer({
             {/* Prompt overlay - always present but controlled by opacity */}
             {item.status === 'complete' && item.prompt && (
                 <div
-                    ref={hoverPromptRef}
                     className={`absolute bottom-0 left-0 right-0 z-10 bg-linear-to-t from-neutral-800/80 via-black/40 to-transparent p-4 pt-8 transition-opacity duration-200 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'
                         }`}
                 >
