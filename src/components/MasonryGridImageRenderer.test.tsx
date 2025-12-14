@@ -126,4 +126,41 @@ describe('MasonryImageRenderer - ConverseParams Support', () => {
         expect(placeholderContainer).toBeInTheDocument();
         expect(placeholderContainer).toHaveClass('w-full', 'h-full', 'cursor-pointer', 'relative');
     });
+
+    it('should display prompt text during generating state with overlay blend mode', () => {
+        const mockImage: GeneratedImage = {
+            id: 'test-image-4',
+            prompt: 'A beautiful sunset over mountains',
+            status: 'generating',
+            aspectRatio: '16:9',
+            width: 1344,
+            height: 768,
+            createdAt: new Date(),
+        };
+
+        render(
+            <BrowserRouter>
+                <MasonryImageRenderer
+                    item={mockImage}
+                    displayWidth={300}
+                    displayHeight={200}
+                    isVisible={true}
+                    onDelete={mockOnDelete}
+                    onEdit={mockOnEdit}
+                />
+            </BrowserRouter>
+        );
+
+        // Check that the prompt text is displayed during generation
+        const promptText = screen.getByText('A beautiful sunset over mountains');
+        expect(promptText).toBeInTheDocument();
+
+        // Check that it has the overlay blend mode style
+        expect(promptText).toHaveStyle({ mixBlendMode: 'overlay' });
+
+        // Check that it's positioned correctly (centered)
+        const promptContainer = promptText.closest('.flex.items-center.justify-center');
+        expect(promptContainer).toBeInTheDocument();
+        expect(promptContainer).toHaveClass('absolute', 'inset-0', 'flex', 'items-center', 'justify-center');
+    });
 });

@@ -67,6 +67,16 @@ export function MasonryImageRenderer({
             return (
                 <div className="absolute inset-0">
                     <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
+                    {/* Prompt overlay during generation */}
+                    {item.prompt && (
+                        <div className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay">
+                            <div
+                                className="text-white text-center text-sm leading-relaxed max-w-full"
+                            >
+                                {item.prompt}
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -253,7 +263,7 @@ export function MasonryImageRenderer({
                         }`}
                 >
                     <p className="text-white text-sm leading-relaxed flex items-start gap-2 select-none">
-                        <span className="flex-1">{item.prompt}</span>
+                        <span className="flex-1">Prompt: {item.prompt}</span>
                         <button
                             onClick={handleCopyPrompt}
                             className="shrink-0 pointer-events-auto hover:bg-white/20 rounded p-1 transition-colors"
