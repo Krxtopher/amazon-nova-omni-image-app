@@ -109,7 +109,7 @@ export function MasonryImageRenderer({
                     {item.prompt && (
                         <div className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay">
                             <div
-                                className="text-white text-center text-sm leading-relaxed max-w-full overflow-hidden select-none"
+                                className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic"
                                 style={{
                                     display: '-webkit-box',
                                     WebkitLineClamp: generatingLineClamp,
