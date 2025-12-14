@@ -6,6 +6,13 @@
   font-family: "IBM Plex Sans", sans-serif;
 }
 
+/* Ensure body and html use the theme background */
+html,
+body {
+  background-color: hsl(var(--color-background));
+  color: hsl(var(--color-foreground));
+}
+
 /* Override button font to use system font instead of Lato */
 button,
 button *,
@@ -215,4 +222,47 @@ select {
   font-style: normal;
   font-variation-settings:
     "wdth" 100;
+}
+
+/* Custom Scrollbar Styles */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: #453a66;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.95);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: #453a66;
+}
+
+/* Modern CSS scrollbar properties (Firefox and newer browsers) */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.85) #453a66;
+}
+
+/* Light mode scrollbar override */
+html:not(.dark) ::-webkit-scrollbar-track,
+html:not(.dark) ::-webkit-scrollbar-corner {
+  background: #f8f8f8;
+}
+
+html:not(.dark) * {
+  scrollbar-color: rgba(255, 255, 255, 0.85) #f8f8f8;
 }
