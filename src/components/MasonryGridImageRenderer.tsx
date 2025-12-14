@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage } from '../types';
 import type { MasonryItemRendererProps } from './MasonryGrid';
@@ -17,6 +17,49 @@ interface ImageRendererProps extends MasonryItemRendererProps {
 }
 
 /**
+ * Custom hook to dynamically calculate the optimal number of lines for text truncation
+ */
+function useDynamicLineClamp(containerRef: React.RefObject<HTMLElement>, text: string, fontSize: number = 14, lineHeight: number = 1.5) {
+    const [lineClamp, setLineClamp] = useState(3);
+
+    const calculateLineClamp = useCallback(() => {
+        if (!containerRef.current || !text) return;
+
+        const container = containerRef.current;
+        const containerHeight = container.clientHeight;
+        const padding = 32; // Account for padding (16px top + 16px bottom)
+        const availableHeight = containerHeight - padding;
+
+        const lineHeightPx = fontSize * lineHeight;
+        const maxLines = Math.floor(availableHeight / lineHeightPx);
+
+        // Ensure we have at least 1 line and cap at a reasonable maximum
+        const clampValue = Math.max(1, Math.min(maxLines, 8));
+        setLineClamp(clampValue);
+    }, [text, fontSize, lineHeight]);
+
+    useEffect(() => {
+        calculateLineClamp();
+    }, [calculateLineClamp]);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const resizeObserver = new ResizeObserver(() => {
+            calculateLineClamp();
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [calculateLineClamp]);
+
+    return lineClamp;
+}
+
+/**
  * Renderer component for displaying GeneratedImage items in MasonryGrid
  */
 export function MasonryImageRenderer({
@@ -32,6 +75,14 @@ export function MasonryImageRenderer({
     const [imageError, setImageError] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [shouldFadeIn, setShouldFadeIn] = useState(false);
+
+    // Refs for dynamic line clamping
+    const generatingPromptRef = useRef<HTMLDivElement>(null);
+    const hoverPromptRef = useRef<HTMLDivElement>(null);
+
+    // Dynamic line clamps
+    const generatingLineClamp = useDynamicLineClamp(generatingPromptRef, item.prompt || '', 14, 1.5);
+    const hoverLineClamp = useDynamicLineClamp(hoverPromptRef, item.prompt || '', 14, 1.5);
 
     const handleImageError = () => {
         setImageError(true);
@@ -69,9 +120,18 @@ export function MasonryImageRenderer({
                     <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
                     {/* Prompt overlay during generation */}
                     {item.prompt && (
-                        <div className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay">
+                        <div
+                            ref={generatingPromptRef}
+                            className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay"
+                        >
                             <div
-                                className="text-white text-center text-sm leading-relaxed max-w-full"
+                                className="text-white text-center text-sm leading-relaxed max-w-full overflow-hidden"
+                                style={{
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: generatingLineClamp,
+                                    WebkitBoxOrient: 'vertical',
+                                    textOverflow: 'ellipsis'
+                                }}
                             >
                                 {item.prompt}
                             </div>
@@ -259,11 +319,22 @@ export function MasonryImageRenderer({
             {/* Prompt overlay - always present but controlled by opacity */}
             {item.status === 'complete' && item.prompt && (
                 <div
+                    ref={hoverPromptRef}
                     className={`absolute bottom-0 left-0 right-0 z-10 bg-linear-to-t from-neutral-800/80 via-black/40 to-transparent p-4 pt-8 transition-opacity duration-200 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'
                         }`}
                 >
                     <p className="text-white text-sm leading-relaxed flex items-start gap-2 select-none">
-                        <span className="flex-1">Prompt: {item.prompt}</span>
+                        <span
+                            className="flex-1 overflow-hidden"
+                            style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: hoverLineClamp,
+                                WebkitBoxOrient: 'vertical',
+                                textOverflow: 'ellipsis'
+                            }}
+                        >
+                            Prompt: {item.prompt}
+                        </span>
                         <button
                             onClick={handleCopyPrompt}
                             className="shrink-0 pointer-events-auto hover:bg-white/20 rounded p-1 transition-colors"
