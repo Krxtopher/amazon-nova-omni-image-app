@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage } from '../types';
 import type { MasonryItemRendererProps } from './FixedMasonryGrid';
@@ -70,12 +70,18 @@ export function MasonryImageRenderer({
     };
 
     // Reset and trigger fade-in when image URL is loaded and becomes visible
+    // Use a ref to track if we've already faded in this image to prevent re-triggering
+    const hasFadedInRef = useRef(false);
+
     useEffect(() => {
-        if (item.status === 'complete' && displayUrl && !isLoadingImage) {
+        if (item.status === 'complete' && displayUrl && !isLoadingImage && !hasFadedInRef.current) {
             setShouldFadeIn(false);
             if (isVisible) {
                 // Longer delay to ensure the opacity-0 class is applied first and visible
-                const timer = setTimeout(() => setShouldFadeIn(true), 200);
+                const timer = setTimeout(() => {
+                    setShouldFadeIn(true);
+                    hasFadedInRef.current = true;
+                }, 200);
                 return () => clearTimeout(timer);
             }
         }
@@ -165,9 +171,12 @@ export function MasonryImageRenderer({
                         loading="eager"
                         onClick={() => navigate(`/image/${item.id}`)}
                         onLoad={() => {
-                            // Ensure fade-in happens when image loads
-                            if (isVisible && !shouldFadeIn) {
-                                setTimeout(() => setShouldFadeIn(true), 50);
+                            // Ensure fade-in happens when image loads, but only if we haven't already faded in
+                            if (isVisible && !shouldFadeIn && !hasFadedInRef.current) {
+                                setTimeout(() => {
+                                    setShouldFadeIn(true);
+                                    hasFadedInRef.current = true;
+                                }, 50);
                             }
                         }}
                     />

@@ -231,8 +231,8 @@ export function FixedMasonryGrid({
             // Simple visibility check - if it's rendered, it's visible
             const isVisible = true;
 
-            // Create a more unique key to avoid duplicates
-            const uniqueKey = `${itemLayout.item.id}-${itemLayout.top}-${itemLayout.left}`;
+            // Use only the item ID as key to maintain component identity across position changes
+            const uniqueKey = itemLayout.item.id;
 
             return (
                 <div
