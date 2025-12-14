@@ -317,6 +317,41 @@ class SQLiteService {
     }
 
     /**
+     * Delete multiple images by their IDs
+     */
+    async deleteImages(ids: string[]): Promise<void> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        if (ids.length === 0) return;
+
+        const placeholders = ids.map(() => '?').join(',');
+        this.db.run(`DELETE FROM images WHERE id IN (${placeholders})`, ids);
+        await this.saveToIndexedDB();
+    }
+
+    /**
+     * Delete images by status
+     */
+    async deleteImagesByStatus(statuses: string[]): Promise<number> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        if (statuses.length === 0) return 0;
+
+        // First count how many will be deleted
+        const placeholders = statuses.map(() => '?').join(',');
+        const countResult = this.db.exec(`SELECT COUNT(*) FROM images WHERE status IN (${placeholders})`, statuses);
+        const deletedCount = countResult.length > 0 ? countResult[0].values[0][0] as number : 0;
+
+        // Then delete them
+        this.db.run(`DELETE FROM images WHERE status IN (${placeholders})`, statuses);
+        await this.saveToIndexedDB();
+
+        return deletedCount;
+    }
+
+    /**
      * Get all images
      */
     async getAllImages(): Promise<GeneratedImage[]> {

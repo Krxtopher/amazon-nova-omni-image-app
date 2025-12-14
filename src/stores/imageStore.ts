@@ -67,8 +67,15 @@ export const useImageStore = create<ImageStore>()((set) => ({
             set({ isLoading: true });
             await sqliteService.init();
 
-            // Load images
+            // Delete incomplete images from database first
+            const deletedCount = await sqliteService.deleteImagesByStatus(['pending', 'generating', 'error']);
+            if (deletedCount > 0) {
+                console.log(`Cleaned up ${deletedCount} incomplete images from database`);
+            }
+
+            // Load only complete images
             const images = await sqliteService.getAllImages();
+            console.log(`Loaded ${images.length} complete images from database`);
 
             // Load text items from localStorage (temporary solution)
             const textItemsJson = localStorage.getItem('textItems');
