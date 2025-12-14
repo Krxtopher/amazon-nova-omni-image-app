@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage, GeneratedText } from '@/types';
-import { X, Paperclip, Send, Dice5 } from 'lucide-react';
+import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
 
 /**
@@ -479,10 +479,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 }}
             >
                 {/* Top row with thumbnail, text input, and send button */}
-                <div className="flex items-start gap-2 p-2">
+                <div className="flex items-center gap-1 p-2">
                     {/* Thumbnail preview (if image uploaded) */}
                     {editSource && (
-                        <div className="relative shrink-0 group mt-0.5">
+                        <div className="relative shrink-0 group">
                             <div className="relative">
                                 <img
                                     src={editSource.url}
@@ -513,11 +513,11 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                             variant="ghost"
                             size="icon"
                             onClick={handleUploadClick}
-                            className="h-9 w-9 mt-0.5 shrink-0"
+                            className="h-9 w-9 shrink-0"
                             aria-label="Upload image to edit"
                             title="Upload image to edit"
                         >
-                            <Paperclip className="h-4 w-4" />
+                            <Plus className="h-4 w-4" />
                         </Button>
                     )}
 
@@ -545,7 +545,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         onClick={handleSubmit}
                         disabled={!prompt.trim()}
                         size="icon"
-                        className="shrink-0 h-9 w-9 mt-0.5"
+                        className="shrink-0 h-9 w-9"
                         aria-label="Generate image"
                     >
                         <Send className="h-4 w-4" />
