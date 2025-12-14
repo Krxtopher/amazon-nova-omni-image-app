@@ -1,8 +1,8 @@
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
-import { VMasonryGrid } from './MasonryGrid';
-import { createImageRenderer } from './MasonryGridImageRenderer';
+import { VirtualizedMasonryGrid } from './VirtualizedMasonryGrid';
+import { createVirtualizedImageRenderer } from './VirtualizedMasonryImageRenderer';
 import { TextCard } from './TextCard';
-import type { MasonryItemRendererProps } from './MasonryGrid';
+import type { MasonryItemRendererProps } from './VirtualizedMasonryGrid';
 
 interface GalleryGridProps {
     items: GalleryItem[];
@@ -51,8 +51,8 @@ export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit }:
         const item = props.item as GalleryItem;
 
         if (isGeneratedImage(item)) {
-            // Use existing image renderer
-            const imageRenderer = createImageRenderer(onImageDelete, onImageEdit);
+            // Use virtualized image renderer
+            const imageRenderer = createVirtualizedImageRenderer(onImageDelete, onImageEdit);
             return imageRenderer(props);
         }
 
@@ -88,12 +88,16 @@ export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit }:
     });
 
     return (
-        <VMasonryGrid
-            items={masonryItems}
-            renderer={renderer}
-            maxItemSize={350}
-            gap={22}
-            className="w-full"
-        />
+        <div className="w-full h-full">
+            <VirtualizedMasonryGrid
+                items={masonryItems}
+                renderer={renderer}
+                columnWidth={350}
+                gap={22}
+                overscan={5}
+                bufferSize={200}
+                className="w-full h-full"
+            />
+        </div>
     );
 }

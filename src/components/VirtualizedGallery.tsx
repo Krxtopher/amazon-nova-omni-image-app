@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useImageStore } from '@/stores/imageStore';
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
-import { VMasonryGrid } from './MasonryGrid';
-import { createImageRenderer } from './MasonryGridImageRenderer';
+import { FixedMasonryGrid } from './FixedMasonryGrid';
+import { createVirtualizedImageRenderer } from './VirtualizedMasonryImageRenderer';
 import { TextCard } from './TextCard';
-import type { MasonryItemRendererProps } from './MasonryGrid';
+import type { MasonryItemRendererProps } from './FixedMasonryGrid';
 
 interface VirtualizedGalleryProps {
     onImageDelete: (id: string) => void;
@@ -39,7 +39,6 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
     const containerRef = useRef<HTMLDivElement>(null);
     const observerRef = useRef<IntersectionObserver | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
-
     // Configuration
     const ITEMS_PER_PAGE = 20; // Load 20 items at a time
 
@@ -123,7 +122,7 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
 
     // Memoized renderer
     const renderer = useMemo(() => {
-        const imageRenderer = createImageRenderer(onImageDelete, onImageEdit);
+        const imageRenderer = createVirtualizedImageRenderer(onImageDelete, onImageEdit);
 
         return (props: MasonryItemRendererProps) => {
             const item = props.item as GalleryItem;
@@ -182,11 +181,13 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
 
     return (
         <div ref={containerRef} className="w-full">
-            <VMasonryGrid
+            <FixedMasonryGrid
                 items={masonryItems}
                 renderer={renderer}
-                maxItemSize={350}
+                columnWidth={350}
                 gap={22}
+                overscan={5}
+                bufferSize={200}
                 className="w-full"
             />
 
