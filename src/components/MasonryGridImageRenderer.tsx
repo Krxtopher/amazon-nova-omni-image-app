@@ -95,7 +95,7 @@ export function MasonryImageRenderer({
                     {item.prompt && (
                         <div className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay">
                             <div
-                                className="text-white text-center text-sm leading-relaxed max-w-full overflow-hidden"
+                                className="text-white text-center text-sm leading-relaxed max-w-full overflow-hidden select-none"
                                 style={{
                                     display: '-webkit-box',
                                     WebkitLineClamp: generatingLineClamp,
@@ -143,9 +143,6 @@ export function MasonryImageRenderer({
                         onClick={() => navigate(`/image/${item.id}`)}
                     >
                         <MagicalImagePlaceholder className="absolute inset-0" variant="basic" />
-                        <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
-                            <div className="text-muted-foreground text-xs opacity-70">Loading...</div>
-                        </div>
                     </div>
                 );
             }
@@ -169,9 +166,7 @@ export function MasonryImageRenderer({
                     />
                     {/* Loading placeholder that shows while fading in */}
                     {!shouldFadeIn && (
-                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
-                            <div className="text-muted-foreground text-xs opacity-50">Loading...</div>
-                        </div>
+                        <div className="absolute inset-0 bg-muted/30"></div>
                     )}
                     {/* Vignette overlay - fades in on hover */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-in-out pointer-events-none"
@@ -188,20 +183,22 @@ export function MasonryImageRenderer({
 
     return (
         <div
-            className="relative group rounded-lg overflow-hidden bg-muted w-full h-full"
+            className={`relative rounded-lg overflow-hidden bg-muted w-full h-full ${item.status === 'complete' ? 'group' : ''}`}
             style={{
                 boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.3)'
             }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={() => item.status === 'complete' && setIsHovered(true)}
+            onMouseLeave={() => item.status === 'complete' && setIsHovered(false)}
         >
-            {/* Inner border overlay */}
-            <div
-                className="absolute inset-0 pointer-events-none rounded-lg transition-all duration-200 z-30"
-                style={{
-                    boxShadow: isHovered ? 'inset 0 0 0 3px white' : 'inset 0 0 0 0px white'
-                }}
-            />
+            {/* Inner border overlay - only for complete images */}
+            {item.status === 'complete' && (
+                <div
+                    className="absolute inset-0 pointer-events-none rounded-lg transition-all duration-200 z-30"
+                    style={{
+                        boxShadow: isHovered ? 'inset 0 0 0 3px white' : 'inset 0 0 0 0px white'
+                    }}
+                />
+            )}
             {renderContent()}
 
             {/* Action buttons - shown on hover for complete images */}
