@@ -480,10 +480,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             >
                 {/* Main layout: Left thumbnail column + Right content column */}
                 <div className="flex items-stretch gap-3 p-2">
-                    {/* Left column - Thumbnail or upload button (spans full height) */}
-                    <div className="shrink-0 flex items-start justify-center" style={{ width: '72px' }}>
-                        {editSource ? (
-                            /* Thumbnail preview (if image uploaded) */
+                    {/* Left column - Thumbnail (only when image is selected) */}
+                    {editSource && (
+                        <div className="shrink-0 flex items-start justify-center" style={{ width: '72px' }}>
+                            {/* Thumbnail preview (if image uploaded) */}
                             <div className="relative group">
                                 <div className="relative">
                                     <img
@@ -508,26 +508,27 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                     <X className="h-3 w-3" />
                                 </Button>
                             </div>
-                        ) : (
-                            /* Paper clip button - only show when no edit source is selected */
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleUploadClick}
-                                className="shrink-0"
-                                style={{ width: '72px', height: '72px' }}
-                                aria-label="Upload image to edit"
-                                title="Upload image to edit"
-                            >
-                                <Plus className="h-6 w-6" />
-                            </Button>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Right column - Text input and aspect ratio selector in column layout */}
                     <div className="flex-1 flex flex-col">
-                        {/* Top row - Text input and send button */}
+                        {/* Top row - Upload button, text input and send button */}
                         <div className="flex items-start gap-1 mb-2">
+                            {/* Upload button - only show when no edit source is selected */}
+                            {!editSource && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleUploadClick}
+                                    className="shrink-0 h-9 w-9"
+                                    aria-label="Upload image to edit"
+                                    title="Upload image to edit"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            )}
+
                             {/* Text Input */}
                             <AutoExpandingTextarea
                                 ref={textareaRef}
