@@ -478,91 +478,98 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     boxShadow: '0 30px 80px rgba(0, 0, 0, 0.15)'
                 }}
             >
-                {/* Top row with thumbnail, text input, and send button */}
-                <div className="flex items-center gap-1 p-2">
-                    {/* Thumbnail preview (if image uploaded) */}
-                    {editSource && (
-                        <div className="relative shrink-0 group">
-                            <div className="relative">
-                                <img
-                                    src={editSource.url}
-                                    alt="Edit source"
-                                    className="w-9 h-9 object-cover rounded border-2 border-primary/50"
-                                />
-                                {/* Selected indicator */}
-                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border border-background flex items-center justify-center">
-                                    <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
+                {/* Main layout: Left thumbnail column + Right content column */}
+                <div className="flex items-stretch gap-3 p-2">
+                    {/* Left column - Thumbnail or upload button (spans full height) */}
+                    <div className="shrink-0 flex items-start justify-center" style={{ width: '72px' }}>
+                        {editSource ? (
+                            /* Thumbnail preview (if image uploaded) */
+                            <div className="relative group">
+                                <div className="relative">
+                                    <img
+                                        src={editSource.url}
+                                        alt="Edit source"
+                                        className="object-cover rounded border-2 border-primary/50"
+                                        style={{ width: '72px', height: '72px' }}
+                                    />
+                                    {/* Selected indicator */}
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border border-background flex items-center justify-center">
+                                        <div className="w-2 h-2 bg-background rounded-full"></div>
+                                    </div>
                                 </div>
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
+                                    onClick={handleClearEditSource}
+                                    aria-label="Remove edit source"
+                                    title="Remove edit source"
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
                             </div>
+                        ) : (
+                            /* Paper clip button - only show when no edit source is selected */
                             <Button
-                                variant="destructive"
+                                variant="ghost"
                                 size="icon"
-                                className="absolute -top-1 -right-1 h-4 w-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
-                                onClick={handleClearEditSource}
-                                aria-label="Remove edit source"
-                                title="Remove edit source"
+                                onClick={handleUploadClick}
+                                className="shrink-0"
+                                style={{ width: '72px', height: '72px' }}
+                                aria-label="Upload image to edit"
+                                title="Upload image to edit"
                             >
-                                <X className="h-3 w-3" />
+                                <Plus className="h-6 w-6" />
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* Right column - Text input and aspect ratio selector in column layout */}
+                    <div className="flex-1 flex flex-col">
+                        {/* Top row - Text input and send button */}
+                        <div className="flex items-start gap-1 mb-2">
+                            {/* Text Input */}
+                            <AutoExpandingTextarea
+                                ref={textareaRef}
+                                id="prompt-input"
+                                placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
+                                value={prompt}
+                                onChange={(e) => {
+                                    setPrompt(e.target.value);
+                                    if (validationError) {
+                                        setValidationError(null);
+                                    }
+                                }}
+                                onKeyDown={handleKeyDown}
+                                className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200/60 placeholder:italic"
+                                aria-label="Image generation prompt"
+                                aria-invalid={!!validationError}
+                                aria-describedby={validationError ? 'prompt-error' : undefined}
+                            />
+
+                            {/* Send Button */}
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={!prompt.trim()}
+                                size="icon"
+                                className="shrink-0 h-9 w-9"
+                                aria-label="Generate image"
+                            >
+                                <Send className="h-4 w-4" />
                             </Button>
                         </div>
-                    )}
 
-                    {/* Paper clip button - only show when no edit source is selected */}
-                    {!editSource && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleUploadClick}
-                            className="h-9 w-9 shrink-0"
-                            aria-label="Upload image to edit"
-                            title="Upload image to edit"
-                        >
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                    )}
-
-                    {/* Text Input */}
-                    <AutoExpandingTextarea
-                        ref={textareaRef}
-                        id="prompt-input"
-                        placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
-                        value={prompt}
-                        onChange={(e) => {
-                            setPrompt(e.target.value);
-                            if (validationError) {
-                                setValidationError(null);
-                            }
-                        }}
-                        onKeyDown={handleKeyDown}
-                        className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200/60 placeholder:italic"
-                        aria-label="Image generation prompt"
-                        aria-invalid={!!validationError}
-                        aria-describedby={validationError ? 'prompt-error' : undefined}
-                    />
-
-                    {/* Send Button */}
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={!prompt.trim()}
-                        size="icon"
-                        className="shrink-0 h-9 w-9"
-                        aria-label="Generate image"
-                    >
-                        <Send className="h-4 w-4" />
-                    </Button>
-
-
-                </div>
-
-                {/* Bottom row with aspect ratio selector */}
-                <div className="flex items-center gap-2 px-2 pb-2 relative justify-center">
-                    <AspectRatioSelector
-                        selectedAspectRatio={selectedAspectRatio}
-                        onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
-                        disabled={!!editSource}
-                        isExpanded={aspectRatioExpanded}
-                        onExpandedChange={setAspectRatioExpanded}
-                    />
+                        {/* Bottom row - Aspect ratio selector */}
+                        <div className="flex items-center gap-2 relative justify-center">
+                            <AspectRatioSelector
+                                selectedAspectRatio={selectedAspectRatio}
+                                onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
+                                disabled={!!editSource}
+                                isExpanded={aspectRatioExpanded}
+                                onExpandedChange={setAspectRatioExpanded}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Expanded aspect ratio tray - integrated within the input bar */}
