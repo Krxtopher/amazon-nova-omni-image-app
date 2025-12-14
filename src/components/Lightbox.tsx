@@ -13,6 +13,7 @@ export function Lightbox() {
     const navigate = useNavigate();
     const { images } = useImageStore();
     const [isCopied, setIsCopied] = useState(false);
+    const [shouldFadeIn, setShouldFadeIn] = useState(false);
 
     // Find the image by ID
     const image = images.find((img) => img.id === imageId);
@@ -66,6 +67,16 @@ export function Lightbox() {
             }
         }
     };
+
+    // Reset and trigger fade-in when image changes
+    useEffect(() => {
+        if (image?.url) {
+            setShouldFadeIn(false);
+            // Longer delay to ensure the opacity-0 class is applied first and visible
+            const timer = setTimeout(() => setShouldFadeIn(true), 200);
+            return () => clearTimeout(timer);
+        }
+    }, [image?.url]);
 
     const handleDownload = () => {
         if (!image?.url) return;
@@ -195,13 +206,25 @@ export function Lightbox() {
                     <img
                         src={image.url}
                         alt={image.prompt}
-                        className="max-w-full max-h-full object-contain"
+                        className={`max-w-full max-h-full object-contain transition-all duration-1000 ease-out ${shouldFadeIn ? 'opacity-100' : 'opacity-0'}`}
                         style={{
                             maxHeight: 'calc(100vh - 2rem)',
                             maxWidth: 'calc(100vw - 22rem)', // Account for sidebar width
                         }}
                         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on image
+                        onLoad={() => {
+                            // Ensure fade-in happens when image loads
+                            if (!shouldFadeIn) {
+                                setTimeout(() => setShouldFadeIn(true), 50);
+                            }
+                        }}
                     />
+                    {/* Loading placeholder that shows while fading in */}
+                    {!shouldFadeIn && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                            <div className="text-white/70 text-sm animate-pulse">Loading image...</div>
+                        </div>
+                    )}
                 </div>
             </div>
 

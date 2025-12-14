@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage } from '../types';
 import type { MasonryItemRendererProps } from './MasonryGrid';
@@ -31,10 +31,23 @@ export function MasonryImageRenderer({
     const [isHovered, setIsHovered] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
+    const [shouldFadeIn, setShouldFadeIn] = useState(false);
 
     const handleImageError = () => {
         setImageError(true);
     };
+
+    // Reset and trigger fade-in when item URL changes or becomes visible
+    useEffect(() => {
+        if (item.status === 'complete' && item.url) {
+            setShouldFadeIn(false);
+            if (isVisible) {
+                // Longer delay to ensure the opacity-0 class is applied first and visible
+                const timer = setTimeout(() => setShouldFadeIn(true), 200);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [item.url, isVisible, item.status]);
 
     const handleCopyPrompt = async () => {
         if (item.prompt) {
@@ -102,11 +115,24 @@ export function MasonryImageRenderer({
                     <img
                         src={item.url}
                         alt={item.prompt}
-                        className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-107 cursor-pointer"
+                        className={`w-full h-full object-cover transition-all duration-1000 ease-out group-hover:scale-107 cursor-pointer ${shouldFadeIn ? 'opacity-100' : 'opacity-0'
+                            }`}
                         onError={handleImageError}
                         loading="eager"
                         onClick={() => navigate(`/image/${item.id}`)}
+                        onLoad={() => {
+                            // Ensure fade-in happens when image loads
+                            if (isVisible && !shouldFadeIn) {
+                                setTimeout(() => setShouldFadeIn(true), 50);
+                            }
+                        }}
                     />
+                    {/* Loading placeholder that shows while fading in */}
+                    {!shouldFadeIn && (
+                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
+                            <div className="text-muted-foreground text-xs opacity-50">Loading...</div>
+                        </div>
+                    )}
                     {/* Vignette overlay - fades in on hover */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-in-out pointer-events-none"
                         style={{
