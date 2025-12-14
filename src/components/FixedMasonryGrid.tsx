@@ -70,6 +70,9 @@ export function FixedMasonryGrid({
         let element = containerRef.current.parentElement;
         while (element) {
             const styles = window.getComputedStyle(element);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Checking element:', element.tagName, element.className, 'overflowY:', styles.overflowY);
+            }
             if (styles.overflowY === 'auto' || styles.overflowY === 'scroll') {
                 setScrollContainer(element);
                 break;
@@ -80,6 +83,25 @@ export function FixedMasonryGrid({
         // Fallback to window if no scroll container found
         if (!element) {
             setScrollContainer(document.documentElement);
+        }
+
+        // Debug logging
+        if (process.env.NODE_ENV === 'development') {
+            const detectedContainer = element || document.documentElement;
+            console.log('=== SCROLL CONTAINER DETECTION ===');
+            console.log('Scroll container detected:', detectedContainer);
+            console.log('Scroll container tag:', detectedContainer.tagName);
+            console.log('Scroll container clientHeight:', detectedContainer.clientHeight);
+            console.log('Scroll container scrollHeight:', detectedContainer.scrollHeight);
+            console.log('Window innerHeight:', window.innerHeight);
+            console.log('Is document.documentElement?', detectedContainer === document.documentElement);
+
+            // Check if we found a proper scroll container
+            if (element) {
+                console.log('Found explicit scroll container:', element.tagName, element.className);
+            } else {
+                console.log('No explicit scroll container found, using document.documentElement');
+            }
         }
     }, []);
 
@@ -146,30 +168,82 @@ export function FixedMasonryGrid({
         const updateViewport = () => {
             if (!scrollContainer || !containerRef.current) return;
 
-            const containerRect = containerRef.current.getBoundingClientRect();
-            const scrollerRect = scrollContainer.getBoundingClientRect();
+            // Calculate scroll position - try both scroll container and window
+            let currentScrollTop = scrollContainer.scrollTop;
 
-            // Calculate relative scroll position
-            const relativeScrollTop = Math.max(0, scrollerRect.top - containerRect.top + scrollContainer.scrollTop);
-            const viewportHeight = scrollContainer.clientHeight;
+            // If the scroll container isn't scrolling, check if the window is scrolling
+            if (currentScrollTop === 0 && scrollContainer !== document.documentElement) {
+                currentScrollTop = window.scrollY;
+            }
 
-            setScrollTop(relativeScrollTop);
-            setViewportHeight(viewportHeight);
+            // Use the actual visible height of the scroll container
+            // The main element is expanding with content, so we need to calculate the actual viewport
+            let calculatedViewportHeight;
+            if (scrollContainer === document.documentElement) {
+                calculatedViewportHeight = window.innerHeight;
+            } else {
+                // For flex containers that expand with content, we need to calculate the constrained height
+                // Get the container's position relative to the viewport
+                const containerRect = scrollContainer.getBoundingClientRect();
+                const availableHeight = window.innerHeight - containerRect.top;
+                calculatedViewportHeight = Math.max(0, availableHeight);
+            }
+
+            // Debug logging
+            if (process.env.NODE_ENV === 'development') {
+                console.log('updateViewport called');
+                console.log('scrollContainer:', scrollContainer);
+                console.log('scrollContainer === document.documentElement:', scrollContainer === document.documentElement);
+                console.log('scrollContainer.tagName:', scrollContainer.tagName);
+                console.log('scrollContainer.clientHeight (content height):', scrollContainer.clientHeight);
+                console.log('scrollContainer.scrollTop:', scrollContainer.scrollTop);
+                console.log('window.scrollY:', window.scrollY);
+                console.log('currentScrollTop (final):', currentScrollTop);
+                console.log('window.innerHeight:', window.innerHeight);
+                if (scrollContainer !== document.documentElement) {
+                    const containerRect = scrollContainer.getBoundingClientRect();
+                    console.log('containerRect.top:', containerRect.top);
+                    console.log('availableHeight (window.innerHeight - containerRect.top):', window.innerHeight - containerRect.top);
+                }
+                console.log('calculatedViewportHeight:', calculatedViewportHeight);
+            }
+
+            setScrollTop(currentScrollTop);
+            setViewportHeight(calculatedViewportHeight);
         };
 
-        scrollContainer.addEventListener('scroll', updateViewport, { passive: true });
+        const scrollHandler = () => {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('SCROLL EVENT DETECTED on:', scrollContainer.tagName, 'scrollTop:', scrollContainer.scrollTop);
+            }
+            updateViewport();
+        };
+
+        scrollContainer.addEventListener('scroll', scrollHandler, { passive: true });
+
+        // Also listen to window scroll as a fallback
+        const windowScrollHandler = () => {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('WINDOW SCROLL EVENT DETECTED, window.scrollY:', window.scrollY);
+            }
+            updateViewport();
+        };
+        window.addEventListener('scroll', windowScrollHandler, { passive: true });
 
         // Also listen for resize
         const resizeObserver = new ResizeObserver(updateViewport);
         resizeObserver.observe(scrollContainer);
 
-        // Initial update
+        // Initial update - try multiple times to ensure it works
         setTimeout(updateViewport, 0);
+        setTimeout(updateViewport, 100);
+        setTimeout(updateViewport, 500);
 
         window.addEventListener('resize', updateViewport);
 
         return () => {
-            scrollContainer.removeEventListener('scroll', updateViewport);
+            scrollContainer.removeEventListener('scroll', scrollHandler);
+            window.removeEventListener('scroll', windowScrollHandler);
             resizeObserver.disconnect();
             window.removeEventListener('resize', updateViewport);
         };
@@ -262,6 +336,8 @@ export function FixedMasonryGrid({
                     <div>Total Height: {totalHeight.toFixed(0)}</div>
                     <div>Container Width: {containerWidth}</div>
                     <div>Scroll Container: {scrollContainer?.tagName || 'None'}</div>
+                    <div>Window Height: {window.innerHeight}</div>
+                    <div>Doc Client Height: {document.documentElement.clientHeight}</div>
                 </div>
             )}
         </div>
