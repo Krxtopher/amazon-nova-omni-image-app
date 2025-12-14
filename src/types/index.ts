@@ -11,6 +11,8 @@ export type {
     GenerationRequest,
     GenerationResponse,
     ConverseRequestParams,
+    ImageMetadata,
+    ImageData,
 } from './image';
 
 export type {

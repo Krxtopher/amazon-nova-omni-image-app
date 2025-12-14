@@ -16,11 +16,11 @@ interface SimpleVirtualizedGalleryProps {
  * Type guards
  */
 function isGeneratedImage(item: GalleryItem): item is GeneratedImage {
-    return 'url' in item && 'width' in item && 'height' in item;
+    return 'width' in item && 'height' in item && 'aspectRatio' in item;
 }
 
 function isGeneratedText(item: GalleryItem): item is GeneratedText {
-    return 'content' in item && !('url' in item);
+    return 'content' in item && !('width' in item);
 }
 
 /**
@@ -37,6 +37,9 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
     // Memoized sorted items (only sort once when data changes)
     const sortedItems = useMemo(() => {
         const allItems: GalleryItem[] = [...images, ...textItems];
+
+
+
         return allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }, [images, textItems]);
 

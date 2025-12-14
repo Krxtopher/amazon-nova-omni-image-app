@@ -7,12 +7,14 @@ import { sqliteService } from '../services/sqliteService';
  */
 interface ImageStoreState {
     // State
-    images: GeneratedImage[];
+    images: GeneratedImage[]; // Metadata only, URLs loaded on demand
     textItems: GeneratedText[];
     selectedAspectRatio: AspectRatio;
     editSource: EditSource | null;
     isGenerating: boolean;
     isLoading: boolean;
+    // Cache for loaded image URLs
+    imageDataCache: Map<string, string>;
 }
 
 /**
@@ -29,6 +31,7 @@ interface ImageStoreActions {
     setEditSource: (source: EditSource | null) => void;
     clearEditSource: () => void;
     loadImages: () => Promise<void>;
+    loadImageData: (id: string) => Promise<string | null>; // Load image URL on demand
     getAllItems: () => GalleryItem[];
     getItemsPaginated: (offset: number, limit: number) => Promise<GalleryItem[]>;
     getTotalItemCount: () => number;
@@ -58,6 +61,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
     editSource: null,
     isGenerating: false,
     isLoading: true,
+    imageDataCache: new Map(),
 
     // Actions
 
@@ -75,9 +79,11 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 console.log(`Cleaned up ${deletedCount} incomplete images from database`);
             }
 
-            // Load only complete images
-            const images = await sqliteService.getAllImages();
-            console.log(`Loaded ${images.length} complete images from database`);
+            // Load only image metadata (not the actual image data)
+            const imageMetadata = await sqliteService.getAllImageMetadata();
+            console.log(`Loaded ${imageMetadata.length} image metadata records from database`);
+
+
 
             // Load text items from localStorage (temporary solution)
             const textItemsJson = localStorage.getItem('textItems');
@@ -91,8 +97,10 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
             const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
 
+
+
             set({
-                images,
+                images: imageMetadata,
                 textItems,
                 selectedAspectRatio: aspectRatio,
                 isLoading: false
@@ -104,14 +112,41 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Load images from the database
+     * Load image metadata from the database
      */
     loadImages: async () => {
         try {
-            const images = await sqliteService.getAllImages();
-            set({ images });
+            const imageMetadata = await sqliteService.getAllImageMetadata();
+            set({ images: imageMetadata });
         } catch (error) {
             console.error('Failed to load images:', error);
+        }
+    },
+
+    /**
+     * Load image data on demand (with caching)
+     */
+    loadImageData: async (id: string): Promise<string | null> => {
+        const state = useImageStore.getState();
+
+        // Check cache first
+        if (state.imageDataCache.has(id)) {
+            return state.imageDataCache.get(id)!;
+        }
+
+        try {
+            const imageData = await sqliteService.getImageData(id);
+            if (imageData) {
+                // Cache the loaded URL
+                set((state) => ({
+                    imageDataCache: new Map(state.imageDataCache).set(id, imageData.url)
+                }));
+                return imageData.url;
+            }
+            return null;
+        } catch (error) {
+            console.error('Failed to load image data:', error);
+            return null;
         }
     },
 
@@ -187,9 +222,14 @@ export const useImageStore = create<ImageStore>()((set) => ({
      */
     deleteImage: async (id: string) => {
         // Update UI immediately for responsive feel
-        set((state) => ({
-            images: state.images.filter((img) => img.id !== id),
-        }));
+        set((state) => {
+            const newCache = new Map(state.imageDataCache);
+            newCache.delete(id); // Remove from cache
+            return {
+                images: state.images.filter((img) => img.id !== id),
+                imageDataCache: newCache,
+            };
+        });
 
         // Persist to database asynchronously (don't block UI)
         sqliteService.deleteImage(id).catch((error) => {
@@ -257,7 +297,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
     /**
      * Get all gallery items (images and text) sorted by creation date (newest first)
      */
-    getAllItems: () => {
+    getAllItems: (): GalleryItem[] => {
         const state = useImageStore.getState();
         const allItems: GalleryItem[] = [...state.images, ...state.textItems];
         return allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -277,7 +317,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
     /**
      * Get total count of all items
      */
-    getTotalItemCount: () => {
+    getTotalItemCount: (): number => {
         const state = useImageStore.getState();
         return state.images.length + state.textItems.length;
     },

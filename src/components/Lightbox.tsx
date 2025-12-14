@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { X, Download, Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { useImageStore } from '../stores/imageStore';
+import { useImageData } from '../hooks/useImageData';
 
 /**
  * Lightbox component for displaying images in fullscreen with details
@@ -17,6 +18,12 @@ export function Lightbox() {
 
     // Find the image by ID
     const image = images.find((img) => img.id === imageId);
+
+    // Load image data for the current image
+    const { imageUrl, isLoading: isLoadingImage } = useImageData(imageId || '');
+
+    // Use loaded URL or fallback to item.url for backward compatibility
+    const displayUrl = imageUrl || image?.url;
 
     // Handle keyboard navigation
     useEffect(() => {
@@ -70,24 +77,24 @@ export function Lightbox() {
 
     // Reset and trigger fade-in when image changes
     useEffect(() => {
-        if (image?.url) {
+        if (displayUrl && !isLoadingImage) {
             setShouldFadeIn(false);
             // Longer delay to ensure the opacity-0 class is applied first and visible
             const timer = setTimeout(() => setShouldFadeIn(true), 200);
             return () => clearTimeout(timer);
         }
-    }, [image?.url]);
+    }, [displayUrl, isLoadingImage]);
 
     const handleDownload = () => {
-        if (!image?.url) return;
+        if (!displayUrl || !image) return;
 
         // Detect file extension from image format
         let extension = 'png'; // default
-        if (image.url.includes('image/jpeg') || image.url.includes('data:image/jpeg')) {
+        if (displayUrl.includes('image/jpeg') || displayUrl.includes('data:image/jpeg')) {
             extension = 'jpg';
-        } else if (image.url.includes('image/gif') || image.url.includes('data:image/gif')) {
+        } else if (displayUrl.includes('image/gif') || displayUrl.includes('data:image/gif')) {
             extension = 'gif';
-        } else if (image.url.includes('image/webp') || image.url.includes('data:image/webp')) {
+        } else if (displayUrl.includes('image/webp') || displayUrl.includes('data:image/webp')) {
             extension = 'webp';
         }
 
@@ -95,7 +102,7 @@ export function Lightbox() {
 
         // Download the image
         const imageLink = document.createElement('a');
-        imageLink.href = image.url;
+        imageLink.href = displayUrl;
         imageLink.download = `${baseFilename}.${extension}`;
         document.body.appendChild(imageLink);
         imageLink.click();
@@ -203,24 +210,30 @@ export function Lightbox() {
                 onClick={handleClose}
             >
                 <div className="relative max-w-full max-h-full">
-                    <img
-                        src={image.url}
-                        alt={image.prompt}
-                        className={`max-w-full max-h-full object-contain transition-all duration-1000 ease-out ${shouldFadeIn ? 'opacity-100' : 'opacity-0'}`}
-                        style={{
-                            maxHeight: 'calc(100vh - 2rem)',
-                            maxWidth: 'calc(100vw - 22rem)', // Account for sidebar width
-                        }}
-                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on image
-                        onLoad={() => {
-                            // Ensure fade-in happens when image loads
-                            if (!shouldFadeIn) {
-                                setTimeout(() => setShouldFadeIn(true), 50);
-                            }
-                        }}
-                    />
+                    {displayUrl && !isLoadingImage ? (
+                        <img
+                            src={displayUrl}
+                            alt={image.prompt}
+                            className={`max-w-full max-h-full object-contain transition-all duration-1000 ease-out ${shouldFadeIn ? 'opacity-100' : 'opacity-0'}`}
+                            style={{
+                                maxHeight: 'calc(100vh - 2rem)',
+                                maxWidth: 'calc(100vw - 22rem)', // Account for sidebar width
+                            }}
+                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on image
+                            onLoad={() => {
+                                // Ensure fade-in happens when image loads
+                                if (!shouldFadeIn) {
+                                    setTimeout(() => setShouldFadeIn(true), 50);
+                                }
+                            }}
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center bg-black/20 backdrop-blur-sm min-w-96 min-h-96">
+                            <div className="text-white/70 text-sm animate-pulse">Loading image...</div>
+                        </div>
+                    )}
                     {/* Loading placeholder that shows while fading in */}
-                    {!shouldFadeIn && (
+                    {displayUrl && !shouldFadeIn && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm">
                             <div className="text-white/70 text-sm animate-pulse">Loading image...</div>
                         </div>

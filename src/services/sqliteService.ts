@@ -1,6 +1,6 @@
 import initSqlJs from 'sql.js';
 import type { Database } from 'sql.js';
-import type { GeneratedImage } from '../types';
+import type { GeneratedImage, ImageMetadata, ImageData } from '../types';
 
 /**
  * SQLite database service for storing generated images
@@ -39,8 +39,8 @@ class SQLiteService {
 
                 if (savedDb) {
                     this.db = new SQL.Database(savedDb);
-                    // Run migrations for existing databases
-                    this.runMigrations();
+                    // Ensure new tables exist first
+                    this.createTables();
                     // Save the migrated database back to IndexedDB
                     await this.saveToIndexedDB();
                 } else {
@@ -64,10 +64,10 @@ class SQLiteService {
     private createTables(): void {
         if (!this.db) return;
 
+        // Separate table for image metadata (loaded immediately)
         this.db.run(`
-            CREATE TABLE IF NOT EXISTS images (
+            CREATE TABLE IF NOT EXISTS image_metadata (
                 id TEXT PRIMARY KEY,
-                url TEXT NOT NULL,
                 prompt TEXT NOT NULL,
                 status TEXT NOT NULL,
                 aspectRatio TEXT NOT NULL,
@@ -79,6 +79,14 @@ class SQLiteService {
             )
         `);
 
+        // Separate table for image data (loaded on demand)
+        this.db.run(`
+            CREATE TABLE IF NOT EXISTS image_data (
+                id TEXT PRIMARY KEY,
+                url TEXT NOT NULL
+            )
+        `);
+
         this.db.run(`
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
@@ -87,61 +95,86 @@ class SQLiteService {
         `);
 
         this.db.run(`
-            CREATE INDEX IF NOT EXISTS idx_images_createdAt ON images(createdAt DESC)
+            CREATE INDEX IF NOT EXISTS idx_image_metadata_createdAt ON image_metadata(createdAt DESC)
         `);
 
-        // Run migrations for existing databases
+        // Run migrations after creating new tables
         this.runMigrations();
     }
 
     /**
-     * Run database migrations
+     * Run database migrations to handle schema changes
      */
     private runMigrations(): void {
         if (!this.db) return;
 
         try {
-            // Ensure the images table exists first
-            this.db.run(`
-                CREATE TABLE IF NOT EXISTS images (
-                    id TEXT PRIMARY KEY,
-                    url TEXT NOT NULL,
-                    prompt TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    aspectRatio TEXT NOT NULL,
-                    width INTEGER NOT NULL,
-                    height INTEGER NOT NULL,
-                    createdAt INTEGER NOT NULL,
-                    error TEXT
-                )
-            `);
+            // Check if old 'images' table exists
+            const tablesResult = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='images'");
+            const hasOldImagesTable = tablesResult.length > 0 && tablesResult[0].values.length > 0;
 
-            // Check if converseParams column exists, if not add it
-            const result = this.db.exec("PRAGMA table_info(images)");
-            if (result.length > 0) {
-                const columns = result[0].values.map(row => row[1] as string);
-                if (!columns.includes('converseParams')) {
-                    console.log('Adding converseParams column to existing database');
-                    this.db.run('ALTER TABLE images ADD COLUMN converseParams TEXT');
-                    console.log('Successfully added converseParams column');
+            console.log('Migration check - old images table exists:', hasOldImagesTable);
+
+            // Debug: Show all tables
+            const allTablesResult = this.db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+            const tableNames = allTablesResult.length > 0 ? allTablesResult[0].values.map(row => row[0]) : [];
+            console.log('All existing tables:', tableNames);
+
+            if (hasOldImagesTable) {
+                console.log('Migrating existing images from old schema to new lazy loading schema');
+
+                // Get all existing images from old table
+                const existingImagesResult = this.db.exec('SELECT * FROM images');
+
+                if (existingImagesResult.length > 0) {
+                    const columns = existingImagesResult[0].columns;
+                    const rows = existingImagesResult[0].values;
+
+                    console.log(`Found ${rows.length} existing images to migrate`);
+
+                    // Migrate each image to new schema
+                    for (const row of rows) {
+                        const imageData: Record<string, any> = {};
+                        columns.forEach((col: string, idx: number) => {
+                            imageData[col] = row[idx];
+                        });
+
+                        // Insert metadata into new table
+                        this.db.run(
+                            `INSERT OR IGNORE INTO image_metadata (id, prompt, status, aspectRatio, width, height, createdAt, error, converseParams)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            [
+                                imageData.id,
+                                imageData.prompt,
+                                imageData.status,
+                                imageData.aspectRatio,
+                                imageData.width,
+                                imageData.height,
+                                imageData.createdAt,
+                                imageData.error || null,
+                                imageData.converseParams || null,
+                            ]
+                        );
+
+                        // Insert image data into new table if URL exists
+                        if (imageData.url) {
+                            this.db.run(
+                                `INSERT OR IGNORE INTO image_data (id, url) VALUES (?, ?)`,
+                                [imageData.id, imageData.url]
+                            );
+                        }
+                    }
+
+                    console.log(`Successfully migrated ${rows.length} images to new schema`);
                 }
+
+                // Drop the old table after successful migration
+                this.db.run('DROP TABLE images');
+                console.log('Dropped old images table after migration');
             }
-
-            // Ensure settings table exists
-            this.db.run(`
-                CREATE TABLE IF NOT EXISTS settings (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
-                )
-            `);
-
-            // Ensure index exists
-            this.db.run(`
-                CREATE INDEX IF NOT EXISTS idx_images_createdAt ON images(createdAt DESC)
-            `);
         } catch (error) {
             console.error('Migration error:', error);
-            throw error;
+            // Don't throw - let the app continue with new schema
         }
     }
 
@@ -224,18 +257,18 @@ class SQLiteService {
     }
 
     /**
-     * Add a new image
+     * Add a new image (metadata and data separately)
      */
     async addImage(image: GeneratedImage): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
+        // Insert metadata
         this.db.run(
-            `INSERT INTO images (id, url, prompt, status, aspectRatio, width, height, createdAt, error, converseParams)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO image_metadata (id, prompt, status, aspectRatio, width, height, createdAt, error, converseParams)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 image.id,
-                image.url,
                 image.prompt,
                 image.status,
                 image.aspectRatio,
@@ -247,72 +280,89 @@ class SQLiteService {
             ]
         );
 
+        // Insert image data if URL is provided
+        if (image.url) {
+            this.db.run(
+                `INSERT INTO image_data (id, url) VALUES (?, ?)`,
+                [image.id, image.url]
+            );
+        }
+
         await this.saveToIndexedDB();
     }
 
     /**
-     * Update an existing image
+     * Update an existing image (metadata and/or data)
      */
     async updateImage(id: string, updates: Partial<GeneratedImage>): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
-        const setClauses: string[] = [];
-        const values: any[] = [];
+        // Update metadata if any metadata fields are provided
+        const metadataFields = ['prompt', 'status', 'aspectRatio', 'width', 'height', 'error', 'converseParams'];
+        const metadataUpdates = Object.keys(updates).filter(key => metadataFields.includes(key));
 
+        if (metadataUpdates.length > 0) {
+            const setClauses: string[] = [];
+            const values: any[] = [];
+
+            if (updates.prompt !== undefined) {
+                setClauses.push('prompt = ?');
+                values.push(updates.prompt);
+            }
+            if (updates.status !== undefined) {
+                setClauses.push('status = ?');
+                values.push(updates.status);
+            }
+            if (updates.aspectRatio !== undefined) {
+                setClauses.push('aspectRatio = ?');
+                values.push(updates.aspectRatio);
+            }
+            if (updates.width !== undefined) {
+                setClauses.push('width = ?');
+                values.push(updates.width);
+            }
+            if (updates.height !== undefined) {
+                setClauses.push('height = ?');
+                values.push(updates.height);
+            }
+            if (updates.error !== undefined) {
+                setClauses.push('error = ?');
+                values.push(updates.error);
+            }
+            if (updates.converseParams !== undefined) {
+                setClauses.push('converseParams = ?');
+                values.push(updates.converseParams ? JSON.stringify(updates.converseParams) : null);
+            }
+
+            values.push(id);
+
+            this.db.run(
+                `UPDATE image_metadata SET ${setClauses.join(', ')} WHERE id = ?`,
+                values
+            );
+        }
+
+        // Update image data if URL is provided
         if (updates.url !== undefined) {
-            setClauses.push('url = ?');
-            values.push(updates.url);
+            this.db.run(
+                `INSERT OR REPLACE INTO image_data (id, url) VALUES (?, ?)`,
+                [id, updates.url]
+            );
         }
-        if (updates.prompt !== undefined) {
-            setClauses.push('prompt = ?');
-            values.push(updates.prompt);
-        }
-        if (updates.status !== undefined) {
-            setClauses.push('status = ?');
-            values.push(updates.status);
-        }
-        if (updates.aspectRatio !== undefined) {
-            setClauses.push('aspectRatio = ?');
-            values.push(updates.aspectRatio);
-        }
-        if (updates.width !== undefined) {
-            setClauses.push('width = ?');
-            values.push(updates.width);
-        }
-        if (updates.height !== undefined) {
-            setClauses.push('height = ?');
-            values.push(updates.height);
-        }
-        if (updates.error !== undefined) {
-            setClauses.push('error = ?');
-            values.push(updates.error);
-        }
-        if (updates.converseParams !== undefined) {
-            setClauses.push('converseParams = ?');
-            values.push(updates.converseParams ? JSON.stringify(updates.converseParams) : null);
-        }
-
-        if (setClauses.length === 0) return;
-
-        values.push(id);
-
-        this.db.run(
-            `UPDATE images SET ${setClauses.join(', ')} WHERE id = ?`,
-            values
-        );
 
         await this.saveToIndexedDB();
     }
 
     /**
-     * Delete an image
+     * Delete an image (both metadata and data)
      */
     async deleteImage(id: string): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
-        this.db.run('DELETE FROM images WHERE id = ?', [id]);
+        this.db.run('DELETE FROM image_metadata WHERE id = ?', [id]);
+        this.db.run('DELETE FROM image_data WHERE id = ?', [id]);
         await this.saveToIndexedDB();
     }
 
@@ -326,7 +376,8 @@ class SQLiteService {
         if (ids.length === 0) return;
 
         const placeholders = ids.map(() => '?').join(',');
-        this.db.run(`DELETE FROM images WHERE id IN (${placeholders})`, ids);
+        this.db.run(`DELETE FROM image_metadata WHERE id IN (${placeholders})`, ids);
+        this.db.run(`DELETE FROM image_data WHERE id IN (${placeholders})`, ids);
         await this.saveToIndexedDB();
     }
 
@@ -341,28 +392,32 @@ class SQLiteService {
 
         // First count how many will be deleted
         const placeholders = statuses.map(() => '?').join(',');
-        const countResult = this.db.exec(`SELECT COUNT(*) FROM images WHERE status IN (${placeholders})`, statuses);
+        const countResult = this.db.exec(`SELECT COUNT(*) FROM image_metadata WHERE status IN (${placeholders})`, statuses);
         const deletedCount = countResult.length > 0 ? countResult[0].values[0][0] as number : 0;
 
         // Then delete them
-        this.db.run(`DELETE FROM images WHERE status IN (${placeholders})`, statuses);
+        this.db.run(`DELETE FROM image_metadata WHERE status IN (${placeholders})`, statuses);
+        this.db.run(`DELETE FROM image_data WHERE id IN (SELECT id FROM image_metadata WHERE status IN (${placeholders}))`, statuses);
+
         await this.saveToIndexedDB();
 
         return deletedCount;
     }
 
     /**
-     * Get all images
+     * Get all image metadata (without image data for performance)
      */
-    async getAllImages(): Promise<GeneratedImage[]> {
+    async getAllImageMetadata(): Promise<ImageMetadata[]> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
-        const result = this.db.exec('SELECT * FROM images ORDER BY createdAt DESC');
+        const result = this.db.exec('SELECT * FROM image_metadata ORDER BY createdAt DESC');
+
+
 
         if (result.length === 0) return [];
 
-        const images: GeneratedImage[] = [];
+        const images: ImageMetadata[] = [];
         const columns = result[0].columns;
         const values = result[0].values;
 
@@ -374,7 +429,6 @@ class SQLiteService {
 
             images.push({
                 id: image.id,
-                url: image.url,
                 prompt: image.prompt,
                 status: image.status,
                 aspectRatio: image.aspectRatio,
@@ -383,6 +437,42 @@ class SQLiteService {
                 createdAt: new Date(image.createdAt),
                 error: image.error || undefined,
                 converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+            });
+        }
+
+        return images;
+    }
+
+    /**
+     * Get image data by ID (loaded on demand)
+     */
+    async getImageData(id: string): Promise<ImageData | null> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        const result = this.db.exec('SELECT * FROM image_data WHERE id = ?', [id]);
+
+        if (result.length === 0 || result[0].values.length === 0) return null;
+
+        const row = result[0].values[0];
+        return {
+            id: row[0] as string,
+            url: row[1] as string,
+        };
+    }
+
+    /**
+     * Get complete image (metadata + data) - for backward compatibility
+     */
+    async getAllImages(): Promise<GeneratedImage[]> {
+        const metadata = await this.getAllImageMetadata();
+        const images: GeneratedImage[] = [];
+
+        for (const meta of metadata) {
+            const imageData = await this.getImageData(meta.id);
+            images.push({
+                ...meta,
+                url: imageData?.url,
             });
         }
 
@@ -425,9 +515,38 @@ class SQLiteService {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
-        this.db.run('DELETE FROM images');
+        this.db.run('DELETE FROM image_metadata');
+        this.db.run('DELETE FROM image_data');
         this.db.run('DELETE FROM settings');
         await this.saveToIndexedDB();
+    }
+
+    /**
+     * Debug method to inspect database contents
+     */
+    async debugDatabase(): Promise<void> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        console.log('=== DATABASE DEBUG ===');
+
+        // Show all tables
+        const tablesResult = this.db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+        const tableNames = tablesResult.length > 0 ? tablesResult[0].values.map(row => row[0]) : [];
+        console.log('Tables:', tableNames);
+
+        // Count records in each table
+        for (const tableName of tableNames) {
+            try {
+                const countResult = this.db.exec(`SELECT COUNT(*) FROM ${tableName}`);
+                const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+                console.log(`${tableName}: ${count} records`);
+            } catch (error) {
+                console.log(`${tableName}: Error counting - ${error}`);
+            }
+        }
+
+        console.log('=== END DEBUG ===');
     }
 }
 

@@ -37,11 +37,10 @@ export interface ConverseRequestParams {
 }
 
 /**
- * Image entry in the gallery
+ * Image metadata (loaded immediately)
  */
-export interface GeneratedImage {
+export interface ImageMetadata {
     id: string;
-    url: string; // Base64 data URL or blob URL
     prompt: string;
     status: ImageStatus;
     aspectRatio: AspectRatio;
@@ -50,6 +49,21 @@ export interface GeneratedImage {
     createdAt: Date;
     error?: string;
     converseParams?: ConverseRequestParams; // Original API request parameters
+}
+
+/**
+ * Image data (loaded on demand)
+ */
+export interface ImageData {
+    id: string;
+    url: string; // Base64 data URL or blob URL
+}
+
+/**
+ * Complete image entry (metadata + data)
+ */
+export interface GeneratedImage extends ImageMetadata {
+    url?: string; // Optional - loaded on demand
 }
 
 /**

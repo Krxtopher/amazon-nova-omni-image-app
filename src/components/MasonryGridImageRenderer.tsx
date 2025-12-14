@@ -5,6 +5,7 @@ import type { MasonryItemRendererProps } from './FixedMasonryGrid';
 import { Button } from './ui/button';
 import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
 import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';
+import { useImageData } from '../hooks/useImageData';
 
 interface ImageMasonryItem extends GeneratedImage {
     // MasonryGrid expects id, width, height which GeneratedImage already has
@@ -45,6 +46,13 @@ export function MasonryImageRenderer({
     const [isCopied, setIsCopied] = useState(false);
     const [shouldFadeIn, setShouldFadeIn] = useState(false);
 
+    // Load image data on demand when visible and status is complete
+    const shouldLoadImage = isVisible && item.status === 'complete';
+    const { imageUrl, isLoading: isLoadingImage } = useImageData(shouldLoadImage ? item.id : '');
+
+    // Use loaded URL or fallback to item.url for backward compatibility
+    const displayUrl = imageUrl || item.url;
+
     // Calculate dynamic line clamps based on actual display height
     const generatingLineClamp = useMemo(() => {
         // For generating state, use the full display height
@@ -61,9 +69,9 @@ export function MasonryImageRenderer({
         setImageError(true);
     };
 
-    // Reset and trigger fade-in when item URL changes or becomes visible
+    // Reset and trigger fade-in when image URL is loaded and becomes visible
     useEffect(() => {
-        if (item.status === 'complete' && item.url) {
+        if (item.status === 'complete' && displayUrl && !isLoadingImage) {
             setShouldFadeIn(false);
             if (isVisible) {
                 // Longer delay to ensure the opacity-0 class is applied first and visible
@@ -71,7 +79,7 @@ export function MasonryImageRenderer({
                 return () => clearTimeout(timer);
             }
         }
-    }, [item.url, isVisible, item.status]);
+    }, [displayUrl, isVisible, item.status, isLoadingImage]);
 
     const handleCopyPrompt = async () => {
         if (item.prompt) {
@@ -133,10 +141,9 @@ export function MasonryImageRenderer({
         }
 
         // Show completed image
-        if (item.status === 'complete' && item.url) {
-            // Only render the actual image when it's visible in the viewport
-            if (!isVisible) {
-                // Show a subtle magical placeholder when not visible to maintain layout
+        if (item.status === 'complete') {
+            // Show loading placeholder while image data is being loaded
+            if (!isVisible || isLoadingImage || !displayUrl) {
                 return (
                     <div
                         className="w-full h-full cursor-pointer relative"
@@ -150,7 +157,7 @@ export function MasonryImageRenderer({
             return (
                 <>
                     <img
-                        src={item.url}
+                        src={displayUrl}
                         alt={item.prompt}
                         className={`w-full h-full object-cover transition-all duration-1000 ease-out group-hover:scale-107 cursor-pointer ${shouldFadeIn ? 'opacity-100' : 'opacity-0'
                             }`}
@@ -220,13 +227,15 @@ export function MasonryImageRenderer({
 
                             const baseFilename = `image-${item.id}`;
 
-                            // Download the image
-                            const imageLink = document.createElement('a');
-                            imageLink.href = item.url!;
-                            imageLink.download = `${baseFilename}.${extension}`;
-                            document.body.appendChild(imageLink);
-                            imageLink.click();
-                            document.body.removeChild(imageLink);
+                            // Download the image using the loaded URL
+                            if (displayUrl) {
+                                const imageLink = document.createElement('a');
+                                imageLink.href = displayUrl;
+                                imageLink.download = `${baseFilename}.${extension}`;
+                                document.body.appendChild(imageLink);
+                                imageLink.click();
+                                document.body.removeChild(imageLink);
+                            }
 
                             // Download the JSON file with Converse API parameters if available
                             if (item.converseParams) {

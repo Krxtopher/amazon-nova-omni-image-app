@@ -15,14 +15,14 @@ interface GalleryGridProps {
  * Type guard to check if an item is a GeneratedImage
  */
 function isGeneratedImage(item: GalleryItem): item is GeneratedImage {
-    return 'url' in item && 'width' in item && 'height' in item;
+    return 'width' in item && 'height' in item && 'aspectRatio' in item;
 }
 
 /**
  * Type guard to check if an item is a GeneratedText
  */
 function isGeneratedText(item: GalleryItem): item is GeneratedText {
-    return 'content' in item && !('url' in item);
+    return 'content' in item && !('width' in item);
 }
 
 /**
