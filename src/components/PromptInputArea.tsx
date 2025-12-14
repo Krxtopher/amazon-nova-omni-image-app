@@ -492,20 +492,16 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                         className="object-cover rounded border-2 border-primary/50"
                                         style={{ width: '72px', height: '72px' }}
                                     />
-                                    {/* Selected indicator */}
-                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border border-background flex items-center justify-center">
-                                        <div className="w-2 h-2 bg-background rounded-full"></div>
-                                    </div>
                                 </div>
                                 <Button
-                                    variant="destructive"
+                                    variant="ghost"
                                     size="icon"
-                                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
+                                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0 bg-white hover:bg-white border border-gray-200"
                                     onClick={handleClearEditSource}
                                     aria-label="Remove edit source"
                                     title="Remove edit source"
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-3 w-3 text-black" />
                                 </Button>
                             </div>
                         </div>
