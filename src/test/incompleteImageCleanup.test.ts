@@ -32,6 +32,16 @@ describe('Incomplete Image Cleanup', () => {
                 createdAt: new Date(),
             },
             {
+                id: 'queued-1',
+                url: 'data:image/png;base64,test6',
+                prompt: 'Test prompt 6',
+                status: 'queued',
+                aspectRatio: '1:1',
+                width: 512,
+                height: 512,
+                createdAt: new Date(),
+            },
+            {
                 id: 'generating-1',
                 url: 'data:image/png;base64,test3',
                 prompt: 'Test prompt 3',
@@ -71,11 +81,11 @@ describe('Incomplete Image Cleanup', () => {
 
         // Verify all images are in database
         const allImages = await sqliteService.getAllImages();
-        expect(allImages).toHaveLength(5);
+        expect(allImages).toHaveLength(6);
 
         // Simulate the cleanup that happens during initialization
-        const deletedCount = await sqliteService.deleteImagesByStatus(['pending', 'generating', 'error']);
-        expect(deletedCount).toBe(3);
+        const deletedCount = await sqliteService.deleteImagesByStatus(['pending', 'queued', 'generating', 'error']);
+        expect(deletedCount).toBe(4);
 
         // Verify only complete images remain
         const remainingImages = await sqliteService.getAllImages();
@@ -109,7 +119,7 @@ describe('Incomplete Image Cleanup', () => {
         await sqliteService.addImage(completeImage);
 
         // Test cleanup - should delete nothing
-        const deletedCount = await sqliteService.deleteImagesByStatus(['pending', 'generating', 'error']);
+        const deletedCount = await sqliteService.deleteImagesByStatus(['pending', 'queued', 'generating', 'error']);
         expect(deletedCount).toBe(0);
 
         // Verify image is still there
