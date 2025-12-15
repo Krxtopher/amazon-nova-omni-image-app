@@ -42,8 +42,7 @@ function createBedrockService(): BedrockImageService {
       accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID || '',
       secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '',
     },
-    systemPrompt: 'If you respond with text instead of an image, ignore any aspect ratio details the user may have included at the end of their prompt. Respond based on the other content of their message.',
-    // systemPrompt: 'Act as an image generation tool. Interpret any prompt the user provides as a request for an image as output.'
+    systemPrompt: 'Act as an image generation tool. Interpret any message the user provides as a request for an image as output.'
   });
 }
 
@@ -53,7 +52,7 @@ function createBedrockService(): BedrockImageService {
  */
 function AppContent() {
   const bedrockService = useBedrockService();
-  const { deleteImage, deleteTextItem, setEditSource, initialize, isLoading } = useImageStore();
+  const { deleteImage, setEditSource, initialize, isLoading } = useImageStore();
 
   const [activeRequests, setActiveRequests] = useState(0);
 
@@ -94,15 +93,7 @@ function AppContent() {
     });
   };
 
-  /**
-   * Handle text item deletion
-   */
-  const handleTextDelete = async (id: string) => {
-    deleteTextItem(id);
-    toast.success('Text deleted', {
-      duration: 2000,
-    });
-  };
+
 
   /**
    * Handle image edit
@@ -187,7 +178,7 @@ function AppContent() {
                 <section aria-label="Generated images gallery" className="px-4 pt-40 pb-8">
                   <SimpleVirtualizedGallery
                     onImageDelete={handleImageDelete}
-                    onTextDelete={handleTextDelete}
+                    onTextDelete={() => { }} // No-op since we no longer use text items
                     onImageEdit={handleImageEdit}
                   />
                 </section>

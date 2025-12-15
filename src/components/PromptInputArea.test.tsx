@@ -347,15 +347,21 @@ describe('PromptInputArea - Submit Handler', () => {
             );
         });
 
-        // Wait for text item to be added and placeholder to be removed
+        // Wait for placeholder to be removed and modal to be shown
         await waitFor(() => {
-            expect(mockAddTextItem).toHaveBeenCalledWith(expect.objectContaining({
-                content: 'This is a text response from the model',
-                prompt: 'A beautiful sunset',
-                status: 'complete',
-            }));
             expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
         });
+
+        // Verify text modal is shown
+        expect(screen.getByText('Unable to Generate Image')).toBeInTheDocument();
+        expect(screen.getByText(/I'm sorry. I'm having trouble interpreting/)).toBeInTheDocument();
+
+        // Check that the prompt appears in the modal (not just the textarea)
+        const modalPrompts = screen.getAllByText('A beautiful sunset');
+        expect(modalPrompts.length).toBeGreaterThan(1); // Should appear in both textarea and modal
+
+        // Verify text item was NOT added to store
+        expect(mockAddTextItem).not.toHaveBeenCalled();
 
         // Verify placeholder was not updated (it was deleted instead)
         expect(mockUpdateImage).not.toHaveBeenCalled();
@@ -408,14 +414,20 @@ describe('PromptInputArea - Submit Handler', () => {
         const submitButton = screen.getByLabelText(/generate image/i);
         await user.click(submitButton);
 
-        // Wait for text item to be added
+        // Wait for placeholder to be removed and modal to be shown
         await waitFor(() => {
-            expect(mockAddTextItem).toHaveBeenCalledWith(expect.objectContaining({
-                content: 'This is a text response from the model',
-                prompt: 'Make it more colorful',
-                status: 'complete',
-            }));
+            expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
         });
+
+        // Verify text modal is shown
+        expect(screen.getByText('Unable to Generate Image')).toBeInTheDocument();
+
+        // Check that the prompt appears in the modal (not just the textarea)
+        const modalPrompts = screen.getAllByText('Make it more colorful');
+        expect(modalPrompts.length).toBeGreaterThan(1); // Should appear in both textarea and modal
+
+        // Verify text item was NOT added to store
+        expect(mockAddTextItem).not.toHaveBeenCalled();
 
         // Verify edit source was NOT cleared after text response
         expect(mockClearEditSource).not.toHaveBeenCalled();

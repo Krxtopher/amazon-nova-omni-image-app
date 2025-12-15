@@ -3,9 +3,10 @@ import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
-import type { AspectRatio, EditSource, GeneratedImage, GeneratedText } from '@/types';
+import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
+import { TextResponseModal } from './TextResponseModal';
 
 /**
  * Props for PromptInputArea component
@@ -69,6 +70,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const [fileError, setFileError] = useState<string | null>(null);
     const [activeRequests, setActiveRequests] = useState(0);
     const [aspectRatioExpanded, setAspectRatioExpanded] = useState(false);
+    const [showTextResponseModal, setShowTextResponseModal] = useState(false);
+    const [textResponsePrompt, setTextResponsePrompt] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputBarRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<any>(null);
@@ -80,7 +83,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         setEditSource,
         clearEditSource,
         addImage,
-        addTextItem,
         updateImage,
         deleteImage,
     } = useImageStore();
@@ -194,20 +196,12 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
             // Handle the response based on type
             if (response.type === 'text') {
-                // Create text item for the gallery FIRST
-                const textItem: GeneratedText = {
-                    id: crypto.randomUUID(),
-                    content: response.text,
-                    prompt: prompt,
-                    status: 'complete',
-                    createdAt: new Date(),
-                    converseParams: response.converseParams,
-                };
-
-                addTextItem(textItem);
-
-                // Then remove placeholder
+                // Remove placeholder image
                 deleteImage(placeholderId);
+
+                // Show modal with helpful message and original prompt
+                setTextResponsePrompt(prompt);
+                setShowTextResponseModal(true);
 
                 // Clear validation error
                 setValidationError(null);
@@ -614,6 +608,13 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     </div>
                 )}
             </div>
+
+            {/* Text Response Modal */}
+            <TextResponseModal
+                isOpen={showTextResponseModal}
+                onClose={() => setShowTextResponseModal(false)}
+                originalPrompt={textResponsePrompt}
+            />
         </div>
     );
 }

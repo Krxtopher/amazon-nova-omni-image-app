@@ -9,13 +9,13 @@ describe('TextResponseModal', () => {
             <TextResponseModal
                 isOpen={true}
                 onClose={vi.fn()}
-                content="This is a test text response"
+                originalPrompt="Create a beautiful sunset"
             />
         );
 
-        expect(screen.getByText('Model Response')).toBeInTheDocument();
-        expect(screen.getByText('The AI model generated a text response instead of an image.')).toBeInTheDocument();
-        expect(screen.getByText('This is a test text response')).toBeInTheDocument();
+        expect(screen.getByText('Unable to Generate Image')).toBeInTheDocument();
+        expect(screen.getByText(/I'm sorry. I'm having trouble interpreting/)).toBeInTheDocument();
+        expect(screen.getByText('Create a beautiful sunset')).toBeInTheDocument();
     });
 
     it('does not render when closed', () => {
@@ -23,11 +23,11 @@ describe('TextResponseModal', () => {
             <TextResponseModal
                 isOpen={false}
                 onClose={vi.fn()}
-                content="This is a test text response"
+                originalPrompt="Create a beautiful sunset"
             />
         );
 
-        expect(screen.queryByText('Model Response')).not.toBeInTheDocument();
+        expect(screen.queryByText('Unable to Generate Image')).not.toBeInTheDocument();
     });
 
     it('calls onClose when dialog is closed', async () => {
@@ -38,7 +38,7 @@ describe('TextResponseModal', () => {
             <TextResponseModal
                 isOpen={true}
                 onClose={onClose}
-                content="This is a test text response"
+                originalPrompt="Create a beautiful sunset"
             />
         );
 
@@ -50,19 +50,49 @@ describe('TextResponseModal', () => {
     });
 
     it('displays multi-line content correctly', () => {
-        const multiLineContent = 'Line 1\nLine 2\nLine 3';
+        const multiLinePrompt = 'Line 1\nLine 2\nLine 3';
 
         render(
             <TextResponseModal
                 isOpen={true}
                 onClose={vi.fn()}
-                content={multiLineContent}
+                originalPrompt={multiLinePrompt}
             />
         );
 
-        // Check that the content is present (using a function matcher to handle whitespace)
-        expect(screen.getByText((_content, element) => {
-            return element?.textContent === multiLineContent;
-        })).toBeInTheDocument();
+        // Check that each line is displayed
+        expect(screen.getByText(/Line 1/)).toBeInTheDocument();
+        expect(screen.getByText(/Line 2/)).toBeInTheDocument();
+        expect(screen.getByText(/Line 3/)).toBeInTheDocument();
+    });
+
+    it('truncates long prompts correctly', () => {
+        const longPrompt = 'This is a very long prompt that should be truncated because it exceeds the maximum length limit that we have set for displaying prompts in the modal dialog';
+
+        render(
+            <TextResponseModal
+                isOpen={true}
+                onClose={vi.fn()}
+                originalPrompt={longPrompt}
+            />
+        );
+
+        // Check that the prompt is truncated with ellipsis
+        const displayedText = screen.getByText(/This is a very long prompt/);
+        expect(displayedText.textContent).toContain('...');
+        expect(displayedText.textContent!.length).toBeLessThan(longPrompt.length);
+    });
+
+    it('handles empty prompt gracefully', () => {
+        render(
+            <TextResponseModal
+                isOpen={true}
+                onClose={vi.fn()}
+                originalPrompt=""
+            />
+        );
+
+        expect(screen.getByText('Unable to Generate Image')).toBeInTheDocument();
+        expect(screen.getByText(/I'm sorry. I'm having trouble interpreting/)).toBeInTheDocument();
     });
 });
