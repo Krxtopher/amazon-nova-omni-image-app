@@ -23,10 +23,10 @@ interface ImageStoreState {
 interface ImageStoreActions {
     // Actions
     addImage: (image: GeneratedImage) => Promise<void>;
-    addTextItem: (textItem: GeneratedText) => Promise<void>;
+    addTextItem: (textItem: GeneratedText) => void;
     updateImage: (id: string, updates: Partial<GeneratedImage>) => Promise<void>;
     deleteImage: (id: string) => Promise<void>;
-    deleteTextItem: (id: string) => Promise<void>;
+    deleteTextItem: (id: string) => void;
     setAspectRatio: (ratio: AspectRatio) => Promise<void>;
     setEditSource: (source: EditSource | null) => void;
     clearEditSource: () => void;
@@ -175,7 +175,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * New text items are added at the beginning of the array (newest first)
      * UI update is immediate, localStorage persistence happens asynchronously
      */
-    addTextItem: async (textItem: GeneratedText) => {
+    addTextItem: (textItem: GeneratedText) => {
         // Update UI immediately for responsive feel
         set((state) => ({
             textItems: [textItem, ...state.textItems],
@@ -183,9 +183,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
 
         // Persist to localStorage asynchronously (don't block UI)
         try {
-            const existingTextItems = JSON.parse(localStorage.getItem('textItems') || '[]');
-            const updatedTextItems = [textItem, ...existingTextItems];
-            localStorage.setItem('textItems', JSON.stringify(updatedTextItems));
+            const currentState = useImageStore.getState();
+            localStorage.setItem('textItems', JSON.stringify(currentState.textItems));
         } catch (error) {
             console.error('Failed to persist text item to localStorage:', error);
             // In a production app, you might want to show a toast notification
@@ -243,7 +242,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Delete a text item from the gallery by ID
      * UI update is immediate, localStorage persistence happens asynchronously
      */
-    deleteTextItem: async (id: string) => {
+    deleteTextItem: (id: string) => {
         // Update UI immediately for responsive feel
         set((state) => ({
             textItems: state.textItems.filter((item) => item.id !== id),
@@ -251,9 +250,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
 
         // Persist to localStorage asynchronously (don't block UI)
         try {
-            const existingTextItems = JSON.parse(localStorage.getItem('textItems') || '[]');
-            const updatedTextItems = existingTextItems.filter((item: GeneratedText) => item.id !== id);
-            localStorage.setItem('textItems', JSON.stringify(updatedTextItems));
+            const currentState = useImageStore.getState();
+            localStorage.setItem('textItems', JSON.stringify(currentState.textItems));
         } catch (error) {
             console.error('Failed to persist text item deletion to localStorage:', error);
             // In a production app, you might want to show a toast notification

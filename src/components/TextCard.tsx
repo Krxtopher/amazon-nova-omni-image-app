@@ -26,6 +26,7 @@ export function TextCard({
     className = '',
     style
 }: TextCardProps) {
+
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -44,20 +45,24 @@ export function TextCard({
 
     return (
         <div
-            className={`relative bg-card border rounded-lg overflow-hidden group ${className}`}
-            style={style}
+            className={`relative rounded-lg overflow-hidden group ${className}`}
+            style={{
+                ...style,
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.3)'
+            }}
         >
             {/* Square aspect ratio container */}
             <div className="aspect-square relative">
                 {/* Content area with scrolling */}
                 <div className="absolute inset-0 p-4 overflow-y-auto">
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed">
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
                         <ReactMarkdown>{content}</ReactMarkdown>
                     </div>
                 </div>
 
                 {/* Gradient overlay at bottom for fade effect */}
-                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-black/5 to-transparent pointer-events-none" />
 
                 {/* Action buttons overlay */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
@@ -87,7 +92,7 @@ export function TextCard({
             </div>
 
             {/* Footer with prompt and timestamp */}
-            <div className="p-3 border-t bg-muted/50">
+            <div className="p-3 border-t border-black/10 bg-black/10">
                 <p className="text-xs text-muted-foreground truncate mb-1" title={prompt}>
                     {prompt}
                 </p>

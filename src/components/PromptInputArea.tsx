@@ -194,10 +194,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
             // Handle the response based on type
             if (response.type === 'text') {
-                // Model returned text content - remove placeholder and add text item to gallery
-                deleteImage(placeholderId);
-
-                // Create text item for the gallery
+                // Create text item for the gallery FIRST
                 const textItem: GeneratedText = {
                     id: crypto.randomUUID(),
                     content: response.text,
@@ -208,6 +205,9 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 };
 
                 addTextItem(textItem);
+
+                // Then remove placeholder
+                deleteImage(placeholderId);
 
                 // Clear validation error
                 setValidationError(null);

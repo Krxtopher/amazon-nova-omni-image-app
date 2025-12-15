@@ -43,6 +43,7 @@ function createBedrockService(): BedrockImageService {
       secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '',
     },
     systemPrompt: 'If you respond with text instead of an image, ignore any aspect ratio details the user may have included at the end of their prompt. Respond based on the other content of their message.',
+    // systemPrompt: 'Act as an image generation tool. Interpret any prompt the user provides as a request for an image as output.'
   });
 }
 

@@ -19,8 +19,9 @@ function isGeneratedImage(item: GalleryItem): item is GeneratedImage {
     return 'width' in item && 'height' in item && 'aspectRatio' in item;
 }
 
-function isGeneratedText(item: GalleryItem): item is GeneratedText {
-    return 'content' in item && !('width' in item);
+function isGeneratedText(item: any): item is GeneratedText {
+    // Check for the _isTextItem flag we add during transformation, or the original content property
+    return '_isTextItem' in item || ('content' in item && !('aspectRatio' in item));
 }
 
 /**
@@ -72,18 +73,22 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
                 );
             }
 
+
             return <div />;
         };
     }, [onImageDelete, onImageEdit, onTextDelete]);
 
     // Transform text items for masonry grid
     const masonryItems = useMemo(() => {
-        return sortedItems.map(item => {
+        const transformed = sortedItems.map(item => {
             if (isGeneratedText(item)) {
-                return { ...item, width: 350, height: 350 };
+                // Add masonry properties but mark it as a text item
+                return { ...item, width: 350, height: 350, _isTextItem: true };
             }
             return item;
         });
+
+        return transformed;
     }, [sortedItems]);
 
     // Handle empty state
