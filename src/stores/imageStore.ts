@@ -74,14 +74,10 @@ export const useImageStore = create<ImageStore>()((set) => ({
             await sqliteService.init();
 
             // Delete incomplete images from database first
-            const deletedCount = await sqliteService.deleteImagesByStatus(['pending', 'generating', 'error']);
-            if (deletedCount > 0) {
-                console.log(`Cleaned up ${deletedCount} incomplete images from database`);
-            }
+            await sqliteService.deleteImagesByStatus(['pending', 'generating', 'error']);
 
             // Load only image metadata (not the actual image data)
             const imageMetadata = await sqliteService.getAllImageMetadata();
-            console.log(`Loaded ${imageMetadata.length} image metadata records from database`);
 
 
 

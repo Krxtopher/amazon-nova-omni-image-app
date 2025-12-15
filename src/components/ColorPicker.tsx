@@ -61,7 +61,6 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
 
     // Capture the screen to canvas
     const captureScreen = useCallback(async () => {
-        console.log('Starting screen capture...');
 
         // Skip html2canvas for now due to oklch compatibility issues
         // Use a more reliable approach that works with your current setup
@@ -85,7 +84,7 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
                     bgColor = computedBg;
                 }
             } catch (e) {
-                console.warn('Could not get background color, using white');
+                // Could not get background color, using white
             }
 
             // Fill canvas with background
@@ -112,7 +111,6 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
                             );
                         } catch (e) {
                             // Skip images that can't be drawn (CORS issues, etc.)
-                            console.warn('Could not draw image:', e);
                         }
                     }
                 }
@@ -138,7 +136,6 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
             ctx.fillText('Color Picker Active - Move mouse to sample colors', 20, 110);
             ctx.fillText('Images from your gallery should appear here if CORS allows', 20, 130);
 
-            console.log('Canvas capture completed successfully');
             canvasRef.current = canvas;
             return true;
 
@@ -181,13 +178,10 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
 
     // Start color picking mode
     const startColorPicking = useCallback(async () => {
-        console.log('Starting color picking...');
         const success = await captureScreen();
-        console.log('Screen capture success:', success);
         if (success) {
             setIsActive(true);
             setCurrentColor(null);
-            console.log('Color picker activated');
         }
     }, [captureScreen]);
 
@@ -227,14 +221,11 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
                 {/* Eye dropper button */}
                 <button
                     onClick={(e) => {
-                        console.log('Button clicked!', { isActive });
                         e.preventDefault();
                         e.stopPropagation();
                         if (isActive) {
-                            console.log('Stopping color picking');
                             stopColorPicking();
                         } else {
-                            console.log('Starting color picking');
                             startColorPicking();
                         }
                     }}

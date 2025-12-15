@@ -7,8 +7,6 @@ interface SimpleMagicalEffectProps {
  * Perfect for multiple simultaneous loading states
  */
 export function SimpleMagicalEffect({ className = "" }: SimpleMagicalEffectProps) {
-    // Debug: Log to verify component is rendering
-    console.log('SimpleMagicalEffect rendering');
 
     return (
         <div className={`relative overflow-hidden ${className}`}>

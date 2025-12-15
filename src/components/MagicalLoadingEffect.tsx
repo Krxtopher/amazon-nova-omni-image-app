@@ -13,7 +13,6 @@ export function MagicalLoadingEffect({ className = "" }: MagicalLoadingEffectPro
 
     useEffect(() => {
         setMounted(true);
-        console.log('MagicalLoadingEffect mounted');
     }, []);
 
     return (

@@ -461,25 +461,18 @@ class SQLiteService {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
-        console.log('=== DATABASE DEBUG ===');
-
         // Show all tables
         const tablesResult = this.db.exec("SELECT name FROM sqlite_master WHERE type='table'");
         const tableNames = tablesResult.length > 0 ? tablesResult[0].values.map(row => row[0]) : [];
-        console.log('Tables:', tableNames);
 
         // Count records in each table
         for (const tableName of tableNames) {
             try {
-                const countResult = this.db.exec(`SELECT COUNT(*) FROM ${tableName}`);
-                const count = countResult.length > 0 ? countResult[0].values[0][0] : 0;
-                console.log(`${tableName}: ${count} records`);
+                this.db.exec(`SELECT COUNT(*) FROM ${tableName}`);
             } catch (error) {
-                console.log(`${tableName}: Error counting - ${error}`);
+                // Silently handle counting errors
             }
         }
-
-        console.log('=== END DEBUG ===');
     }
 }
 

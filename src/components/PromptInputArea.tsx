@@ -77,7 +77,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const inputBarRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<any>(null);
 
-    const { queueRequest, canMakeRequest, recordRequest, rateLimitConfig } = useRateLimit();
+    const { queueRequest, canMakeRequest, recordRequest } = useRateLimit();
 
     const {
         selectedAspectRatio,
@@ -176,7 +176,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         };
 
         // Add placeholder to gallery immediately
-        console.log('Adding placeholder image with status:', placeholderImage.status);
         addImage(placeholderImage);
 
         // Track active request
@@ -234,7 +233,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     const actualDimensions = await getImageDimensions(response.imageDataUrl);
                     const actualAspectRatio = calculateAspectRatio(actualDimensions.width, actualDimensions.height);
 
-                    console.log('Updating image to complete status for:', placeholderId);
                     updateImage(placeholderId, {
                         url: response.imageDataUrl,
                         status: 'complete',
@@ -274,16 +272,12 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         };
 
         // Queue or execute the request based on rate limiting
-        console.log(`Rate limit: ${rateLimitConfig.requestsPerMinute} requests/min, Can make request: ${canMakeRequest}`);
-
         if (canMakeRequest) {
             // Execute immediately and record timestamp
-            console.log(`Rate limit allows immediate execution for ${placeholderId}`);
             recordRequest(placeholderId);
             executeGeneration();
         } else {
             // Queue the request
-            console.log(`Rate limit exceeded, queuing request ${placeholderId}`);
             queueRequest(placeholderId, executeGeneration);
         }
     };

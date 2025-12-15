@@ -77,10 +77,9 @@ function AppContent() {
    * Requirements: 1.5, 10.5
    * Note: Errors are now shown in image placeholders instead of toasts
    */
-  const handleError = (error: string) => {
+  const handleError = (_error: string) => {
     // Errors are now handled by showing them in image placeholders
     // This function is kept for compatibility but no longer shows toasts
-    console.log('Error handled in placeholder:', error);
   };
 
   /**
@@ -212,9 +211,7 @@ function App() {
   const bedrockService = createBedrockService();
 
   useEffect(() => {
-    // Log initialization
-    console.log('AI Image Generator initialized');
-    console.log('AWS Region:', import.meta.env.VITE_AWS_REGION || 'us-east-1');
+    // Initialize application
   }, []);
 
   return (

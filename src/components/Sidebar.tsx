@@ -48,7 +48,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
             label: 'Colors',
             action: () => {
                 // Future: Open color picker modal
-                console.log('Colors clicked - feature coming soon');
             }
         },
         {
@@ -57,7 +56,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
             label: 'Download',
             action: () => {
                 // Future: Open download options
-                console.log('Download clicked - feature coming soon');
             }
         },
         {
@@ -74,7 +72,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
             label: 'Help',
             action: () => {
                 // Future: Open help modal or documentation
-                console.log('Help clicked - feature coming soon');
             }
         },
         {
