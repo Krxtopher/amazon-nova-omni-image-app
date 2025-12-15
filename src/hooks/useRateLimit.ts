@@ -42,18 +42,21 @@ export function useRateLimit() {
     }, [requestTimestamps]);
 
     // Periodic cleanup of old timestamps
+    // Keep only the last few timestamps since we only need the most recent one for delay calculation
     useEffect(() => {
         const cleanup = setInterval(() => {
-            const now = Date.now();
-            const oneMinuteAgo = now - 60000;
             setRequestTimestamps(prev => {
-                const filtered = prev.filter(timestamp => timestamp > oneMinuteAgo);
-                if (filtered.length !== prev.length) {
-                    console.log(`Cleaned up ${prev.length - filtered.length} old timestamps`);
+                // Keep only the last 10 timestamps to prevent memory leaks
+                // We only need the most recent one for delay calculation, but keeping a few more for safety
+                if (prev.length > 10) {
+                    const sorted = [...prev].sort((a, b) => b - a); // Sort descending (newest first)
+                    const kept = sorted.slice(0, 10);
+                    console.log(`Cleaned up ${prev.length - kept.length} old timestamps, kept ${kept.length}`);
+                    return kept;
                 }
-                return filtered;
+                return prev;
             });
-        }, 10000); // Clean up every 10 seconds
+        }, 30000); // Clean up every 30 seconds
 
         return () => clearInterval(cleanup);
     }, []);
@@ -85,29 +88,46 @@ export function useRateLimit() {
 
 
 
+    // Calculate minimum delay between requests based on rate limit
+    const getMinimumDelayBetweenRequests = useCallback(() => {
+        // Convert requests per minute to milliseconds between requests
+        // 60000ms / requestsPerMinute = minimum delay in ms
+        return Math.ceil(60000 / rateLimitConfig.requestsPerMinute);
+    }, [rateLimitConfig.requestsPerMinute]);
+
     // Helper function to check if we can make a request at a given time
     const canMakeRequestAt = useCallback((timestamps: number[], checkTime: number = Date.now()) => {
-        const oneMinuteAgo = checkTime - 60000;
-        const recentTimestamps = timestamps.filter(timestamp => timestamp > oneMinuteAgo);
-        const canMake = recentTimestamps.length < rateLimitConfig.requestsPerMinute;
-        console.log(`Rate limit check: ${recentTimestamps.length}/${rateLimitConfig.requestsPerMinute} requests in last minute. Can make request: ${canMake}`);
+        if (timestamps.length === 0) {
+            return true; // No previous requests, can make request
+        }
+
+        const lastRequestTime = Math.max(...timestamps);
+        const minimumDelay = getMinimumDelayBetweenRequests();
+        const timeSinceLastRequest = checkTime - lastRequestTime;
+        const canMake = timeSinceLastRequest >= minimumDelay;
+
+        console.log(`Rate limit check: Last request ${timeSinceLastRequest}ms ago, minimum delay ${minimumDelay}ms. Can make request: ${canMake}`);
         return canMake;
-    }, [rateLimitConfig.requestsPerMinute]);
+    }, [getMinimumDelayBetweenRequests]);
 
     // Helper function to calculate time until next available slot
     const calculateTimeUntilNextSlot = useCallback((timestamps: number[], checkTime: number = Date.now()) => {
-        const oneMinuteAgo = checkTime - 60000;
-        const recentTimestamps = timestamps.filter(timestamp => timestamp > oneMinuteAgo);
+        if (timestamps.length === 0) {
+            return 0; // No previous requests, can make request now
+        }
 
-        if (recentTimestamps.length < rateLimitConfig.requestsPerMinute) {
+        const lastRequestTime = Math.max(...timestamps);
+        const minimumDelay = getMinimumDelayBetweenRequests();
+        const timeSinceLastRequest = checkTime - lastRequestTime;
+
+        if (timeSinceLastRequest >= minimumDelay) {
             return 0; // Can make request now
         }
 
-        // Find the oldest timestamp that will expire soonest
-        const oldestTimestamp = Math.min(...recentTimestamps);
-        const timeUntilSlotFree = (oldestTimestamp + 60000) - checkTime;
-        return Math.max(0, timeUntilSlotFree);
-    }, [rateLimitConfig.requestsPerMinute]);
+        // Calculate remaining time to wait
+        const timeUntilNextSlot = minimumDelay - timeSinceLastRequest;
+        return Math.max(0, timeUntilNextSlot);
+    }, [getMinimumDelayBetweenRequests]);
 
     // Current state values (for external consumption)
     const canMakeRequestNow = useMemo(() => {

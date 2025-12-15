@@ -34,11 +34,11 @@ Image generation requests now support the following states:
 - Shows the original prompt below the timer
 
 ### 4. Rate Limiting Logic
-- Uses a sliding window approach (60-second window)
-- Tracks request timestamps to enforce limits
-- Automatically processes queue when slots become available
-- Immediate execution if under the rate limit
-- Graceful queuing when at or over the limit
+- Uses minimum delay enforcement based on rate limit (e.g., 4 requests/minute = 15-second minimum delay)
+- Tracks request timestamps to calculate time since last request
+- Automatically processes queue when minimum delay has elapsed
+- Immediate execution only if no previous requests or minimum delay has passed
+- Graceful queuing when minimum delay hasn't elapsed
 
 ## Technical Implementation
 
@@ -96,12 +96,41 @@ if (canMakeRequest) {
 }
 ```
 
+## Rate Limiting Behavior
+
+The rate limiter now enforces a **minimum delay between requests** based on the configured rate limit:
+
+- **4 requests per minute** = 15-second minimum delay between requests
+- **6 requests per minute** = 10-second minimum delay between requests  
+- **1 request per minute** = 60-second minimum delay between requests
+
+This ensures a steady, predictable rate of requests rather than allowing bursts followed by long waits.
+
+### Example Scenarios
+
+**Scenario 1: 4 requests/minute limit**
+- User submits 3 requests quickly
+- Request 1: Executes immediately
+- Request 2: Queued, executes after 15 seconds
+- Request 3: Queued, executes after 30 seconds
+
+**Scenario 2: Previous sliding window behavior (old)**
+- User submits 4 requests quickly
+- All 4 execute immediately
+- Next request waits ~60 seconds
+
+**Scenario 3: New minimum delay behavior**
+- User submits 4 requests quickly  
+- Request 1: Executes immediately
+- Requests 2-4: Execute at 15-second intervals
+
 ## Benefits
 
 1. **API Protection**: Prevents overwhelming the Bedrock API with too many concurrent requests
 2. **User Experience**: Clear visual feedback about request status and queue position
 3. **Flexibility**: Configurable rate limits to suit different usage patterns
 4. **Reliability**: Graceful handling of rate limit scenarios without request loss
+5. **Predictable Timing**: Consistent intervals between requests for better resource management
 
 ## Future Enhancements
 

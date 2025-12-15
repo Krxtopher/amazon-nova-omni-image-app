@@ -97,10 +97,11 @@ export function RateLimitTest() {
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                 <h3 className="text-lg font-semibold mb-2">Test Instructions</h3>
                 <ol className="list-decimal list-inside space-y-1 text-sm">
-                    <li>Set rate limit to 1 request per minute</li>
+                    <li>Set rate limit to 1 request per minute (enforces 60-second minimum delay)</li>
                     <li>Click "Submit Test Request" twice quickly</li>
                     <li>First request should execute immediately</li>
-                    <li>Second request should be queued and execute after ~60 seconds</li>
+                    <li>Second request should be queued and execute after exactly 60 seconds</li>
+                    <li>Try 5 requests per minute (12-second minimum delay) for faster testing</li>
                     <li>Watch the console for detailed logging</li>
                 </ol>
             </div>
