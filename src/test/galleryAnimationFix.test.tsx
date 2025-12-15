@@ -6,7 +6,7 @@ describe('Gallery Animation Fix', () => {
         const itemId = 'test-image-123';
 
         // Before fix: keys included position data
-        const oldKeyWithPosition = `${itemId}-100-200`; // id-top-left
+        // const oldKeyWithPosition = `${itemId}-100-200`; // id-top-left
 
         // After fix: keys use only item ID
         const newStableKey = itemId;
@@ -16,7 +16,7 @@ describe('Gallery Animation Fix', () => {
         expect(newStableKey).not.toContain('-100-200');
 
         // Simulate position change (what happens when new items are added)
-        const newPosition = { top: 150, left: 250 };
+        // const newPosition = { top: 150, left: 250 };
         const keyAfterPositionChange = itemId; // Still the same!
 
         expect(keyAfterPositionChange).toBe(newStableKey);

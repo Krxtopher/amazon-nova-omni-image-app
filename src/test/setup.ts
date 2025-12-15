@@ -20,7 +20,7 @@ if (!Blob.prototype.arrayBuffer) {
 
 // Mock ResizeObserver for tests
 global.ResizeObserver = class ResizeObserver {
-    constructor(callback: ResizeObserverCallback) {
+    constructor(_callback: ResizeObserverCallback) {
         // Mock implementation
     }
     observe() {

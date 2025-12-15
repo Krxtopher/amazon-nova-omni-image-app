@@ -14,7 +14,7 @@ interface ImageMasonryItem extends GeneratedImage {
 interface ImageRendererProps extends MasonryItemRendererProps {
     item: ImageMasonryItem;
     onDelete: (id: string) => void;
-    onEdit: (image: GeneratedImage) => void;
+    onEdit: (image: GeneratedImage) => Promise<void>;
 }
 
 /**
@@ -340,7 +340,7 @@ export function MasonryImageRenderer({
  */
 export function createImageRenderer(
     onDelete: (id: string) => void,
-    onEdit: (image: GeneratedImage) => void
+    onEdit: (image: GeneratedImage) => Promise<void>
 ) {
     return (props: MasonryItemRendererProps) => (
         <MasonryImageRenderer

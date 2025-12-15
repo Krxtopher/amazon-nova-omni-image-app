@@ -108,24 +108,38 @@ function AppContent() {
    * Sets the selected image as edit source and scrolls to prompt input
    * Requirements: 5.2
    */
-  const handleImageEdit = (image: any) => {
-    setEditSource({
-      id: image.id,
-      url: image.url,
-      aspectRatio: image.aspectRatio,
-      width: image.width,
-      height: image.height,
-    });
+  const handleImageEdit = async (image: any) => {
+    // Load the image URL if not already available
+    let imageUrl = image.url;
+    if (!imageUrl) {
+      const { loadImageData } = useImageStore.getState();
+      imageUrl = await loadImageData(image.id);
+    }
 
-    // Scroll to prompt input area
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    // Only set edit source if we have a valid URL
+    if (imageUrl) {
+      setEditSource({
+        id: image.id,
+        url: imageUrl,
+        aspectRatio: image.aspectRatio,
+        width: image.width,
+        height: image.height,
+      });
 
-    toast.info('Image set as edit source', {
-      duration: 2000,
-    });
+      // Scroll to prompt input area
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+
+      toast.info('Image set as edit source', {
+        duration: 2000,
+      });
+    } else {
+      toast.error('Failed to load image for editing', {
+        duration: 3000,
+      });
+    }
   };
 
   // Show loading state while initializing

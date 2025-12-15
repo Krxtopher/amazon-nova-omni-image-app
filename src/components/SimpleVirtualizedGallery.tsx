@@ -9,7 +9,7 @@ import type { MasonryItemRendererProps } from './FixedMasonryGrid';
 interface SimpleVirtualizedGalleryProps {
     onImageDelete: (id: string) => void;
     onTextDelete: (id: string) => void;
-    onImageEdit: (image: GeneratedImage) => void;
+    onImageEdit: (image: GeneratedImage) => Promise<void>;
 }
 
 /**
