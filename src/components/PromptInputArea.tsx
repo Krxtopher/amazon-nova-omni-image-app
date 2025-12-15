@@ -469,7 +469,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 ref={inputBarRef}
                 className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl transition-all duration-200"
                 style={{
-                    boxShadow: '0 30px 80px rgba(0, 0, 0, 0.15)'
+                    boxShadow: '0 12px 65px rgba(0, 0, 0, 0.15)'
                 }}
             >
                 {/* Main layout: Left thumbnail column + Right content column */}
