@@ -4,6 +4,7 @@ import { PromptInputArea, GeneratingStatus, Sidebar } from '@/components';
 import { SimpleVirtualizedGallery } from '@/components/SimpleVirtualizedGallery';
 import { Lightbox } from '@/components/Lightbox';
 import { MagicalEffectsDemo } from '@/components/MagicalEffectsDemo';
+import { RateLimitTest } from '@/components/RateLimitTest';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
@@ -151,6 +152,9 @@ function AppContent() {
       <Routes>
         {/* Demo route - standalone */}
         <Route path="/demo" element={<MagicalEffectsDemo />} />
+
+        {/* Rate limit test route */}
+        <Route path="/test-rate-limit" element={<RateLimitTest />} />
 
         {/* Main app layout */}
         <Route path="/*" element={

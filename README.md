@@ -74,6 +74,9 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
+#### Testing Rate Limiting
+A test page is available at `http://localhost:5173/test-rate-limit` to verify rate limiting functionality. Set the rate limit to 1 request per minute and submit multiple requests to see the queuing behavior.
+
 ### Build
 
 ```bash
@@ -102,6 +105,9 @@ npm run test:ui
 - Aspect ratio selection for generated images
 - Real-time loading indicators and error handling
 - **Enhanced Storage**: SQLite-based storage with much larger capacity than localStorage
+- **Rate Limiting**: Configurable request rate limiting (1-100 requests per minute) with visual queue status
+- **Request States**: Clear visual feedback for queued, generating, complete, and failed requests
+- **Generation Timer**: Real-time timer display during image generation
 
 ## Requirements
 

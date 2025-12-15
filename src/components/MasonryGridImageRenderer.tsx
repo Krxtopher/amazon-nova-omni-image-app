@@ -45,6 +45,7 @@ export function MasonryImageRenderer({
     const [imageError, setImageError] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [shouldFadeIn, setShouldFadeIn] = useState(false);
+    const [generatingTimer, setGeneratingTimer] = useState(0);
 
     // Load image data on demand when visible and status is complete
     const shouldLoadImage = isVisible && item.status === 'complete';
@@ -52,6 +53,22 @@ export function MasonryImageRenderer({
 
     // Use loaded URL or fallback to item.url for backward compatibility
     const displayUrl = imageUrl || item.url;
+
+    // Timer for generating state
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (item.status === 'generating') {
+            setGeneratingTimer(0);
+            interval = setInterval(() => {
+                setGeneratingTimer(prev => prev + 1);
+            }, 1000);
+        } else {
+            setGeneratingTimer(0);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [item.status]);
 
     // Calculate dynamic line clamps based on actual display height
     const generatingLineClamp = useMemo(() => {
@@ -100,14 +117,17 @@ export function MasonryImageRenderer({
     };
 
     const renderContent = () => {
-        // Show magical loading effect for pending/generating states
-        if (item.status === 'pending' || item.status === 'generating') {
+        // Show queued state with magical effect
+        if (item.status === 'queued') {
             return (
                 <div className="absolute inset-0">
                     <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
-                    {/* Prompt overlay during generation */}
-                    {item.prompt && (
-                        <div className="absolute inset-0 flex items-center justify-center p-4 z-10 mix-blend-overlay">
+                    {/* Queued status overlay */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-10 mix-blend-overlay">
+                        <div className="text-white text-xl font-semibold mb-2 bg-black/30 px-3 py-1 rounded">
+                            Queued...
+                        </div>
+                        {item.prompt && (
                             <div
                                 className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic"
                                 style={{
@@ -119,8 +139,44 @@ export function MasonryImageRenderer({
                             >
                                 {item.prompt}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Show magical loading effect for pending/generating states
+        if (item.status === 'pending' || item.status === 'generating') {
+            const formatTime = (seconds: number) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            return (
+                <div className="absolute inset-0">
+                    <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
+                    {/* Timer and prompt overlay during generation */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-10 mix-blend-overlay">
+                        {item.status === 'generating' && (
+                            <div className="text-white text-xl font-mono font-bold mb-2 bg-black/30 px-3 py-1 rounded">
+                                {formatTime(generatingTimer)}
+                            </div>
+                        )}
+                        {item.prompt && (
+                            <div
+                                className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic"
+                                style={{
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: generatingLineClamp,
+                                    WebkitBoxOrient: 'vertical',
+                                    textOverflow: 'ellipsis'
+                                }}
+                            >
+                                {item.prompt}
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         }

@@ -407,7 +407,7 @@ class SQLiteService {
     /**
      * Get a setting value
      */
-    async getSetting(key: string): Promise<string | null> {
+    async getSetting(key: string): Promise<string | number | null> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
@@ -415,19 +415,27 @@ class SQLiteService {
 
         if (result.length === 0 || result[0].values.length === 0) return null;
 
-        return result[0].values[0][0] as string;
+        const value = result[0].values[0][0] as string;
+
+        // Try to parse as number if it looks like one
+        const numValue = Number(value);
+        if (!isNaN(numValue) && isFinite(numValue)) {
+            return numValue;
+        }
+
+        return value;
     }
 
     /**
      * Set a setting value
      */
-    async setSetting(key: string, value: string): Promise<void> {
+    async setSetting(key: string, value: string | number): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
         this.db.run(
             'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
-            [key, value]
+            [key, String(value)]
         );
 
         await this.saveToIndexedDB();

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
@@ -75,6 +76,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputBarRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<any>(null);
+
+    const { queueRequest, canMakeRequest, recordRequest, rateLimitConfig } = useRateLimit();
 
     const {
         selectedAspectRatio,
@@ -160,11 +163,12 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         // Create placeholder image immediately (optimistic UI)
         // Requirements: 1.3
         const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        const initialStatus = canMakeRequest ? 'generating' : 'queued';
         const placeholderImage: GeneratedImage = {
             id: placeholderId,
             url: '', // Empty URL for placeholder
             prompt: prompt,
-            status: 'generating',
+            status: initialStatus,
             aspectRatio: aspectRatioToUse,
             width: dimensions.width,
             height: dimensions.height,
@@ -178,89 +182,109 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         // Track active request
         setActiveRequests(prev => prev + 1);
 
-        try {
-            // Prepare the prompt with aspect ratio information for the model
-            let enhancedPrompt = prompt;
-            if (!currentEditSource) {
-                // Only append aspect ratio for new generation, not for edits
-                enhancedPrompt = `${prompt} (aspect ratio ${aspectRatioToUse})`;
-            }
+        // Define the generation function
+        const executeGeneration = async () => {
+            try {
+                // Update status to generating when execution starts
+                updateImage(placeholderId, { status: 'generating' });
 
-            // Call BedrockImageService to generate content
-            // Use editSource if present, otherwise generate from scratch
-            const response = await bedrockService.generateContent({
-                prompt: enhancedPrompt,
-                aspectRatio: currentEditSource ? undefined : aspectRatioToUse,
-                editSource: currentEditSource || undefined,
-            });
-
-            // Handle the response based on type
-            if (response.type === 'text') {
-                // Remove placeholder image
-                deleteImage(placeholderId);
-
-                // Show modal with helpful message and original prompt
-                setTextResponsePrompt(prompt);
-                setShowTextResponseModal(true);
-
-                // Clear validation error
-                setValidationError(null);
-
-                // Note: Keep edit source selected for additional requests
-            } else if (response.type === 'error') {
-                // Model returned an error (e.g., unexpected stopReason) - update placeholder to show error
-                updateImage(placeholderId, {
-                    status: 'error',
-                    error: response.error,
-                    converseParams: response.converseParams,
-                });
-
-                // Clear validation error
-                setValidationError(null);
-
-                // Note: Keep edit source selected for additional requests
-            } else {
-                // Model returned an image - check actual aspect ratio and update placeholder
-                // Requirements: 1.4
-                const actualDimensions = await getImageDimensions(response.imageDataUrl);
-                const actualAspectRatio = calculateAspectRatio(actualDimensions.width, actualDimensions.height);
-
-                console.log('Updating image to complete status for:', placeholderId);
-                updateImage(placeholderId, {
-                    url: response.imageDataUrl,
-                    status: 'complete',
-                    aspectRatio: actualAspectRatio,
-                    width: actualDimensions.width,
-                    height: actualDimensions.height,
-                    converseParams: response.converseParams,
-                });
-
-                // Show success notification
-                if (onSuccess) {
-                    onSuccess(currentEditSource ? 'Image edited successfully! Image remains selected for more edits.' : 'Image generated successfully!');
+                // Prepare the prompt with aspect ratio information for the model
+                let enhancedPrompt = prompt;
+                if (!currentEditSource) {
+                    // Only append aspect ratio for new generation, not for edits
+                    enhancedPrompt = `${prompt} (aspect ratio ${aspectRatioToUse})`;
                 }
 
-                // Clear validation error
-                setValidationError(null);
+                // Call BedrockImageService to generate content
+                // Use editSource if present, otherwise generate from scratch
+                const response = await bedrockService.generateContent({
+                    prompt: enhancedPrompt,
+                    aspectRatio: currentEditSource ? undefined : aspectRatioToUse,
+                    editSource: currentEditSource || undefined,
+                });
 
-                // Note: Keep edit source selected for additional requests
+                // Handle the response based on type
+                if (response.type === 'text') {
+                    // Remove placeholder image
+                    deleteImage(placeholderId);
+
+                    // Show modal with helpful message and original prompt
+                    setTextResponsePrompt(prompt);
+                    setShowTextResponseModal(true);
+
+                    // Clear validation error
+                    setValidationError(null);
+
+                    // Note: Keep edit source selected for additional requests
+                } else if (response.type === 'error') {
+                    // Model returned an error (e.g., unexpected stopReason) - update placeholder to show error
+                    updateImage(placeholderId, {
+                        status: 'error',
+                        error: response.error,
+                        converseParams: response.converseParams,
+                    });
+
+                    // Clear validation error
+                    setValidationError(null);
+
+                    // Note: Keep edit source selected for additional requests
+                } else {
+                    // Model returned an image - check actual aspect ratio and update placeholder
+                    // Requirements: 1.4
+                    const actualDimensions = await getImageDimensions(response.imageDataUrl);
+                    const actualAspectRatio = calculateAspectRatio(actualDimensions.width, actualDimensions.height);
+
+                    console.log('Updating image to complete status for:', placeholderId);
+                    updateImage(placeholderId, {
+                        url: response.imageDataUrl,
+                        status: 'complete',
+                        aspectRatio: actualAspectRatio,
+                        width: actualDimensions.width,
+                        height: actualDimensions.height,
+                        converseParams: response.converseParams,
+                    });
+
+                    // Show success notification
+                    if (onSuccess) {
+                        onSuccess(currentEditSource ? 'Image edited successfully! Image remains selected for more edits.' : 'Image generated successfully!');
+                    }
+
+                    // Clear validation error
+                    setValidationError(null);
+
+                    // Note: Keep edit source selected for additional requests
+                }
+            } catch (error) {
+                // Handle errors - update placeholder to show error instead of removing it
+                // Requirements: 1.5
+                const errorMessage = error && typeof error === 'object' && 'message' in error
+                    ? (error as { message: string }).message
+                    : 'Failed to generate content. Please try again.';
+
+                updateImage(placeholderId, {
+                    status: 'error',
+                    error: errorMessage,
+                });
+
+                console.error('Content generation error:', error);
+            } finally {
+                // Decrement active requests
+                setActiveRequests(prev => prev - 1);
             }
-        } catch (error) {
-            // Handle errors - update placeholder to show error instead of removing it
-            // Requirements: 1.5
-            const errorMessage = error && typeof error === 'object' && 'message' in error
-                ? (error as { message: string }).message
-                : 'Failed to generate content. Please try again.';
+        };
 
-            updateImage(placeholderId, {
-                status: 'error',
-                error: errorMessage,
-            });
+        // Queue or execute the request based on rate limiting
+        console.log(`Rate limit: ${rateLimitConfig.requestsPerMinute} requests/min, Can make request: ${canMakeRequest}`);
 
-            console.error('Content generation error:', error);
-        } finally {
-            // Decrement active requests
-            setActiveRequests(prev => prev - 1);
+        if (canMakeRequest) {
+            // Execute immediately and record timestamp
+            console.log(`Rate limit allows immediate execution for ${placeholderId}`);
+            recordRequest(placeholderId);
+            executeGeneration();
+        } else {
+            // Queue the request
+            console.log(`Rate limit exceeded, queuing request ${placeholderId}`);
+            queueRequest(placeholderId, executeGeneration);
         }
     };
 

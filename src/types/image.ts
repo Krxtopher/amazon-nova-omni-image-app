@@ -1,7 +1,7 @@
 /**
  * Image generation status
  */
-export type ImageStatus = 'pending' | 'generating' | 'complete' | 'error';
+export type ImageStatus = 'pending' | 'queued' | 'generating' | 'complete' | 'error';
 
 /**
  * Aspect ratio options for image generation
