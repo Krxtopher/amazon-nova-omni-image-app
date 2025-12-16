@@ -273,14 +273,14 @@ export function Lightbox() {
                     {/* Image details */}
                     <div className="space-y-4">
                         <div>
-                            <h3 className="text-white font-medium mb-2">Prompt</h3>
+                            <h3 className="text-white font-medium mb-2 special-gothic-label">Prompt</h3>
                             <p className="text-gray-300 text-sm leading-relaxed">
                                 {image.prompt}
                             </p>
                         </div>
 
                         <div>
-                            <h3 className="text-white font-medium mb-2">Details</h3>
+                            <h3 className="text-white font-medium mb-2 special-gothic-label">Details</h3>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Aspect Ratio:</span>
@@ -306,7 +306,7 @@ export function Lightbox() {
                         {/* Technical details */}
                         {image.converseParams && (
                             <div>
-                                <h3 className="text-white font-medium mb-2">Technical Info</h3>
+                                <h3 className="text-white font-medium mb-2 special-gothic-label">Technical Info</h3>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-gray-400">Model:</span>

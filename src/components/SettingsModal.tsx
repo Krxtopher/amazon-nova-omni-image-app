@@ -144,7 +144,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className="flex items-center justify-between p-6 border-b border-border">
                     <h2
                         id="settings-modal-title"
-                        className="text-lg font-semibold text-foreground"
+                        className="text-lg font-semibold text-foreground special-gothic-label"
                     >
                         Settings
                     </h2>
@@ -162,7 +162,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className="p-6 space-y-6">
                     {/* Data Management Section */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-foreground">
+                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
                             Data Management
                         </h3>
                         <div className="space-y-3">
@@ -189,7 +189,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                     {/* Rate Limiting Section */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-foreground">
+                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
                             Rate Limiting
                         </h3>
                         <div className="space-y-3">
@@ -219,7 +219,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <div className="space-y-2">
                                 <h3
                                     id="reset-dialog-title"
-                                    className="text-lg font-semibold text-foreground"
+                                    className="text-lg font-semibold text-foreground special-gothic-label"
                                 >
                                     Reset All Data?
                                 </h3>

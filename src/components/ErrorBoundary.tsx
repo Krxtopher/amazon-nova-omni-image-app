@@ -93,7 +93,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
                         {/* Error Message */}
                         <div className="space-y-2">
-                            <h1 className="text-2xl font-bold text-foreground">
+                            <h1 className="text-2xl font-bold text-foreground special-gothic-label">
                                 Something went wrong
                             </h1>
                             <p className="text-muted-foreground">

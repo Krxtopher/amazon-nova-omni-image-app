@@ -569,7 +569,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         </div>
 
                         {/* Bottom row - Aspect ratio selector */}
-                        <div className="flex items-center gap-2 relative justify-center">
+                        <div className="flex items-center gap-0 px-2 relative justify-start">
+                            <span className="text-white/50 font-medium special-gothic-label">Dimensions</span>
                             <AspectRatioSelector
                                 selectedAspectRatio={selectedAspectRatio}
                                 onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}

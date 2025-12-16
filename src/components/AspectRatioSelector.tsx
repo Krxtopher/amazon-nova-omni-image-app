@@ -84,7 +84,7 @@ export function AspectRatioSelector({
             </div>
 
             {/* Label */}
-            <span className="text-sm">{currentRatio.label === "Any" ? "Random Aspect Ratio" : currentRatio.label}</span>
+            <span className="text-sm">{currentRatio.label === "Any" ? "Random" : currentRatio.label}</span>
         </Button>
     );
 }
