@@ -442,6 +442,15 @@ export class BedrockImageService {
                 ],
             };
 
+            // Add system prompt if configured
+            if (this.systemPrompt) {
+                converseParams.system = [
+                    {
+                        text: this.systemPrompt
+                    }
+                ];
+            }
+
             // Call the Bedrock API
             const response = await this.client.send(command);
 

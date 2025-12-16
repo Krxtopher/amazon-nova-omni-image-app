@@ -39,6 +39,9 @@ export interface ConverseRequestParams {
             };
         }>;
     }>;
+    system?: Array<{
+        text: string;
+    }>;
 }
 
 /**

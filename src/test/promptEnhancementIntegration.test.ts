@@ -40,7 +40,7 @@ describe('Prompt Enhancement Integration', () => {
     it('should enhance prompt and use it for image generation', async () => {
         const originalPrompt = 'A cat';
         const enhancedPrompt = 'A majestic cat with piercing eyes, dramatic lighting, professional photography';
-        const imageDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+        // const imageDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
         // Mock the enhancement call
         mockSend

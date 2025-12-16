@@ -192,20 +192,65 @@ export function ImageCard({
         // Show error state
         if (item.status === 'error' || imageError) {
             return (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/10 p-4 gap-3">
-                    <p className="text-sm text-destructive text-center flex-1 flex items-center">
-                        {item.error || 'Failed to load image'}
-                    </p>
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => onDelete(item.id)}
-                        className="shrink-0"
-                        aria-label="Delete error message"
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                    </Button>
+                <div className="absolute inset-0 flex flex-col bg-destructive/10">
+                    {/* Action buttons at the top */}
+                    <div className="flex justify-between items-start p-3 shrink-0">
+                        <div className="text-sm text-destructive font-medium">
+                            {item.error || 'Failed to load image'}
+                        </div>
+                        <div className="flex gap-2 ml-3">
+                            <Button
+                                size="icon"
+                                variant="secondary"
+                                onClick={() => {
+                                    // Download JSON file with Converse API parameters
+                                    if (item.converseParams) {
+                                        const jsonData = JSON.stringify(item.converseParams, null, 2);
+                                        const jsonBlob = new Blob([jsonData], { type: 'application/json' });
+                                        const jsonUrl = URL.createObjectURL(jsonBlob);
+
+                                        const jsonLink = document.createElement('a');
+                                        jsonLink.href = jsonUrl;
+                                        jsonLink.download = `error-${item.id}-converse-params.json`;
+                                        document.body.appendChild(jsonLink);
+                                        jsonLink.click();
+                                        document.body.removeChild(jsonLink);
+
+                                        // Clean up the blob URL
+                                        URL.revokeObjectURL(jsonUrl);
+                                    }
+                                }}
+                                className="h-8 w-8 shadow-sm"
+                                aria-label="Download parameters"
+                                disabled={!item.converseParams}
+                            >
+                                <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                size="icon"
+                                variant="destructive"
+                                onClick={() => onDelete(item.id)}
+                                className="h-8 w-8 shadow-sm"
+                                aria-label="Delete error message"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Scrollable prompt area */}
+                    {item.prompt && (
+                        <div className="flex-1 px-3 pb-3 min-h-0">
+                            <div className="h-full bg-muted/30 rounded-md p-3 overflow-y-auto">
+                                <div className="text-xs text-muted-foreground mb-2 font-medium">
+                                    Original Prompt:
+                                </div>
+                                <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                                    {item.prompt}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
