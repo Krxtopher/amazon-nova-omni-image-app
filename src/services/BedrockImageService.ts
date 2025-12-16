@@ -2,6 +2,7 @@ import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-r
 import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams, PromptEnhancement } from '../types';
+import { sqliteService } from './sqliteService';
 
 /**
  * Configuration for BedrockImageService
@@ -298,14 +299,22 @@ export class BedrockImageService {
             return originalPrompt;
         }
 
-        // For custom enhancement, return original prompt for now
-        // This could be extended to use user-defined enhancement rules
-        if (enhancementType === 'custom') {
-            return originalPrompt;
-        }
-
         try {
-            const systemPrompt = PROMPT_ENHANCEMENT_SYSTEM_PROMPTS[enhancementType];
+            let systemPrompt: string;
+
+            // Handle custom enhancement by loading user-defined persona
+            if (enhancementType === 'custom') {
+                const customPersona = await sqliteService.getSetting('customPromptEnhancementPersona');
+                if (!customPersona) {
+                    // If no custom persona is set, fall back to original prompt
+                    console.warn('Custom prompt enhancement selected but no custom persona found');
+                    return originalPrompt;
+                }
+                systemPrompt = customPersona as string;
+            } else {
+                // Use predefined system prompt for standard/creative modes
+                systemPrompt = PROMPT_ENHANCEMENT_SYSTEM_PROMPTS[enhancementType];
+            }
 
             const commandParams: any = {
                 modelId: this.modelId,
@@ -320,6 +329,9 @@ export class BedrockImageService {
                         text: systemPrompt
                     }
                 ],
+                inferenceConfig: {
+                    temperature: 1.0
+                }
             };
 
             const command = new ConverseCommand(commandParams);

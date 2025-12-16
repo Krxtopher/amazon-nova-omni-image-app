@@ -242,10 +242,11 @@ input[type="reset"]:disabled,
 }
 
 .special-gothic-label {
-  font-family: "Special Gothic Condensed One", sans-serif;
-  text-transform: uppercase;
-  font-weight: 400;
-  letter-spacing: 0.05em;
+  font-family: "IBM Plex Sans", "Special Gothic Condensed One", sans-serif;
+  /* text-transform: uppercase; */
+  font-weight: 300;
+  font-size: 80%;
+  /* letter-spacing: 0.05em; */
 }
 
 /* Custom Scrollbar Styles */
