@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { MasonryImageRenderer } from './MasonryGridImageRenderer';
+import { ImageCard } from './ImageCard';
 import type { GeneratedImage, ConverseRequestParams } from '../types';
 
-describe('MasonryImageRenderer - ConverseParams Support', () => {
+describe('ImageCard - ConverseParams Support', () => {
     const mockOnDelete = vi.fn();
     const mockOnEdit = vi.fn();
 
@@ -37,7 +37,7 @@ describe('MasonryImageRenderer - ConverseParams Support', () => {
 
         render(
             <BrowserRouter>
-                <MasonryImageRenderer
+                <ImageCard
                     item={mockImage}
                     displayWidth={300}
                     displayHeight={200}
@@ -70,7 +70,7 @@ describe('MasonryImageRenderer - ConverseParams Support', () => {
 
         render(
             <BrowserRouter>
-                <MasonryImageRenderer
+                <ImageCard
                     item={mockImage}
                     displayWidth={300}
                     displayHeight={300}
@@ -102,7 +102,7 @@ describe('MasonryImageRenderer - ConverseParams Support', () => {
 
         render(
             <BrowserRouter>
-                <MasonryImageRenderer
+                <ImageCard
                     item={mockImage}
                     displayWidth={300}
                     displayHeight={200}
@@ -140,7 +140,7 @@ describe('MasonryImageRenderer - ConverseParams Support', () => {
 
         render(
             <BrowserRouter>
-                <MasonryImageRenderer
+                <ImageCard
                     item={mockImage}
                     displayWidth={300}
                     displayHeight={200}

@@ -32,7 +32,7 @@ function calculateLineClamp(availableHeight: number, fontSize: number = 14, line
 /**
  * Renderer component for displaying GeneratedImage items in MasonryGrid
  */
-export function MasonryImageRenderer({
+export function ImageCard({
     item,
     displayWidth: _displayWidth,
     displayHeight,
@@ -399,7 +399,7 @@ export function createImageRenderer(
     onEdit: (image: GeneratedImage) => Promise<void>
 ) {
     return (props: MasonryItemRendererProps) => (
-        <MasonryImageRenderer
+        <ImageCard
             {...props}
             item={props.item as ImageMasonryItem}
             onDelete={onDelete}

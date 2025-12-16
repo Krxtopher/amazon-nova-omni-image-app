@@ -10,7 +10,7 @@ export { ThemeProvider } from './ThemeProvider';
 export { ResetDataButton } from './ResetDataButton';
 export { TextCard } from './TextCard';
 export { FixedMasonryGrid } from './FixedMasonryGrid';
-export { MasonryImageRenderer, createImageRenderer } from './MasonryGridImageRenderer';
+export { ImageCard, createImageRenderer } from './ImageCard';
 export { GeneratingStatus } from './GeneratingStatus';
 export { Lightbox } from './Lightbox';
 export { ColorPicker } from './ColorPicker';

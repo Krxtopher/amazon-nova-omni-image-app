@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useImageStore } from '@/stores/imageStore';
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
 import { FixedMasonryGrid } from './FixedMasonryGrid';
-import { createImageRenderer } from './MasonryGridImageRenderer';
+import { createImageRenderer } from './ImageCard';
 import { TextCard } from './TextCard';
 import type { MasonryItemRendererProps } from './FixedMasonryGrid';
 

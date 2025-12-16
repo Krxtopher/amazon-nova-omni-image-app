@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { useImageStore } from '@/stores/imageStore';
 import type { GeneratedImage } from '../types';
 import { FixedMasonryGrid } from './FixedMasonryGrid';
-import { createImageRenderer } from './MasonryGridImageRenderer';
+import { createImageRenderer } from './ImageCard';
 
 interface SimpleVirtualizedGalleryProps {
     onImageDelete: (id: string) => void;
