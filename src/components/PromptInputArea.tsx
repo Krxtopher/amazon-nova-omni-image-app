@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
-import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
-import { X, Plus, Send, Dice5 } from 'lucide-react';
+import type { AspectRatio, EditSource, GeneratedImage, PromptEnhancement } from '@/types';
+import { X, Plus, Send, Dice5, Sparkles, Wand2, Settings } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
+import { PromptEnhancementSelector } from './PromptEnhancementSelector';
 import { TextResponseModal } from './TextResponseModal';
 
 /**
@@ -71,6 +72,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const [fileError, setFileError] = useState<string | null>(null);
     const [activeRequests, setActiveRequests] = useState(0);
     const [aspectRatioExpanded, setAspectRatioExpanded] = useState(false);
+    const [promptEnhancementExpanded, setPromptEnhancementExpanded] = useState(false);
     const [showTextResponseModal, setShowTextResponseModal] = useState(false);
     const [textResponsePrompt, setTextResponsePrompt] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,8 +83,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
     const {
         selectedAspectRatio,
+        selectedPromptEnhancement,
         editSource,
         setAspectRatio,
+        setPromptEnhancement,
         setEditSource,
         clearEditSource,
         addImage,
@@ -95,19 +99,20 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         onActiveRequestsChange?.(activeRequests);
     }, [activeRequests, onActiveRequestsChange]);
 
-    // Handle clicking outside to close aspect ratio tray
+    // Handle clicking outside to close expanded trays
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (inputBarRef.current && !inputBarRef.current.contains(event.target as Node)) {
                 setAspectRatioExpanded(false);
+                setPromptEnhancementExpanded(false);
             }
         };
 
-        if (aspectRatioExpanded) {
+        if (aspectRatioExpanded || promptEnhancementExpanded) {
             document.addEventListener('mousedown', handleClickOutside);
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }
-    }, [aspectRatioExpanded]);
+    }, [aspectRatioExpanded, promptEnhancementExpanded]);
 
     /**
      * Validate prompt is non-empty and not just whitespace
@@ -187,19 +192,31 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 // Update status to generating when execution starts
                 updateImage(placeholderId, { status: 'generating' });
 
-                // Prepare the prompt with aspect ratio information for the model
+                // Step 1: Enhance the prompt if enhancement is enabled
                 let enhancedPrompt = prompt;
+                if (selectedPromptEnhancement !== 'off') {
+                    try {
+                        enhancedPrompt = await bedrockService.enhancePrompt(prompt, selectedPromptEnhancement);
+                    } catch (error) {
+                        console.warn('Prompt enhancement failed, using original prompt:', error);
+                        enhancedPrompt = prompt;
+                    }
+                }
+
+                // Step 2: Prepare the final prompt with aspect ratio information for the model
+                let finalPrompt = enhancedPrompt;
                 if (!currentEditSource) {
                     // Only append aspect ratio for new generation, not for edits
-                    enhancedPrompt = `${prompt} (aspect ratio ${aspectRatioToUse})`;
+                    finalPrompt = `${enhancedPrompt} (aspect ratio ${aspectRatioToUse})`;
                 }
 
                 // Call BedrockImageService to generate content
                 // Use editSource if present, otherwise generate from scratch
                 const response = await bedrockService.generateContent({
-                    prompt: enhancedPrompt,
+                    prompt: finalPrompt,
                     aspectRatio: currentEditSource ? undefined : aspectRatioToUse,
                     editSource: currentEditSource || undefined,
+                    promptEnhancement: selectedPromptEnhancement,
                 });
 
                 // Handle the response based on type
@@ -240,6 +257,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         width: actualDimensions.width,
                         height: actualDimensions.height,
                         converseParams: response.converseParams,
+                        enhancedPrompt: selectedPromptEnhancement !== 'off' ? enhancedPrompt : undefined,
                     });
 
                     // Show success notification
@@ -568,16 +586,27 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                             </Button>
                         </div>
 
-                        {/* Bottom row - Aspect ratio selector */}
-                        <div className="flex items-center gap-0 px-2 relative justify-start">
-                            <span className="text-white/50 font-medium special-gothic-label">Dimensions</span>
-                            <AspectRatioSelector
-                                selectedAspectRatio={selectedAspectRatio}
-                                onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
-                                disabled={!!editSource}
-                                isExpanded={aspectRatioExpanded}
-                                onExpandedChange={setAspectRatioExpanded}
-                            />
+                        {/* Bottom row - Aspect ratio and prompt enhancement selectors */}
+                        <div className="flex items-center gap-4 px-2 relative justify-start">
+                            <div className="flex items-center gap-0">
+                                <span className="text-white/50 font-medium special-gothic-label">Dimensions</span>
+                                <AspectRatioSelector
+                                    selectedAspectRatio={selectedAspectRatio}
+                                    onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
+                                    disabled={!!editSource}
+                                    isExpanded={aspectRatioExpanded}
+                                    onExpandedChange={setAspectRatioExpanded}
+                                />
+                            </div>
+                            <div className="flex items-center gap-0">
+                                <span className="text-white/50 font-medium special-gothic-label">Prompt Enhancement</span>
+                                <PromptEnhancementSelector
+                                    selectedEnhancement={selectedPromptEnhancement}
+                                    onEnhancementChange={setPromptEnhancement}
+                                    isExpanded={promptEnhancementExpanded}
+                                    onExpandedChange={setPromptEnhancementExpanded}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -623,6 +652,45 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                     <span className="text-xs font-medium whitespace-nowrap">{ratio.label}</span>
                                 </button>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Expanded prompt enhancement tray - integrated within the input bar */}
+                {promptEnhancementExpanded && (
+                    <div className="px-2 pb-3 border-t border-border/30 mt-2">
+                        <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
+                            {([
+                                { value: 'off', label: 'Off', icon: X, description: 'Use your prompt as-is without enhancement' },
+                                { value: 'standard', label: 'Standard', icon: Sparkles, description: 'Enhance prompt with standard improvements' },
+                                { value: 'creative', label: 'Creative', icon: Wand2, description: 'Add creative flair and artistic details' },
+                                { value: 'custom', label: 'Custom', icon: Settings, description: 'Use custom enhancement settings' },
+                            ] as Array<{ value: PromptEnhancement; label: string; icon: any; description: string }>).map((enhancement) => {
+                                const IconComponent = enhancement.icon;
+                                return (
+                                    <button
+                                        key={enhancement.value}
+                                        onClick={() => {
+                                            setPromptEnhancement(enhancement.value);
+                                            setPromptEnhancementExpanded(false);
+                                        }}
+                                        className={`flex flex-col items-center gap-2 p-3 min-w-[80px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPromptEnhancement === enhancement.value
+                                            ? 'bg-white/10 border border-transparent'
+                                            : 'border border-transparent hover:border-border'
+                                            }`}
+                                        aria-label={`Select prompt enhancement ${enhancement.label}: ${enhancement.description}`}
+                                        title={enhancement.description}
+                                    >
+                                        {/* Icon representation */}
+                                        <div className="flex items-center justify-center h-8">
+                                            <IconComponent className="h-5 w-5" />
+                                        </div>
+
+                                        {/* Label */}
+                                        <span className="text-xs font-medium whitespace-nowrap">{enhancement.label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

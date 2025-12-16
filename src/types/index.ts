@@ -18,6 +18,7 @@ export type {
 export type {
     ImageStatus,
     AspectRatio,
+    PromptEnhancement,
 } from './image';
 
 // Bedrock API types

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GeneratedImage, GeneratedText, GalleryItem, EditSource, AspectRatio } from '../types';
+import type { GeneratedImage, GeneratedText, GalleryItem, EditSource, AspectRatio, PromptEnhancement } from '../types';
 import { sqliteService } from '../services/sqliteService';
 
 /**
@@ -10,6 +10,7 @@ interface ImageStoreState {
     images: GeneratedImage[]; // Metadata only, URLs loaded on demand
     textItems: GeneratedText[];
     selectedAspectRatio: AspectRatio;
+    selectedPromptEnhancement: PromptEnhancement;
     editSource: EditSource | null;
     isGenerating: boolean;
     isLoading: boolean;
@@ -28,6 +29,7 @@ interface ImageStoreActions {
     deleteImage: (id: string) => Promise<void>;
     deleteTextItem: (id: string) => void;
     setAspectRatio: (ratio: AspectRatio) => Promise<void>;
+    setPromptEnhancement: (enhancement: PromptEnhancement) => Promise<void>;
     setEditSource: (source: EditSource | null) => void;
     clearEditSource: () => void;
     loadImages: () => Promise<void>;
@@ -49,6 +51,11 @@ export type ImageStore = ImageStoreState & ImageStoreActions;
 const DEFAULT_ASPECT_RATIO: AspectRatio = 'random';
 
 /**
+ * Default prompt enhancement
+ */
+const DEFAULT_PROMPT_ENHANCEMENT: PromptEnhancement = 'off';
+
+/**
  * Image store using Zustand with SQLite persistence
  * Manages the state for generated images, aspect ratio selection, and edit source
  * Requirements: 3.1 - Persist images to SQLite database via IndexedDB
@@ -58,6 +65,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
     images: [],
     textItems: [],
     selectedAspectRatio: DEFAULT_ASPECT_RATIO,
+    selectedPromptEnhancement: DEFAULT_PROMPT_ENHANCEMENT,
     editSource: null,
     isGenerating: false,
     isLoading: true,
@@ -93,12 +101,15 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
             const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
 
-
+            // Load prompt enhancement setting
+            const savedEnhancement = await sqliteService.getSetting('selectedPromptEnhancement');
+            const promptEnhancement = (savedEnhancement as PromptEnhancement) || DEFAULT_PROMPT_ENHANCEMENT;
 
             set({
                 images: imageMetadata,
                 textItems,
                 selectedAspectRatio: aspectRatio,
+                selectedPromptEnhancement: promptEnhancement,
                 isLoading: false
             });
         } catch (error) {
@@ -267,6 +278,22 @@ export const useImageStore = create<ImageStore>()((set) => ({
         // Persist to database asynchronously (don't block UI)
         sqliteService.setSetting('selectedAspectRatio', ratio).catch((error) => {
             console.error('Failed to persist aspect ratio setting to database:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
+        });
+    },
+
+    /**
+     * Set the selected prompt enhancement for new image generation
+     * UI update is immediate, database persistence happens asynchronously
+     */
+    setPromptEnhancement: async (enhancement: PromptEnhancement) => {
+        // Update UI immediately for responsive feel
+        set({ selectedPromptEnhancement: enhancement });
+
+        // Persist to database asynchronously (don't block UI)
+        sqliteService.setSetting('selectedPromptEnhancement', enhancement).catch((error) => {
+            console.error('Failed to persist prompt enhancement setting to database:', error);
             // In a production app, you might want to show a toast notification
             // or implement retry logic here
         });

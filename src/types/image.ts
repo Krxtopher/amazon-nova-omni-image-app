@@ -9,6 +9,11 @@ export type ImageStatus = 'pending' | 'queued' | 'generating' | 'complete' | 'er
 export type AspectRatio = 'random' | '2:1' | '16:9' | '3:2' | '4:3' | '1:1' | '3:4' | '2:3' | '9:16' | '1:2';
 
 /**
+ * Prompt enhancement options
+ */
+export type PromptEnhancement = 'off' | 'standard' | 'creative' | 'custom';
+
+/**
  * Generation response types
  */
 export type GenerationResponse =
@@ -64,6 +69,7 @@ export interface ImageData {
  */
 export interface GeneratedImage extends ImageMetadata {
     url?: string; // Optional - loaded on demand
+    enhancedPrompt?: string; // The enhanced version of the prompt (if enhancement was used)
 }
 
 /**
@@ -101,4 +107,5 @@ export interface GenerationRequest {
     prompt: string;
     aspectRatio?: Exclude<AspectRatio, 'random'>;
     editSource?: EditSource;
+    promptEnhancement?: PromptEnhancement;
 }

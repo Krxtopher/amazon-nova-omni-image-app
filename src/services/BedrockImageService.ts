@@ -1,7 +1,7 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
-import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams } from '../types';
+import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams, PromptEnhancement } from '../types';
 
 /**
  * Configuration for BedrockImageService
@@ -27,6 +27,38 @@ export const ASPECT_RATIO_DIMENSIONS: Record<Exclude<AspectRatio, 'random'>, { w
     '2:3': { width: 768, height: 1152 },
     '9:16': { width: 768, height: 1344 },
     '1:2': { width: 768, height: 1536 },
+};
+
+/**
+ * System prompts for different prompt enhancement modes
+ */
+const PROMPT_ENHANCEMENT_SYSTEM_PROMPTS: Record<Exclude<PromptEnhancement, 'off' | 'custom'>, string> = {
+    standard: `You are a prompt enhancement assistant. Your task is to take a user's image generation prompt and enhance it to produce better, more detailed results while preserving the user's original intent.
+
+Guidelines for enhancement:
+- Keep the core subject and concept intact
+- Add relevant artistic and technical details
+- Include appropriate style descriptors
+- Enhance lighting, composition, and quality terms
+- Add professional photography or art terminology when appropriate
+- Maintain the original tone and mood
+- Don't change the fundamental meaning or subject
+
+Return only the enhanced prompt, nothing else.`,
+
+    creative: `You are a creative prompt enhancement assistant. Your task is to take a user's image generation prompt and enhance it with artistic flair and creative details while preserving the original concept.
+
+Guidelines for creative enhancement:
+- Keep the original subject and intent
+- Add imaginative and artistic elements
+- Include creative lighting, atmosphere, and mood descriptors
+- Enhance with artistic styles, techniques, and mediums
+- Add cinematic or dramatic elements when appropriate
+- Include color palettes and artistic composition terms
+- Make it more visually striking and creative
+- Don't fundamentally alter the core concept
+
+Return only the enhanced prompt, nothing else.`
 };
 
 /**
@@ -250,6 +282,68 @@ export class BedrockImageService {
 
         // Default to PNG if unable to detect
         return 'png';
+    }
+
+    /**
+     * Enhances a user prompt using Nova 2 Omni based on the enhancement type
+     * 
+     * @param originalPrompt - The original user prompt
+     * @param enhancementType - The type of enhancement to apply
+     * @returns Promise resolving to the enhanced prompt
+     * @throws Error if enhancement fails
+     */
+    async enhancePrompt(originalPrompt: string, enhancementType: PromptEnhancement): Promise<string> {
+        // Return original prompt if enhancement is off
+        if (enhancementType === 'off') {
+            return originalPrompt;
+        }
+
+        // For custom enhancement, return original prompt for now
+        // This could be extended to use user-defined enhancement rules
+        if (enhancementType === 'custom') {
+            return originalPrompt;
+        }
+
+        try {
+            const systemPrompt = PROMPT_ENHANCEMENT_SYSTEM_PROMPTS[enhancementType];
+
+            const commandParams: any = {
+                modelId: this.modelId,
+                messages: [
+                    {
+                        role: 'user',
+                        content: [{ text: originalPrompt }],
+                    },
+                ],
+                system: [
+                    {
+                        text: systemPrompt
+                    }
+                ],
+            };
+
+            const command = new ConverseCommand(commandParams);
+            const response = await this.client.send(command);
+
+            // Extract the enhanced prompt from the response
+            if (!response.output?.message?.content) {
+                throw new Error('Invalid response structure: missing content');
+            }
+
+            const textContent = response.output.message.content.find(
+                (item) => item.text !== undefined
+            );
+
+            if (!textContent?.text) {
+                throw new Error('No text content found in enhancement response');
+            }
+
+            return textContent.text.trim();
+        } catch (error) {
+            console.error('Prompt enhancement failed:', error);
+            // Fall back to original prompt if enhancement fails
+            return originalPrompt;
+        }
     }
 
     /**
