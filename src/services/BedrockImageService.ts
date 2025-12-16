@@ -31,10 +31,10 @@ export const ASPECT_RATIO_DIMENSIONS: Record<Exclude<AspectRatio, 'random'>, { w
 };
 
 /**
- * System prompts for different prompt enhancement modes
+ * System prompts for different persona modes
  */
 const PROMPT_ENHANCEMENT_SYSTEM_PROMPTS: Record<Exclude<PromptEnhancement, 'off' | 'custom'>, string> = {
-    standard: `You are a prompt enhancement assistant. Your task is to take a user's image generation prompt and enhance it to produce better, more detailed results while preserving the user's original intent.
+    standard: `You are a professional photographer persona. Your task is to take a user's image generation prompt and enhance it with technical expertise while preserving the user's original intent.
 
 Guidelines for enhancement:
 - Keep the core subject and concept intact
@@ -47,7 +47,7 @@ Guidelines for enhancement:
 
 Return only the enhanced prompt, nothing else.`,
 
-    creative: `You are a creative prompt enhancement assistant. Your task is to take a user's image generation prompt and enhance it with artistic flair and creative details while preserving the original concept.
+    creative: `You are an artistic persona with a unique creative style. Your task is to take a user's image generation prompt and enhance it with artistic flair and creative details while preserving the original concept.
 
 Guidelines for creative enhancement:
 - Keep the original subject and intent

@@ -98,7 +98,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     } = useImageStore();
 
     /**
-     * Handle prompt enhancement selection, showing custom modal if needed
+     * Handle persona selection, showing custom modal if needed
      */
     const handlePromptEnhancementChange = async (enhancement: PromptEnhancement) => {
         if (enhancement === 'custom') {
@@ -118,7 +118,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             }
         }
 
-        // Set the enhancement normally
+        // Set the persona normally
         setPromptEnhancement(enhancement);
     };
 
@@ -235,7 +235,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 // Update status to generating when execution starts
                 updateImage(placeholderId, { status: 'generating' });
 
-                // Step 1: Enhance the prompt if enhancement is enabled
+                // Step 1: Enhance the prompt if persona is enabled
                 let enhancedPrompt = prompt;
                 if (selectedPromptEnhancement !== 'off') {
                     try {
@@ -244,7 +244,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         // Update the placeholder with the enhanced prompt so it's displayed immediately
                         updateImage(placeholderId, { prompt: enhancedPrompt });
                     } catch (error) {
-                        console.warn('Prompt enhancement failed, using original prompt:', error);
+                        console.warn('Persona enhancement failed, using original prompt:', error);
                         enhancedPrompt = prompt;
                     }
                 }
@@ -644,7 +644,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                 />
                             </div>
                             <div className="flex items-center gap-0">
-                                <span className="text-white/50 font-medium special-gothic-label">Prompt Enhancement</span>
+                                <span className="text-white/50 font-medium special-gothic-label">Persona</span>
                                 <PromptEnhancementSelector
                                     selectedEnhancement={selectedPromptEnhancement}
                                     onEnhancementChange={setPromptEnhancement}
@@ -701,15 +701,15 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     </div>
                 )}
 
-                {/* Expanded prompt enhancement tray - integrated within the input bar */}
+                {/* Expanded personas tray - integrated within the input bar */}
                 {promptEnhancementExpanded && (
                     <div className="px-2 pb-3 border-t border-border/30 mt-2">
                         <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
                             {([
-                                { value: 'off', label: 'Off', icon: X, description: 'Use your prompt as-is without enhancement' },
-                                { value: 'standard', label: 'Standard', icon: Sparkles, description: 'Enhance prompt with standard improvements' },
-                                { value: 'creative', label: 'Creative', icon: Wand2, description: 'Add creative flair and artistic details' },
-                                { value: 'custom', label: 'Custom', icon: Settings, description: 'Use custom enhancement settings' },
+                                { value: 'off', label: 'Off', icon: X, description: 'Use your prompt as-is without a persona' },
+                                { value: 'standard', label: 'Standard', icon: Sparkles, description: 'Professional photographer persona with technical expertise' },
+                                { value: 'creative', label: 'Creative', icon: Wand2, description: 'Artistic persona that adds creative flair and imagination' },
+                                { value: 'custom', label: 'Custom', icon: Settings, description: 'Your own custom persona with unique characteristics' },
                             ] as Array<{ value: PromptEnhancement; label: string; icon: any; description: string }>).map((enhancement) => {
                                 const IconComponent = enhancement.icon;
                                 return (
@@ -731,12 +731,12 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                             }`}
                                         aria-label={
                                             enhancement.value === 'custom' && selectedPromptEnhancement === 'custom'
-                                                ? 'Edit custom prompt enhancement settings'
-                                                : `Select prompt enhancement ${enhancement.label}: ${enhancement.description}`
+                                                ? 'Edit custom persona settings'
+                                                : `Select persona ${enhancement.label}: ${enhancement.description}`
                                         }
                                         title={
                                             enhancement.value === 'custom' && selectedPromptEnhancement === 'custom'
-                                                ? 'Click to edit your custom enhancement settings'
+                                                ? 'Click to edit your custom persona settings'
                                                 : enhancement.description
                                         }
                                     >
@@ -764,7 +764,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 originalPrompt={textResponsePrompt}
             />
 
-            {/* Custom Prompt Enhancement Modal */}
+            {/* Custom Persona Modal */}
             <CustomPromptEnhancementModal
                 isOpen={showCustomEnhancementModal}
                 onClose={() => setShowCustomEnhancementModal(false)}

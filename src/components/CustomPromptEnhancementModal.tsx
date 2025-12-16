@@ -10,7 +10,7 @@ interface CustomPromptEnhancementModalProps {
     onSave: (customPersona: string) => void;
 }
 
-const DEFAULT_CUSTOM_PERSONA = `You are a prompt enhancement assistant with a unique creative style. Your task is to take a user's image generation prompt and enhance it while preserving the original intent.
+const DEFAULT_CUSTOM_PERSONA = `You are a creative persona with a unique artistic style. Your task is to take a user's image generation prompt and enhance it while preserving the original intent.
 
 Guidelines for enhancement:
 - Keep the core subject and concept intact
@@ -77,7 +77,7 @@ export function CustomPromptEnhancementModal({ isOpen, onClose, onSave }: Custom
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Custom Prompt Enhancement</DialogTitle>
+                    <DialogTitle>Custom Persona</DialogTitle>
                     <DialogDescription>
                         Define your own AI persona for prompt enhancement. Describe the characteristics, style, and approach you want the AI to adopt when enhancing your prompts.
                     </DialogDescription>
@@ -97,7 +97,7 @@ export function CustomPromptEnhancementModal({ isOpen, onClose, onSave }: Custom
                                 <AutoExpandingTextarea
                                     value={customPersona}
                                     onChange={(e) => setCustomPersona(e.target.value)}
-                                    placeholder="Describe your custom AI persona for prompt enhancement..."
+                                    placeholder="Describe your custom AI persona..."
                                     className="w-full h-full min-h-[200px] resize-none"
                                     maxHeight={400}
                                 />

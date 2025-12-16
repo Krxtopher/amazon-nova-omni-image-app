@@ -29,7 +29,7 @@ interface ImageStoreActions {
     deleteImage: (id: string) => Promise<void>;
     deleteTextItem: (id: string) => void;
     setAspectRatio: (ratio: AspectRatio) => Promise<void>;
-    setPromptEnhancement: (enhancement: PromptEnhancement) => Promise<void>;
+    setPromptEnhancement: (persona: PromptEnhancement) => Promise<void>;
     setEditSource: (source: EditSource | null) => void;
     clearEditSource: () => void;
     loadImages: () => Promise<void>;
@@ -51,7 +51,7 @@ export type ImageStore = ImageStoreState & ImageStoreActions;
 const DEFAULT_ASPECT_RATIO: AspectRatio = 'random';
 
 /**
- * Default prompt enhancement
+ * Default persona
  */
 const DEFAULT_PROMPT_ENHANCEMENT: PromptEnhancement = 'off';
 
@@ -101,7 +101,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
             const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
 
-            // Load prompt enhancement setting
+            // Load persona setting
             const savedEnhancement = await sqliteService.getSetting('selectedPromptEnhancement');
             const promptEnhancement = (savedEnhancement as PromptEnhancement) || DEFAULT_PROMPT_ENHANCEMENT;
 
@@ -284,16 +284,16 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Set the selected prompt enhancement for new image generation
+     * Set the selected persona for new image generation
      * UI update is immediate, database persistence happens asynchronously
      */
-    setPromptEnhancement: async (enhancement: PromptEnhancement) => {
+    setPromptEnhancement: async (persona: PromptEnhancement) => {
         // Update UI immediately for responsive feel
-        set({ selectedPromptEnhancement: enhancement });
+        set({ selectedPromptEnhancement: persona });
 
         // Persist to database asynchronously (don't block UI)
-        sqliteService.setSetting('selectedPromptEnhancement', enhancement).catch((error) => {
-            console.error('Failed to persist prompt enhancement setting to database:', error);
+        sqliteService.setSetting('selectedPromptEnhancement', persona).catch((error) => {
+            console.error('Failed to persist persona setting to database:', error);
             // In a production app, you might want to show a toast notification
             // or implement retry logic here
         });

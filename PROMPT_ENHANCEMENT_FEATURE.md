@@ -1,42 +1,42 @@
-# Prompt Enhancement Feature
+# Personas Feature
 
 ## Overview
 
-The Prompt Enhancement feature allows users to automatically improve their image generation prompts using Amazon Nova 2 Omni before generating images. This feature enhances the quality and detail of generated images by providing more descriptive and optimized prompts to the image generation model.
+The Personas feature allows users to automatically improve their image generation prompts using Amazon Nova 2 Omni before generating images. This feature enhances the quality and detail of generated images by applying different AI personas that provide more descriptive and optimized prompts to the image generation model.
 
 ## Feature Components
 
-### 1. Prompt Enhancement Selector
+### 1. Persona Selector
 
-A new selector has been added to the input bar, similar to the aspect ratio selector, with the label "Prompt Enhancement". It provides four options:
+A new selector has been added to the input bar, similar to the aspect ratio selector, with the label "Personas". It provides four options:
 
-- **Off**: Use the user's prompt as-is without any enhancement
-- **Standard**: Apply standard prompt improvements (technical details, quality terms)
-- **Creative**: Add creative flair and artistic details to the prompt
-- **Custom**: Reserved for future custom enhancement settings
+- **Off**: Use the user's prompt as-is without any persona
+- **Standard**: Professional photographer persona with technical expertise
+- **Creative**: Artistic persona that adds creative flair and imagination
+- **Custom**: Your own custom persona with unique characteristics
 
-### 2. Enhancement Flow
+### 2. Persona Flow
 
-When any option other than "Off" is selected, the following flow occurs:
+When any persona other than "Off" is selected, the following flow occurs:
 
 1. **User submits prompt**: User enters their prompt and clicks generate
-2. **Prompt enhancement**: The original prompt is sent to Nova 2 Omni with a specialized system prompt for enhancement
-3. **Enhanced prompt generation**: Nova 2 Omni returns an improved version of the prompt
+2. **Persona enhancement**: The original prompt is sent to Nova 2 Omni with a specialized persona system prompt
+3. **Enhanced prompt generation**: Nova 2 Omni returns an improved version of the prompt based on the selected persona
 4. **UI update**: The enhanced prompt immediately replaces the original prompt in the placeholder and all UI displays
 5. **Image generation**: The enhanced prompt is used for actual image generation
 6. **Storage**: The enhanced prompt is saved as the main prompt for the generated image
 
-### 3. System Prompts
+### 3. Persona Types
 
-#### Standard Enhancement
-- Focuses on technical and quality improvements
+#### Standard Persona
+- Professional photographer persona with technical expertise
 - Adds relevant artistic and technical details
 - Includes professional photography terminology
 - Enhances lighting, composition, and quality terms
 - Preserves original intent and subject
 
-#### Creative Enhancement
-- Adds imaginative and artistic elements
+#### Creative Persona
+- Artistic persona that adds creative flair and imagination
 - Includes creative lighting and atmospheric details
 - Enhances with artistic styles and techniques
 - Adds cinematic or dramatic elements
@@ -50,22 +50,22 @@ export type PromptEnhancement = 'off' | 'standard' | 'creative' | 'custom';
 ```
 
 ### State Management
-- Added `selectedPromptEnhancement` to the image store
+- Added `selectedPromptEnhancement` to the image store (represents selected persona)
 - Persisted to SQLite database like other user preferences
 - Default value is 'off' to maintain backward compatibility
 
 ### Service Layer
 - Added `enhancePrompt()` method to `BedrockImageService`
-- Uses Nova 2 Omni with specialized system prompts
-- Graceful fallback to original prompt if enhancement fails
+- Uses Nova 2 Omni with specialized persona system prompts
+- Graceful fallback to original prompt if persona enhancement fails
 
 ### UI Components
-- `PromptEnhancementSelector`: Main selector component with icon-based UI
+- `PromptEnhancementSelector`: Main persona selector component with icon-based UI
 - Integrated into `PromptInputArea` alongside aspect ratio selector
-- Expandable tray showing all enhancement options with descriptions
+- Expandable tray showing all persona options with descriptions
 
 ### Data Storage
-- When prompt enhancement is used, the enhanced prompt becomes the main `prompt` field of `GeneratedImage`
+- When a persona is used, the enhanced prompt becomes the main `prompt` field of `GeneratedImage`
 - The enhanced prompt is displayed everywhere the prompt is shown (placeholders, image cards, lightbox)
 - Original prompt is not preserved - the enhanced version becomes the canonical prompt for the image
 
@@ -73,45 +73,45 @@ export type PromptEnhancement = 'off' | 'standard' | 'creative' | 'custom';
 
 ### Visual Design
 - Consistent with existing aspect ratio selector design
-- Icon-based representation for each enhancement type:
+- Icon-based representation for each persona type:
   - Off: X icon
   - Standard: Sparkles icon
   - Creative: Wand icon
   - Custom: Settings icon
 
 ### Interaction Flow
-1. User selects enhancement type from dropdown
+1. User selects persona type from dropdown
 2. User enters their prompt
 3. User clicks generate
-4. System shows "generating" status during both enhancement and image generation
+4. System shows "generating" status during both persona enhancement and image generation
 5. Final image is generated using enhanced prompt
 6. Enhanced prompt is available for reference
 
 ### Error Handling
-- If prompt enhancement fails, falls back to original prompt
-- No user-visible errors for enhancement failures
+- If persona enhancement fails, falls back to original prompt
+- No user-visible errors for persona enhancement failures
 - Continues with image generation using original prompt
 
 ## Benefits
 
-1. **Improved Image Quality**: Enhanced prompts typically produce higher quality, more detailed images
+1. **Improved Image Quality**: Persona-enhanced prompts typically produce higher quality, more detailed images
 2. **User Learning**: Users can see how their prompts were enhanced and learn better prompting techniques
-3. **Consistency**: Standardized enhancement approaches ensure consistent quality improvements
-4. **Flexibility**: Users can choose enhancement level or disable it entirely
+3. **Consistency**: Standardized persona approaches ensure consistent quality improvements
+4. **Flexibility**: Users can choose persona type or disable it entirely
 5. **Transparency**: Enhanced prompts replace the original and are visible everywhere in the UI
 
 ## Future Enhancements
 
-1. **Custom Enhancement**: Allow users to define their own enhancement rules
-2. **Enhancement History**: Show before/after prompt comparisons
-3. **Enhancement Analytics**: Track which enhancements produce better results
-4. **Prompt Templates**: Pre-defined enhancement templates for specific use cases
-5. **A/B Testing**: Generate images with both original and enhanced prompts for comparison
+1. **More Personas**: Add additional pre-defined personas for specific styles or use cases
+2. **Persona History**: Show before/after prompt comparisons
+3. **Persona Analytics**: Track which personas produce better results
+4. **Persona Templates**: Pre-defined persona templates for specific use cases
+5. **A/B Testing**: Generate images with both original and persona-enhanced prompts for comparison
 
 ## Technical Notes
 
-- Enhancement uses the same Nova 2 Omni model as image generation
-- Enhancement requests are separate API calls before image generation
+- Persona enhancement uses the same Nova 2 Omni model as image generation
+- Persona enhancement requests are separate API calls before image generation
 - Minimal performance impact due to text-only enhancement requests
 - Backward compatible - existing functionality unchanged when set to 'off'
-- Graceful degradation if enhancement service is unavailable
+- Graceful degradation if persona enhancement service is unavailable

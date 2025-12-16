@@ -11,7 +11,7 @@ interface PromptEnhancementSelectorProps {
 }
 
 /**
- * Available prompt enhancement options with their visual representations
+ * Available persona options with their visual representations
  */
 const PROMPT_ENHANCEMENTS: {
     value: PromptEnhancement;
@@ -23,30 +23,30 @@ const PROMPT_ENHANCEMENTS: {
             value: 'off',
             label: 'Off',
             icon: X,
-            description: 'Use your prompt as-is without enhancement'
+            description: 'Use your prompt as-is without a persona'
         },
         {
             value: 'standard',
             label: 'Standard',
             icon: Sparkles,
-            description: 'Enhance prompt with standard improvements'
+            description: 'Professional photographer persona with technical expertise'
         },
         {
             value: 'creative',
             label: 'Creative',
             icon: Wand2,
-            description: 'Add creative flair and artistic details'
+            description: 'Artistic persona that adds creative flair and imagination'
         },
         {
             value: 'custom',
             label: 'Custom',
             icon: Settings,
-            description: 'Use custom enhancement settings'
+            description: 'Your own custom persona with unique characteristics'
         },
     ];
 
 /**
- * Get the enhancement data for a specific enhancement type
+ * Get the persona data for a specific persona type
  */
 const getEnhancementData = (enhancement: PromptEnhancement) => {
     return PROMPT_ENHANCEMENTS.find(e => e.value === enhancement) || PROMPT_ENHANCEMENTS[0];
@@ -55,7 +55,7 @@ const getEnhancementData = (enhancement: PromptEnhancement) => {
 /**
  * PromptEnhancementSelector Component
  * 
- * A custom prompt enhancement selector that shows the current enhancement with an icon
+ * A custom persona selector that shows the current persona with an icon
  * and triggers the parent's expanded state when clicked.
  */
 export function PromptEnhancementSelector({
@@ -81,7 +81,7 @@ export function PromptEnhancementSelector({
             onClick={handleToggle}
             className={`h-8 px-3 gap-2 text-base font-medium hover:bg-accent/50 transition-colors ${isExpanded ? 'bg-accent/50' : ''
                 }`}
-            aria-label={`Current prompt enhancement: ${currentEnhancement.label}. Click to ${isExpanded ? 'close' : 'open'
+            aria-label={`Current persona: ${currentEnhancement.label}. Click to ${isExpanded ? 'close' : 'open'
                 } options`}
             aria-expanded={isExpanded}
         >

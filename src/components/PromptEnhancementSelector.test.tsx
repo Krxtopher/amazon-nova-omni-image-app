@@ -3,18 +3,18 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { PromptEnhancementSelector } from './PromptEnhancementSelector';
 
 describe('PromptEnhancementSelector', () => {
-    const mockOnEnhancementChange = vi.fn();
+    const mockOnPersonaChange = vi.fn();
     const mockOnExpandedChange = vi.fn();
 
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('renders with default enhancement (off)', () => {
+    it('renders with default persona (off)', () => {
         render(
             <PromptEnhancementSelector
                 selectedEnhancement="off"
-                onEnhancementChange={mockOnEnhancementChange}
+                onEnhancementChange={mockOnPersonaChange}
                 onExpandedChange={mockOnExpandedChange}
             />
         );
@@ -22,11 +22,11 @@ describe('PromptEnhancementSelector', () => {
         expect(screen.getByRole('button')).toHaveTextContent('Off');
     });
 
-    it('renders with standard enhancement', () => {
+    it('renders with standard persona', () => {
         render(
             <PromptEnhancementSelector
                 selectedEnhancement="standard"
-                onEnhancementChange={mockOnEnhancementChange}
+                onEnhancementChange={mockOnPersonaChange}
                 onExpandedChange={mockOnExpandedChange}
             />
         );
@@ -34,11 +34,11 @@ describe('PromptEnhancementSelector', () => {
         expect(screen.getByRole('button')).toHaveTextContent('Standard');
     });
 
-    it('renders with creative enhancement', () => {
+    it('renders with creative persona', () => {
         render(
             <PromptEnhancementSelector
                 selectedEnhancement="creative"
-                onEnhancementChange={mockOnEnhancementChange}
+                onEnhancementChange={mockOnPersonaChange}
                 onExpandedChange={mockOnExpandedChange}
             />
         );
@@ -46,11 +46,11 @@ describe('PromptEnhancementSelector', () => {
         expect(screen.getByRole('button')).toHaveTextContent('Creative');
     });
 
-    it('renders with custom enhancement', () => {
+    it('renders with custom persona', () => {
         render(
             <PromptEnhancementSelector
                 selectedEnhancement="custom"
-                onEnhancementChange={mockOnEnhancementChange}
+                onEnhancementChange={mockOnPersonaChange}
                 onExpandedChange={mockOnExpandedChange}
             />
         );
@@ -62,7 +62,7 @@ describe('PromptEnhancementSelector', () => {
         render(
             <PromptEnhancementSelector
                 selectedEnhancement="off"
-                onEnhancementChange={mockOnEnhancementChange}
+                onEnhancementChange={mockOnPersonaChange}
                 onExpandedChange={mockOnExpandedChange}
                 isExpanded={false}
             />
@@ -76,7 +76,7 @@ describe('PromptEnhancementSelector', () => {
         render(
             <PromptEnhancementSelector
                 selectedEnhancement="off"
-                onEnhancementChange={mockOnEnhancementChange}
+                onEnhancementChange={mockOnPersonaChange}
                 onExpandedChange={mockOnExpandedChange}
                 disabled={true}
             />
@@ -90,7 +90,7 @@ describe('PromptEnhancementSelector', () => {
         render(
             <PromptEnhancementSelector
                 selectedEnhancement="off"
-                onEnhancementChange={mockOnEnhancementChange}
+                onEnhancementChange={mockOnPersonaChange}
                 onExpandedChange={mockOnExpandedChange}
                 isExpanded={true}
             />

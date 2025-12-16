@@ -12,7 +12,7 @@ vi.mock('@aws-sdk/client-bedrock-runtime', () => ({
     ConverseCommand: vi.fn()
 }));
 
-describe('Prompt Enhancement', () => {
+describe('Persona Enhancement', () => {
     let bedrockService: BedrockImageService;
     let mockSend: any;
 
@@ -73,7 +73,7 @@ describe('Prompt Enhancement', () => {
         const callArgs = mockSend.mock.calls[0][0];
         expect(callArgs.input.modelId).toBe('us.amazon.nova-2-omni-v1:0');
         expect(callArgs.input.messages[0].content[0].text).toBe(originalPrompt);
-        expect(callArgs.input.system[0].text).toContain('prompt enhancement assistant');
+        expect(callArgs.input.system[0].text).toContain('professional photographer persona');
     });
 
     it('should call Nova 2 Omni for creative enhancement', async () => {
@@ -96,7 +96,7 @@ describe('Prompt Enhancement', () => {
         expect(mockSend).toHaveBeenCalledTimes(1);
 
         const callArgs = mockSend.mock.calls[0][0];
-        expect(callArgs.input.system[0].text).toContain('creative prompt enhancement assistant');
+        expect(callArgs.input.system[0].text).toContain('artistic persona');
     });
 
     it('should fallback to original prompt if enhancement fails', async () => {

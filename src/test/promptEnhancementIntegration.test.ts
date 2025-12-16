@@ -12,7 +12,7 @@ vi.mock('@aws-sdk/client-bedrock-runtime', () => ({
     ConverseCommand: vi.fn()
 }));
 
-describe('Prompt Enhancement Integration', () => {
+describe('Persona Integration', () => {
     let bedrockService: BedrockImageService;
     let mockSend: any;
 
@@ -70,7 +70,7 @@ describe('Prompt Enhancement Integration', () => {
                 stopReason: 'end_turn'
             });
 
-        // First, test prompt enhancement
+        // First, test persona enhancement
         const result = await bedrockService.enhancePrompt(originalPrompt, 'standard');
         expect(result).toBe(enhancedPrompt);
 
@@ -92,7 +92,7 @@ describe('Prompt Enhancement Integration', () => {
         // Verify enhancement call
         const enhancementCall = mockSend.mock.calls[0][0];
         expect(enhancementCall.input.messages[0].content[0].text).toBe(originalPrompt);
-        expect(enhancementCall.input.system[0].text).toContain('prompt enhancement assistant');
+        expect(enhancementCall.input.system[0].text).toContain('professional photographer persona');
 
         // Verify image generation call
         const imageCall = mockSend.mock.calls[1][0];
@@ -121,7 +121,7 @@ describe('Prompt Enhancement Integration', () => {
             stopReason: 'end_turn'
         });
 
-        // Test prompt enhancement (should return original)
+        // Test persona enhancement (should return original)
         const enhancedPrompt = await bedrockService.enhancePrompt(originalPrompt, 'off');
         expect(enhancedPrompt).toBe(originalPrompt);
 
