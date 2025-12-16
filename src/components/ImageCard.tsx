@@ -72,8 +72,10 @@ export function ImageCard({
 
     // Calculate dynamic line clamps based on actual display height
     const generatingLineClamp = useMemo(() => {
-        // For generating state, use the full display height
-        return calculateLineClamp(displayHeight, 14, 1.5, 32);
+        // For generating state, account for timer space at bottom (approx 40px for timer + spacing)
+        const timerHeight = 40;
+        const availableHeight = displayHeight - timerHeight;
+        return calculateLineClamp(availableHeight, 18, 1.5, 32); // Using 18px font size to match text-lg
     }, [displayHeight]);
 
     const hoverLineClamp = useMemo(() => {
@@ -123,23 +125,27 @@ export function ImageCard({
                 <div className="absolute inset-0">
                     <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
                     {/* Queued status overlay */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-10 mix-blend-overlay">
-                        <div className="text-white text-xl font-semibold mb-2 bg-black/30 px-3 py-1 rounded">
-                            Queued...
+                    <div className="absolute inset-0 flex flex-col p-4 z-10 mix-blend-overlay">
+                        {/* Prompt centered in the available space */}
+                        <div className="flex-1 flex items-center justify-center min-h-0">
+                            {item.prompt && (
+                                <div
+                                    className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic"
+                                    style={{
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: generatingLineClamp,
+                                        WebkitBoxOrient: 'vertical',
+                                        textOverflow: 'ellipsis'
+                                    }}
+                                >
+                                    {item.prompt}
+                                </div>
+                            )}
                         </div>
-                        {item.prompt && (
-                            <div
-                                className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic"
-                                style={{
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: generatingLineClamp,
-                                    WebkitBoxOrient: 'vertical',
-                                    textOverflow: 'ellipsis'
-                                }}
-                            >
-                                {item.prompt}
-                            </div>
-                        )}
+                        {/* Queued message at the bottom */}
+                        <div className="text-white text-center shrink-0 mt-2">
+                            Queued
+                        </div>
                     </div>
                 </div>
             );
@@ -157,25 +163,27 @@ export function ImageCard({
                 <div className="absolute inset-0">
                     <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
                     {/* Timer and prompt overlay during generation */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-10 mix-blend-overlay">
-                        {item.status === 'generating' && (
-                            <div className="text-white text-xl font-mono font-bold mb-2 bg-black/30 px-3 py-1 rounded">
-                                {formatTime(generatingTimer)}
-                            </div>
-                        )}
-                        {item.prompt && (
-                            <div
-                                className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic"
-                                style={{
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: generatingLineClamp,
-                                    WebkitBoxOrient: 'vertical',
-                                    textOverflow: 'ellipsis'
-                                }}
-                            >
-                                {item.prompt}
-                            </div>
-                        )}
+                    <div className="absolute inset-0 flex flex-col p-4 z-10 mix-blend-overlay">
+                        {/* Prompt centered in the available space */}
+                        <div className="flex-1 flex items-center justify-center min-h-0">
+                            {item.prompt && (
+                                <div
+                                    className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic"
+                                    style={{
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: generatingLineClamp,
+                                        WebkitBoxOrient: 'vertical',
+                                        textOverflow: 'ellipsis'
+                                    }}
+                                >
+                                    {item.prompt}
+                                </div>
+                            )}
+                        </div>
+                        {/* Status and timer at the bottom - fixed height */}
+                        <div className="text-white text-center shrink-0 mt-2">
+                            {item.status === 'generating' ? formatTime(generatingTimer) : 'Pending'}
+                        </div>
                     </div>
                 </div>
             );
