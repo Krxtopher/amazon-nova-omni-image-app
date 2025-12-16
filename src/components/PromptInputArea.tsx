@@ -172,7 +172,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         const placeholderImage: GeneratedImage = {
             id: placeholderId,
             url: '', // Empty URL for placeholder
-            prompt: prompt,
+            prompt: prompt, // Start with original prompt, will be updated with enhanced prompt if enhancement is used
             status: initialStatus,
             aspectRatio: aspectRatioToUse,
             width: dimensions.width,
@@ -197,6 +197,9 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 if (selectedPromptEnhancement !== 'off') {
                     try {
                         enhancedPrompt = await bedrockService.enhancePrompt(prompt, selectedPromptEnhancement);
+
+                        // Update the placeholder with the enhanced prompt so it's displayed immediately
+                        updateImage(placeholderId, { prompt: enhancedPrompt });
                     } catch (error) {
                         console.warn('Prompt enhancement failed, using original prompt:', error);
                         enhancedPrompt = prompt;
@@ -257,7 +260,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         width: actualDimensions.width,
                         height: actualDimensions.height,
                         converseParams: response.converseParams,
-                        enhancedPrompt: selectedPromptEnhancement !== 'off' ? enhancedPrompt : undefined,
                     });
 
                     // Show success notification

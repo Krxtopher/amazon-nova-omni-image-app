@@ -22,8 +22,9 @@ When any option other than "Off" is selected, the following flow occurs:
 1. **User submits prompt**: User enters their prompt and clicks generate
 2. **Prompt enhancement**: The original prompt is sent to Nova 2 Omni with a specialized system prompt for enhancement
 3. **Enhanced prompt generation**: Nova 2 Omni returns an improved version of the prompt
-4. **Image generation**: The enhanced prompt is used for actual image generation
-5. **Storage**: The enhanced prompt is saved with the generated image
+4. **UI update**: The enhanced prompt immediately replaces the original prompt in the placeholder and all UI displays
+5. **Image generation**: The enhanced prompt is used for actual image generation
+6. **Storage**: The enhanced prompt is saved as the main prompt for the generated image
 
 ### 3. System Prompts
 
@@ -64,9 +65,9 @@ export type PromptEnhancement = 'off' | 'standard' | 'creative' | 'custom';
 - Expandable tray showing all enhancement options with descriptions
 
 ### Data Storage
-- Enhanced prompts are stored in the `enhancedPrompt` field of `GeneratedImage`
-- Only stored when enhancement is actually used (not 'off')
-- Allows users to see what enhanced prompt was used for each image
+- When prompt enhancement is used, the enhanced prompt becomes the main `prompt` field of `GeneratedImage`
+- The enhanced prompt is displayed everywhere the prompt is shown (placeholders, image cards, lightbox)
+- Original prompt is not preserved - the enhanced version becomes the canonical prompt for the image
 
 ## User Experience
 
@@ -97,7 +98,7 @@ export type PromptEnhancement = 'off' | 'standard' | 'creative' | 'custom';
 2. **User Learning**: Users can see how their prompts were enhanced and learn better prompting techniques
 3. **Consistency**: Standardized enhancement approaches ensure consistent quality improvements
 4. **Flexibility**: Users can choose enhancement level or disable it entirely
-5. **Transparency**: Enhanced prompts are saved and visible to users
+5. **Transparency**: Enhanced prompts replace the original and are visible everywhere in the UI
 
 ## Future Enhancements
 

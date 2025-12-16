@@ -69,7 +69,6 @@ export interface ImageData {
  */
 export interface GeneratedImage extends ImageMetadata {
     url?: string; // Optional - loaded on demand
-    enhancedPrompt?: string; // The enhanced version of the prompt (if enhancement was used)
 }
 
 /**
