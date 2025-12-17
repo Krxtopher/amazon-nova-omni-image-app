@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Wand2, X, Plus, Edit, Trash2 } from 'lucide-react';
-import { PersonaModal } from './PersonaModal';
+import { Sparkles, Wand2, X, Plus, Edit, Trash2, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { personaService } from '@/services/personaService';
 import type { PromptEnhancement, CustomPersona } from '@/types';
 
@@ -34,10 +36,26 @@ const BUILT_IN_PERSONAS = [
     }
 ];
 
+const DEFAULT_SYSTEM_PROMPT = `You are a creative persona with a unique artistic style. Your task is to take a user's image generation prompt and enhance it while preserving the original intent.
+
+Guidelines for enhancement:
+- Keep the core subject and concept intact
+- Add your own creative flair and artistic vision
+- Include detailed descriptions that match your style
+- Enhance with appropriate technical and artistic terms
+- Maintain the original mood and intent
+- Make the prompt more vivid and engaging
+
+Return only the enhanced prompt, nothing else.`;
+
 export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: PersonaTrayProps) {
     const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]);
-    const [showPersonaModal, setShowPersonaModal] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
     const [editingPersona, setEditingPersona] = useState<CustomPersona | null>(null);
+    const [name, setName] = useState('');
+    const [systemPrompt, setSystemPrompt] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState<{ name?: string; systemPrompt?: string }>({});
 
     // Load custom personas when component mounts
     useEffect(() => {
@@ -60,13 +78,19 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
 
     const handleCreatePersona = () => {
         setEditingPersona(null);
-        setShowPersonaModal(true);
+        setName('');
+        setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+        setErrors({});
+        setIsCreating(true);
     };
 
     const handleEditPersona = (persona: CustomPersona, event: React.MouseEvent) => {
         event.stopPropagation();
         setEditingPersona(persona);
-        setShowPersonaModal(true);
+        setName(persona.name);
+        setSystemPrompt(persona.systemPrompt);
+        setErrors({});
+        setIsCreating(true);
     };
 
     const handleDeletePersona = async (persona: CustomPersona, event: React.MouseEvent) => {
@@ -87,19 +111,82 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
         }
     };
 
-    const handlePersonaSave = async (persona: CustomPersona) => {
-        // Reload the list
-        await loadCustomPersonas();
+    const validateForm = () => {
+        const newErrors: typeof errors = {};
 
-        // If this was a new persona, select it
-        if (!editingPersona) {
-            onPersonaChange(persona.id);
+        if (!name.trim()) {
+            newErrors.name = 'Name is required';
+        } else if (name.trim().length > 50) {
+            newErrors.name = 'Name must be 50 characters or less';
+        }
+
+        if (!systemPrompt.trim()) {
+            newErrors.systemPrompt = 'System prompt is required';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSave = async () => {
+        if (!validateForm()) {
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+
+            let persona: CustomPersona;
+            if (editingPersona) {
+                // Update existing persona
+                const updated = await personaService.updateCustomPersona(editingPersona.id, {
+                    name: name.trim(),
+                    systemPrompt: systemPrompt.trim()
+                });
+                if (!updated) {
+                    throw new Error('Failed to update persona');
+                }
+                persona = updated;
+            } else {
+                // Create new persona
+                persona = await personaService.createCustomPersona(
+                    name.trim(),
+                    systemPrompt.trim(),
+                    'Custom persona' // Use a default description
+                );
+            }
+
+            // Reload the list
+            await loadCustomPersonas();
+
+            // If this was a new persona, select it
+            if (!editingPersona) {
+                onPersonaChange(persona.id);
+            }
+
+            // Exit editing mode
+            setIsCreating(false);
+            setEditingPersona(null);
+        } catch (error) {
+            console.error('Failed to save persona:', error);
+            // Could show a toast error here
+        } finally {
+            setIsSaving(false);
         }
     };
 
+    const handleCancel = () => {
+        setIsCreating(false);
+        setEditingPersona(null);
+        setName('');
+        setSystemPrompt('');
+        setErrors({});
+    };
+
     return (
-        <>
-            <div className="px-2 pb-3 border-t border-border/30 mt-2">
+        <div className="px-2 pb-3 border-t border-border/30 mt-2">
+            {!isCreating ? (
+                // Persona selection view
                 <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
                     {/* Built-in personas */}
                     {BUILT_IN_PERSONAS.map((persona) => {
@@ -178,15 +265,71 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                         </span>
                     </button>
                 </div>
-            </div>
+            ) : (
+                // Inline persona creation/editing form
+                <div className="space-y-4 py-4">
+                    {/* System prompt field */}
+                    <div className="space-y-2">
+                        <Label htmlFor="persona-prompt" className="text-sm font-medium">
+                            System Prompt
+                        </Label>
+                        <textarea
+                            id="persona-prompt"
+                            value={systemPrompt}
+                            onChange={(e) => setSystemPrompt(e.target.value)}
+                            placeholder="Describe how this AI persona should enhance prompts..."
+                            className={`w-full h-32 p-3 border rounded-md resize-none text-sm ${errors.systemPrompt ? 'border-red-500' : 'border-input'} bg-background`}
+                        />
+                        {errors.systemPrompt && (
+                            <p className="text-sm text-red-500">{errors.systemPrompt}</p>
+                        )}
+                    </div>
 
-            {/* Persona creation/editing modal */}
-            <PersonaModal
-                isOpen={showPersonaModal}
-                onClose={() => setShowPersonaModal(false)}
-                onSave={handlePersonaSave}
-                editingPersona={editingPersona}
-            />
-        </>
+                    {/* Name field */}
+                    <div className="space-y-2">
+                        <Label htmlFor="persona-name" className="text-sm font-medium">
+                            Name
+                        </Label>
+                        <Input
+                            id="persona-name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="e.g., Fantasy Artist, Technical Writer"
+                            className={errors.name ? 'border-red-500' : ''}
+                        />
+                        {errors.name && (
+                            <p className="text-sm text-red-500">{errors.name}</p>
+                        )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancel}
+                            disabled={isSaving}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            size="sm"
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="gap-2"
+                        >
+                            {isSaving ? (
+                                'Saving...'
+                            ) : (
+                                <>
+                                    <Check className="h-4 w-4" />
+                                    {editingPersona ? 'Update' : 'Create'}
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

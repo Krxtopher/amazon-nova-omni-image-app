@@ -17,6 +17,5 @@ export { ColorPicker } from './ColorPicker';
 export { AspectRatioSelector } from './AspectRatioSelector';
 export { PersonaSelector } from './PersonaSelector';
 export { PersonaTray } from './PersonaTray';
-export { PersonaModal } from './PersonaModal';
 export { Sidebar } from './Sidebar';
 export { SettingsModal } from './SettingsModal';
