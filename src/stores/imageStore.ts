@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { GeneratedImage, GeneratedText, GalleryItem, EditSource, AspectRatio, PromptEnhancement } from '../types';
+import { personaService } from '../services/personaService';
 import { sqliteService } from '../services/sqliteService';
 
 /**
@@ -101,9 +102,23 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
             const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
 
+            // Migrate old custom persona if needed
+            await personaService.migrateOldCustomPersona();
+
             // Load persona setting
             const savedEnhancement = await sqliteService.getSetting('selectedPromptEnhancement');
-            const promptEnhancement = (savedEnhancement as PromptEnhancement) || DEFAULT_PROMPT_ENHANCEMENT;
+            let promptEnhancement = (savedEnhancement as PromptEnhancement) || DEFAULT_PROMPT_ENHANCEMENT;
+
+            // If the saved enhancement was 'custom', we need to check if we have any custom personas
+            // and select the first one, or fall back to 'off'
+            if (promptEnhancement === 'custom') {
+                const customPersonas = await personaService.getCustomPersonas();
+                if (customPersonas.length > 0) {
+                    promptEnhancement = customPersonas[0].id;
+                } else {
+                    promptEnhancement = 'off';
+                }
+            }
 
             set({
                 images: imageMetadata,

@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
-import type { AspectRatio, EditSource, GeneratedImage, PromptEnhancement } from '@/types';
-import { X, Plus, Send, Dice5, Sparkles, Wand2, Settings } from 'lucide-react';
+import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
+import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
-import { PromptEnhancementSelector } from './PromptEnhancementSelector';
+import { PersonaSelector } from './PersonaSelector';
+import { PersonaTray } from './PersonaTray';
 import { TextResponseModal } from './TextResponseModal';
-import { CustomPromptEnhancementModal } from './CustomPromptEnhancementModal';
-import { sqliteService } from '@/services/sqliteService';
+
 
 /**
  * Props for PromptInputArea component
@@ -77,7 +77,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const [promptEnhancementExpanded, setPromptEnhancementExpanded] = useState(false);
     const [showTextResponseModal, setShowTextResponseModal] = useState(false);
     const [textResponsePrompt, setTextResponsePrompt] = useState('');
-    const [showCustomEnhancementModal, setShowCustomEnhancementModal] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputBarRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<any>(null);
@@ -97,45 +97,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         deleteImage,
     } = useImageStore();
 
-    /**
-     * Handle persona selection, showing custom modal if needed
-     */
-    const handlePromptEnhancementChange = async (enhancement: PromptEnhancement) => {
-        if (enhancement === 'custom') {
-            // Check if custom persona already exists
-            try {
-                const existingPersona = await sqliteService.getSetting('customPromptEnhancementPersona');
-                if (!existingPersona) {
-                    // Show modal for first-time setup
-                    setShowCustomEnhancementModal(true);
-                    return; // Don't set the enhancement yet
-                }
-            } catch (error) {
-                console.error('Failed to check for existing custom persona:', error);
-                // Show modal anyway if we can't check
-                setShowCustomEnhancementModal(true);
-                return;
-            }
-        }
 
-        // Set the persona normally
-        setPromptEnhancement(enhancement);
-    };
-
-    /**
-     * Handle saving custom persona from modal
-     */
-    const handleCustomPersonaSave = (_customPersona: string) => {
-        // Now that we have a custom persona, we can set the enhancement to custom
-        setPromptEnhancement('custom');
-    };
-
-    /**
-     * Handle editing custom persona (when custom is already selected)
-     */
-    const handleEditCustomPersona = () => {
-        setShowCustomEnhancementModal(true);
-    };
 
     // Notify parent when activeRequests changes
     useEffect(() => {
@@ -645,9 +607,9 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                             </div>
                             <div className="flex items-center gap-0">
                                 <span className="text-white/50 font-medium special-gothic-label">Persona</span>
-                                <PromptEnhancementSelector
-                                    selectedEnhancement={selectedPromptEnhancement}
-                                    onEnhancementChange={setPromptEnhancement}
+                                <PersonaSelector
+                                    selectedPersona={selectedPromptEnhancement}
+                                    onPersonaChange={setPromptEnhancement}
                                     isExpanded={promptEnhancementExpanded}
                                     onExpandedChange={setPromptEnhancementExpanded}
                                 />
@@ -703,57 +665,11 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 {/* Expanded personas tray - integrated within the input bar */}
                 {promptEnhancementExpanded && (
-                    <div className="px-2 pb-3 border-t border-border/30 mt-2">
-                        <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
-                            {([
-                                { value: 'off', label: 'Off', icon: X, description: 'Use your prompt as-is without a persona' },
-                                { value: 'standard', label: 'Standard', icon: Sparkles, description: 'Professional photographer persona with technical expertise' },
-                                { value: 'creative', label: 'Creative', icon: Wand2, description: 'Artistic persona that adds creative flair and imagination' },
-                                { value: 'custom', label: 'Custom', icon: Settings, description: 'Your own custom persona with unique characteristics' },
-                            ] as Array<{ value: PromptEnhancement; label: string; icon: any; description: string }>).map((enhancement) => {
-                                const IconComponent = enhancement.icon;
-                                return (
-                                    <button
-                                        key={enhancement.value}
-                                        onClick={() => {
-                                            if (enhancement.value === 'custom' && selectedPromptEnhancement === 'custom') {
-                                                // If custom is already selected, show edit modal
-                                                handleEditCustomPersona();
-                                            } else {
-                                                // Normal selection behavior
-                                                handlePromptEnhancementChange(enhancement.value);
-                                            }
-                                            setPromptEnhancementExpanded(false);
-                                        }}
-                                        className={`flex flex-col items-center gap-2 p-3 min-w-[80px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPromptEnhancement === enhancement.value
-                                            ? 'bg-white/10 border border-transparent'
-                                            : 'border border-transparent hover:border-border'
-                                            }`}
-                                        aria-label={
-                                            enhancement.value === 'custom' && selectedPromptEnhancement === 'custom'
-                                                ? 'Edit custom persona settings'
-                                                : `Select persona ${enhancement.label}: ${enhancement.description}`
-                                        }
-                                        title={
-                                            enhancement.value === 'custom' && selectedPromptEnhancement === 'custom'
-                                                ? 'Click to edit your custom persona settings'
-                                                : enhancement.description
-                                        }
-                                    >
-                                        {/* Icon representation */}
-                                        <div className="flex items-center justify-center h-8">
-                                            <IconComponent className="h-5 w-5" />
-                                        </div>
-
-                                        {/* Label */}
-                                        <span className="text-xs font-medium whitespace-nowrap">
-                                            {enhancement.value === 'custom' && selectedPromptEnhancement === 'custom' ? 'Edit' : enhancement.label}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <PersonaTray
+                        selectedPersona={selectedPromptEnhancement}
+                        onPersonaChange={setPromptEnhancement}
+                        onClose={() => setPromptEnhancementExpanded(false)}
+                    />
                 )}
             </div>
 
@@ -764,12 +680,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 originalPrompt={textResponsePrompt}
             />
 
-            {/* Custom Persona Modal */}
-            <CustomPromptEnhancementModal
-                isOpen={showCustomEnhancementModal}
-                onClose={() => setShowCustomEnhancementModal(false)}
-                onSave={handleCustomPersonaSave}
-            />
+
         </div>
     );
 }

@@ -442,6 +442,17 @@ class SQLiteService {
     }
 
     /**
+     * Delete a setting
+     */
+    async deleteSetting(key: string): Promise<void> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        this.db.run('DELETE FROM settings WHERE key = ?', [key]);
+        await this.saveToIndexedDB();
+    }
+
+    /**
      * Clear all data
      */
     async clearAll(): Promise<void> {

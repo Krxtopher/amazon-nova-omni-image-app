@@ -18,8 +18,14 @@ export type {
 export type {
     ImageStatus,
     AspectRatio,
-    PromptEnhancement,
 } from './image';
+
+// Persona types
+export type {
+    CustomPersona,
+    BuiltInPersona,
+    PromptEnhancement,
+} from './persona';
 
 // Bedrock API types
 export type {

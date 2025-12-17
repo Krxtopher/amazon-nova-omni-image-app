@@ -1,8 +1,9 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
-import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams, PromptEnhancement } from '../types';
-import { sqliteService } from './sqliteService';
+import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams, PromptEnhancement, BuiltInPersona } from '../types';
+import { personaService } from './personaService';
+
 
 /**
  * Configuration for BedrockImageService
@@ -31,9 +32,9 @@ export const ASPECT_RATIO_DIMENSIONS: Record<Exclude<AspectRatio, 'random'>, { w
 };
 
 /**
- * System prompts for different persona modes
+ * System prompts for different built-in persona modes
  */
-const PROMPT_ENHANCEMENT_SYSTEM_PROMPTS: Record<Exclude<PromptEnhancement, 'off' | 'custom'>, string> = {
+const PROMPT_ENHANCEMENT_SYSTEM_PROMPTS: Record<Exclude<BuiltInPersona, 'off'>, string> = {
     standard: `You are a professional photographer persona. Your task is to take a user's image generation prompt and enhance it with technical expertise while preserving the user's original intent.
 
 Guidelines for enhancement:
@@ -302,18 +303,20 @@ export class BedrockImageService {
         try {
             let systemPrompt: string;
 
-            // Handle custom enhancement by loading user-defined persona
-            if (enhancementType === 'custom') {
-                const customPersona = await sqliteService.getSetting('customPromptEnhancementPersona');
-                if (!customPersona) {
-                    // If no custom persona is set, fall back to original prompt
-                    console.warn('Custom prompt enhancement selected but no custom persona found');
+            // Check if it's a built-in persona
+            if (personaService.isBuiltInPersona(enhancementType)) {
+                if (enhancementType === 'off') {
                     return originalPrompt;
                 }
-                systemPrompt = customPersona as string;
-            } else {
-                // Use predefined system prompt for standard/creative modes
                 systemPrompt = PROMPT_ENHANCEMENT_SYSTEM_PROMPTS[enhancementType];
+            } else {
+                // Handle custom persona by ID
+                const customSystemPrompt = await personaService.getSystemPrompt(enhancementType);
+                if (!customSystemPrompt) {
+                    console.warn(`Custom persona ${enhancementType} not found, using original prompt`);
+                    return originalPrompt;
+                }
+                systemPrompt = customSystemPrompt;
             }
 
             const commandParams: any = {
