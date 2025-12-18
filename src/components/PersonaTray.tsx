@@ -3,6 +3,7 @@ import { Sparkles, Wand2, X, Plus, Edit, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { personaService } from '@/services/personaService';
 import type { PromptEnhancement, CustomPersona } from '@/types';
 
@@ -36,26 +37,16 @@ const BUILT_IN_PERSONAS = [
     }
 ];
 
-const DEFAULT_SYSTEM_PROMPT = `You are a creative persona with a unique artistic style. Your task is to take a user's image generation prompt and enhance it while preserving the original intent.
 
-Guidelines for enhancement:
-- Keep the core subject and concept intact
-- Add your own creative flair and artistic vision
-- Include detailed descriptions that match your style
-- Enhance with appropriate technical and artistic terms
-- Maintain the original mood and intent
-- Make the prompt more vivid and engaging
-
-Return only the enhanced prompt, nothing else.`;
 
 export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: PersonaTrayProps) {
     const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [editingPersona, setEditingPersona] = useState<CustomPersona | null>(null);
     const [name, setName] = useState('');
-    const [systemPrompt, setSystemPrompt] = useState('');
+    const [personaDescription, setPersonaDescription] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [errors, setErrors] = useState<{ name?: string; systemPrompt?: string }>({});
+    const [errors, setErrors] = useState<{ name?: string; personaDescription?: string }>({});
 
     // Load custom personas when component mounts
     useEffect(() => {
@@ -79,7 +70,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
     const handleCreatePersona = () => {
         setEditingPersona(null);
         setName('');
-        setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+        setPersonaDescription('');
         setErrors({});
         setIsCreating(true);
     };
@@ -88,7 +79,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
         event.stopPropagation();
         setEditingPersona(persona);
         setName(persona.name);
-        setSystemPrompt(persona.systemPrompt);
+        setPersonaDescription(personaService.extractPersonaDescription(persona.systemPrompt));
         setErrors({});
         setIsCreating(true);
     };
@@ -120,8 +111,8 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             newErrors.name = 'Name must be 50 characters or less';
         }
 
-        if (!systemPrompt.trim()) {
-            newErrors.systemPrompt = 'System prompt is required';
+        if (!personaDescription.trim()) {
+            newErrors.personaDescription = 'Persona description is required';
         }
 
         setErrors(newErrors);
@@ -141,7 +132,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                 // Update existing persona
                 const updated = await personaService.updateCustomPersona(editingPersona.id, {
                     name: name.trim(),
-                    systemPrompt: systemPrompt.trim()
+                    personaDescription: personaDescription.trim()
                 });
                 if (!updated) {
                     throw new Error('Failed to update persona');
@@ -151,7 +142,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                 // Create new persona
                 persona = await personaService.createCustomPersona(
                     name.trim(),
-                    systemPrompt.trim(),
+                    personaDescription.trim(),
                     'Custom persona' // Use a default description
                 );
             }
@@ -179,7 +170,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
         setIsCreating(false);
         setEditingPersona(null);
         setName('');
-        setSystemPrompt('');
+        setPersonaDescription('');
         setErrors({});
     };
 
@@ -268,65 +259,89 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             ) : (
                 // Inline persona creation/editing form
                 <div className="space-y-4 py-4">
-                    {/* System prompt field */}
-                    <div className="space-y-2">
-                        <Label htmlFor="persona-prompt" className="text-sm font-medium">
-                            System Prompt
-                        </Label>
-                        <textarea
-                            id="persona-prompt"
-                            value={systemPrompt}
-                            onChange={(e) => setSystemPrompt(e.target.value)}
-                            placeholder="Describe how this AI persona should enhance prompts..."
-                            className={`w-full h-32 p-3 border rounded-md resize-none text-sm ${errors.systemPrompt ? 'border-red-500' : 'border-input'} bg-background`}
-                        />
-                        {errors.systemPrompt && (
-                            <p className="text-sm text-red-500">{errors.systemPrompt}</p>
-                        )}
-                    </div>
+                    {/* Description and Name fields side by side */}
+                    <div className="flex gap-4">
+                        {/* Persona description field - 75% width */}
+                        <div className="flex-1 space-y-2">
+                            <Label htmlFor="persona-description" className="text-white/50 font-medium special-gothic-label">
+                                Persona Description
+                            </Label>
+                            <AutoExpandingTextarea
+                                id="persona-description"
+                                value={personaDescription}
+                                onChange={(e) => setPersonaDescription(e.target.value)}
+                                placeholder="Describe the persona's style and characteristics..."
+                                className={`w-full p-3 text-sm bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none placeholder:text-neutral-200/60 placeholder:italic rounded-md ${errors.personaDescription ? 'border border-red-500' : 'border border-white/20'}`}
+                                style={{ minHeight: '100px' }}
+                            />
+                            {errors.personaDescription && (
+                                <p className="text-sm text-red-500">{errors.personaDescription}</p>
+                            )}
+                        </div>
 
-                    {/* Name field */}
-                    <div className="space-y-2">
-                        <Label htmlFor="persona-name" className="text-sm font-medium">
-                            Name
-                        </Label>
-                        <Input
-                            id="persona-name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g., Fantasy Artist, Technical Writer"
-                            className={errors.name ? 'border-red-500' : ''}
-                        />
-                        {errors.name && (
-                            <p className="text-sm text-red-500">{errors.name}</p>
-                        )}
+                        {/* Name field - 25% width */}
+                        <div className="w-1/4 space-y-2">
+                            <Label htmlFor="persona-name" className="text-white/50 font-medium special-gothic-label">
+                                Name
+                            </Label>
+                            <Input
+                                id="persona-name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="e.g., Fantasy Artist"
+                                className={`bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none placeholder:text-neutral-200/60 placeholder:italic ${errors.name ? 'border border-red-500' : 'border border-white/20'}`}
+                            />
+                            {errors.name && (
+                                <p className="text-sm text-red-500">{errors.name}</p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center justify-end gap-2 pt-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCancel}
-                            disabled={isSaving}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            size="sm"
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="gap-2"
-                        >
-                            {isSaving ? (
-                                'Saving...'
-                            ) : (
-                                <>
-                                    <Check className="h-4 w-4" />
-                                    {editingPersona ? 'Update' : 'Create'}
-                                </>
-                            )}
-                        </Button>
+                    <div className={`flex items-center pt-2 ${editingPersona ? 'justify-between' : 'justify-end'}`}>
+                        {editingPersona && (
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (editingPersona) {
+                                        await handleDeletePersona(editingPersona, e);
+                                        handleCancel();
+                                    }
+                                }}
+                                disabled={isSaving}
+                                className="gap-2"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                            </Button>
+                        )}
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleCancel}
+                                disabled={isSaving}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleSave}
+                                disabled={isSaving || !name.trim() || !personaDescription.trim()}
+                                className="gap-2"
+                            >
+                                {isSaving ? (
+                                    'Saving...'
+                                ) : (
+                                    <>
+                                        <Check className="h-4 w-4" />
+                                        {editingPersona ? 'Update' : 'Create'}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}

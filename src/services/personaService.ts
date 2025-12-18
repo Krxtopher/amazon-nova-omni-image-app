@@ -47,16 +47,19 @@ class PersonaService {
     }
 
     /**
-     * Create a new custom persona
+     * Create a new custom persona using the template
      */
-    async createCustomPersona(name: string, systemPrompt: string, description?: string): Promise<CustomPersona> {
+    async createCustomPersona(name: string, personaDescription: string, description?: string): Promise<CustomPersona> {
         const personas = await this.getCustomPersonas();
+
+        // Use the template with the user's persona description
+        const systemPrompt = this.generateSystemPromptFromTemplate(personaDescription);
 
         const newPersona: CustomPersona = {
             id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
             name: name.trim(),
             description: description?.trim() || 'Custom persona',
-            systemPrompt: systemPrompt.trim(),
+            systemPrompt: systemPrompt,
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -70,7 +73,7 @@ class PersonaService {
     /**
      * Update an existing custom persona
      */
-    async updateCustomPersona(id: string, updates: Partial<Pick<CustomPersona, 'name' | 'description' | 'systemPrompt'>>): Promise<CustomPersona | null> {
+    async updateCustomPersona(id: string, updates: Partial<Pick<CustomPersona, 'name' | 'description'>> & { personaDescription?: string }): Promise<CustomPersona | null> {
         const personas = await this.getCustomPersonas();
         const index = personas.findIndex(p => p.id === id);
 
@@ -78,11 +81,20 @@ class PersonaService {
             return null;
         }
 
+        // If personaDescription is provided, regenerate the system prompt
+        const systemPromptUpdate = updates.personaDescription
+            ? { systemPrompt: this.generateSystemPromptFromTemplate(updates.personaDescription) }
+            : {};
+
         const updatedPersona = {
             ...personas[index],
             ...updates,
+            ...systemPromptUpdate,
             updatedAt: new Date()
         };
+
+        // Remove personaDescription from the final object as it's not part of CustomPersona
+        delete (updatedPersona as any).personaDescription;
 
         personas[index] = updatedPersona;
         await this.savePersonas(personas);
@@ -142,6 +154,33 @@ class PersonaService {
             label: persona.name,
             description: persona.description
         };
+    }
+
+    /**
+     * Generate system prompt from template using persona description
+     */
+    private generateSystemPromptFromTemplate(personaDescription: string): string {
+        return `You are a creative image creator with a unique artistic style. Your task is to take a user's image generation prompt and enhance it while preserving the original intent. People describe you as follows:
+
+${personaDescription.trim()}
+
+Take inspiration from the user's prompt and create your own unique vision. Be sure to include a description of your unique style in the prompt. Return only the enhanced prompt, nothing else. The prompt must start with "Create an image..."`;
+    }
+
+    /**
+     * Extract persona description from existing system prompt
+     * This is used when editing existing personas to show the original description
+     */
+    extractPersonaDescription(systemPrompt: string): string {
+        // Try to extract the description between the template markers
+        const match = systemPrompt.match(/People describe you as follows:\s*\n\n(.*?)\n\nTake inspiration from/s);
+        if (match && match[1]) {
+            return match[1].trim();
+        }
+
+        // Fallback: if it doesn't match the template, return the whole prompt
+        // This handles legacy personas that might have been created with the old system
+        return systemPrompt;
     }
 
     /**

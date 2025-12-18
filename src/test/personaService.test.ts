@@ -39,19 +39,21 @@ describe('PersonaService', () => {
     });
 
     describe('Custom personas', () => {
-        it('should create a new custom persona', async () => {
+        it('should create a new custom persona using template', async () => {
             vi.mocked(sqliteService.getSetting).mockResolvedValue('[]');
             vi.mocked(sqliteService.setSetting).mockResolvedValue();
 
             const persona = await personaService.createCustomPersona(
                 'Test Persona',
-                'You are a test persona',
+                'a test persona with unique characteristics',
                 'A test persona'
             );
 
             expect(persona.name).toBe('Test Persona');
             expect(persona.description).toBe('A test persona');
-            expect(persona.systemPrompt).toBe('You are a test persona');
+            expect(persona.systemPrompt).toContain('You are a creative image creator');
+            expect(persona.systemPrompt).toContain('a test persona with unique characteristics');
+            expect(persona.systemPrompt).toContain('Create an image...');
             expect(persona.id).toMatch(/^custom-/);
             expect(sqliteService.setSetting).toHaveBeenCalled();
         });
@@ -120,6 +122,48 @@ describe('PersonaService', () => {
             const savedPersonas = JSON.parse(savedCall[1] as string);
             expect(savedPersonas).toHaveLength(1);
             expect(savedPersonas[0].id).toBe('custom-456');
+        });
+    });
+
+    describe('Template methods', () => {
+        it('should extract persona description from template-based system prompt', () => {
+            const systemPrompt = `You are a creative image creator with a unique artistic style. Your task is to take a user's image generation prompt and enhance it while preserving the original intent. People describe you as follows:
+
+a whimsical fantasy artist who loves magical creatures and enchanted forests
+
+Take inspiration from the user's prompt and create your own unique vision. Be sure to include a description of your unique style in the prompt. Return only the enhanced prompt, nothing else. The prompt must start with "Create an image..."`;
+
+            const extracted = personaService.extractPersonaDescription(systemPrompt);
+            expect(extracted).toBe('a whimsical fantasy artist who loves magical creatures and enchanted forests');
+        });
+
+        it('should return full prompt for non-template system prompts', () => {
+            const systemPrompt = 'You are a custom persona with special instructions';
+            const extracted = personaService.extractPersonaDescription(systemPrompt);
+            expect(extracted).toBe(systemPrompt);
+        });
+
+        it('should update persona with new description', async () => {
+            const mockPersonas = [{
+                id: 'custom-123',
+                name: 'Test',
+                description: 'Test persona',
+                systemPrompt: 'Old system prompt',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }];
+
+            vi.mocked(sqliteService.getSetting).mockResolvedValue(JSON.stringify(mockPersonas));
+            vi.mocked(sqliteService.setSetting).mockResolvedValue();
+
+            const updated = await personaService.updateCustomPersona('custom-123', {
+                name: 'Updated Test',
+                personaDescription: 'a new artistic style'
+            });
+
+            expect(updated?.name).toBe('Updated Test');
+            expect(updated?.systemPrompt).toContain('You are a creative image creator');
+            expect(updated?.systemPrompt).toContain('a new artistic style');
         });
     });
 
