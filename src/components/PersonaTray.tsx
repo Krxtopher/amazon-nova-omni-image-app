@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { personaService } from '@/services/personaService';
+import { useBedrockService } from '@/contexts/BedrockServiceContext';
 import type { PromptEnhancement, CustomPersona } from '@/types';
 
 interface PersonaTrayProps {
@@ -40,12 +41,14 @@ const BUILT_IN_PERSONAS = [
 
 
 export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: PersonaTrayProps) {
+    const bedrockService = useBedrockService();
     const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [editingPersona, setEditingPersona] = useState<CustomPersona | null>(null);
     const [name, setName] = useState('');
     const [personaDescription, setPersonaDescription] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isGeneratingName, setIsGeneratingName] = useState(false);
     const [errors, setErrors] = useState<{ name?: string; personaDescription?: string }>({});
 
     // Load custom personas when component mounts
@@ -174,11 +177,34 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
         setErrors({});
     };
 
+    const handleGenerateName = async () => {
+        if (!personaDescription.trim()) {
+            setErrors({ ...errors, personaDescription: 'Please enter a persona description first' });
+            return;
+        }
+
+        try {
+            setIsGeneratingName(true);
+            setErrors({ ...errors, name: undefined }); // Clear any existing name errors
+
+            const generatedName = await bedrockService.generatePersonaName(personaDescription.trim());
+            setName(generatedName);
+        } catch (error) {
+            console.error('Failed to generate persona name:', error);
+            setErrors({
+                ...errors,
+                name: 'Failed to generate name. Please try again or enter one manually.'
+            });
+        } finally {
+            setIsGeneratingName(false);
+        }
+    };
+
     return (
         <div className="px-2 pb-3 border-t border-border/30 mt-2">
             {!isCreating ? (
                 // Persona selection view
-                <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
+                <div className="flex items-start justify-center gap-2 overflow-x-auto py-2">
                     {/* Built-in personas */}
                     {BUILT_IN_PERSONAS.map((persona) => {
                         const IconComponent = persona.icon;
@@ -186,7 +212,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                             <button
                                 key={persona.value}
                                 onClick={() => handlePersonaSelect(persona.value)}
-                                className={`flex flex-col items-center gap-2 p-3 min-w-[80px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPersona === persona.value
+                                className={`flex flex-col items-center gap-2 p-3 min-w-[80px] max-w-[100px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPersona === persona.value
                                     ? 'bg-white/10 border border-transparent'
                                     : 'border border-transparent hover:border-border'
                                     }`}
@@ -196,7 +222,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                                 <div className="flex items-center justify-center h-8">
                                     <IconComponent className="h-5 w-5" />
                                 </div>
-                                <span className="text-xs font-medium whitespace-nowrap">
+                                <span className="text-xs font-medium text-center leading-tight">
                                     {persona.label}
                                 </span>
                             </button>
@@ -207,7 +233,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                     {customPersonas.map((persona) => (
                         <div
                             key={persona.id}
-                            className={`group relative flex flex-col items-center gap-2 p-3 min-w-[80px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPersona === persona.id
+                            className={`group relative flex flex-col items-center gap-2 p-3 min-w-[80px] max-w-[100px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPersona === persona.id
                                 ? 'bg-white/10 border border-transparent'
                                 : 'border border-transparent hover:border-border'
                                 }`}
@@ -217,7 +243,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                             <div className="flex items-center justify-center h-8">
                                 <Edit className="h-5 w-5" />
                             </div>
-                            <span className="text-xs font-medium whitespace-nowrap max-w-[70px] truncate">
+                            <span className="text-xs font-medium text-center leading-tight">
                                 {persona.name}
                             </span>
 
@@ -244,14 +270,14 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                     {/* Add new persona button */}
                     <button
                         onClick={handleCreatePersona}
-                        className="flex flex-col items-center gap-2 p-3 min-w-[80px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors border border-dashed border-border hover:border-primary"
+                        className="flex flex-col items-center gap-2 p-3 min-w-[80px] max-w-[100px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors border border-dashed border-border hover:border-primary"
                         aria-label="Create new custom persona"
                         title="Create new custom persona"
                     >
                         <div className="flex items-center justify-center h-8">
                             <Plus className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-medium whitespace-nowrap">
+                        <span className="text-xs font-medium text-center leading-tight">
                             Add New
                         </span>
                     </button>
@@ -284,13 +310,27 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                             <Label htmlFor="persona-name" className="text-white/50 font-medium special-gothic-label">
                                 Name
                             </Label>
-                            <Input
-                                id="persona-name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g., Fantasy Artist"
-                                className={`bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none placeholder:text-neutral-200/60 placeholder:italic ${errors.name ? 'border border-red-500' : 'border border-white/20'}`}
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="persona-name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="e.g., Fantasy Artist"
+                                    className={`bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none placeholder:text-neutral-200/60 placeholder:italic pr-10 ${errors.name ? 'border border-red-500' : 'border border-white/20'}`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateName}
+                                    disabled={isGeneratingName || !personaDescription.trim()}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Generate creative name from description"
+                                    aria-label="Generate creative name from description"
+                                >
+                                    <Sparkles
+                                        className={`h-4 w-4 text-purple-400 ${isGeneratingName ? 'animate-pulse' : ''}`}
+                                    />
+                                </button>
+                            </div>
                             {errors.name && (
                                 <p className="text-sm text-red-500">{errors.name}</p>
                             )}

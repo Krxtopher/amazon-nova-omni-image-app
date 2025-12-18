@@ -287,6 +287,75 @@ export class BedrockImageService {
     }
 
     /**
+     * Generates a creative 1-2 word persona name based on the persona description
+     * 
+     * @param personaDescription - The description of the persona
+     * @returns Promise resolving to a creative persona name
+     * @throws Error if name generation fails
+     */
+    async generatePersonaName(personaDescription: string): Promise<string> {
+        if (!personaDescription.trim()) {
+            throw new Error('Persona description is required for name generation');
+        }
+
+        try {
+            const systemPrompt = `You invent canny names for visual artistic archetypes.
+            
+## Guidelines:
+- One or two word archetype names are most memorable
+- The name should personify the archetype
+- Never using camelCase or PascalCase for labels. Instead, put spaces between words and use Title Case
+- The word "and" should be replaced with "&"
+- Prefer single words over compound phrases when possible
+- You aviod mentioning artists by name and instead base the archetype name on their signature style.
+- Always return a single name as plain text. No formatting.
+`
+
+            const userPrompt = `Artistic Persona: ${personaDescription}\nPersona Name: `
+
+            const commandParams: any = {
+                modelId: 'us.amazon.nova-2-lite-v1:0',
+                messages: [
+                    {
+                        role: 'user',
+                        content: [{ text: userPrompt }],
+                    },
+                ],
+                system: [
+                    {
+                        text: systemPrompt
+                    }
+                ],
+                inferenceConfig: {
+                    temperature: 0.7,
+                    topP: 0.5
+                }
+            };
+
+            const command = new ConverseCommand(commandParams);
+            const response = await this.client.send(command);
+
+            // Extract the generated name from the response
+            if (!response.output?.message?.content) {
+                throw new Error('Invalid response structure: missing content');
+            }
+
+            const textContent = response.output.message.content.find(
+                (item) => item.text !== undefined
+            );
+
+            if (!textContent?.text) {
+                throw new Error('No text content found in name generation response');
+            }
+
+            return textContent.text.trim();
+        } catch (error) {
+            console.error('Persona name generation failed:', error);
+            throw new Error('Failed to generate persona name. Please try again.');
+        }
+    }
+
+    /**
      * Enhances a user prompt using Nova 2 Omni based on the enhancement type
      * 
      * @param originalPrompt - The original user prompt
