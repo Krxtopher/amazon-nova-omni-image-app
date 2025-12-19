@@ -6,6 +6,7 @@ export interface CustomPersona {
     name: string;
     description: string;
     systemPrompt: string;
+    icon: string; // Lucide React icon name
     createdAt: Date;
     updatedAt: Date;
 }

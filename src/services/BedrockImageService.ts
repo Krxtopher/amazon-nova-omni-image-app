@@ -354,6 +354,100 @@ export class BedrockImageService {
     }
 
     /**
+     * Generates a suitable icon name based on the persona description
+     * Returns a Lucide React icon name that matches the persona's characteristics
+     * 
+     * @param personaDescription - The description of the persona
+     * @returns Promise resolving to a Lucide React icon name
+     * @throws Error if icon generation fails
+     */
+    async generatePersonaIcon(personaDescription: string): Promise<string> {
+        if (!personaDescription.trim()) {
+            throw new Error('Persona description is required for icon generation');
+        }
+
+        try {
+            const systemPrompt = `You are an expert in visual iconography and UI design. Your task is to select the most appropriate Lucide React icon name based on a persona description.
+
+## Available Icon Categories:
+- Art & Design: Palette, Brush, Pen, PenTool, Paintbrush, Image, Camera, Aperture, Focus
+- Nature: Flower, Tree, Sun, Moon, Star, Cloud, Mountain, Waves, Leaf
+- Abstract: Sparkles, Zap, Flame, Heart, Diamond, Circle, Square, Triangle
+- Tools: Wrench, Hammer, Scissors, Ruler, Compass, Gear, Settings
+- Creative: Wand2, Magic, Lightbulb, Eye, Target, Crown, Gem
+- Technology: Monitor, Smartphone, Tablet, Headphones, Mic, Radio
+- Music: Music, Volume2, Play, Pause, SkipForward, Repeat
+- Animals: Cat, Dog, Bird, Fish, Butterfly, Rabbit, Owl
+- Objects: Book, Feather, Key, Lock, Gift, Trophy, Medal
+- Emotions: Smile, Frown, Meh, Laugh, Heart, ThumbsUp
+
+## Guidelines:
+- Choose ONE icon name that best represents the persona's style or characteristics
+- Return ONLY the exact Lucide React icon name (e.g., "Palette", "Sparkles", "Camera")
+- Consider the artistic style, mood, and creative focus described
+- Prefer creative and artistic icons for artistic personas
+- Use abstract icons for conceptual or emotional styles
+- Match the icon to the dominant theme or tool associated with the style
+- Return ONLY the icon name with no quotes, asterisks, or other formatting
+- Do not include explanations, descriptions, or additional text`
+
+            const userPrompt = `Persona Description: ${personaDescription}\nIcon Name: `
+
+            const commandParams: any = {
+                modelId: 'us.amazon.nova-2-lite-v1:0',
+                messages: [
+                    {
+                        role: 'user',
+                        content: [{ text: userPrompt }],
+                    },
+                ],
+                system: [
+                    {
+                        text: systemPrompt
+                    }
+                ],
+                inferenceConfig: {
+                    temperature: 0.3,
+                    topP: 0.8
+                }
+            };
+
+            const command = new ConverseCommand(commandParams);
+            const response = await this.client.send(command);
+
+            // Extract the generated icon name from the response
+            if (!response.output?.message?.content) {
+                throw new Error('Invalid response structure: missing content');
+            }
+
+            const textContent = response.output.message.content.find(
+                (item) => item.text !== undefined
+            );
+
+            if (!textContent?.text) {
+                throw new Error('No text content found in icon generation response');
+            }
+
+            // Clean up the response to extract just the icon name
+            let iconName = textContent.text.trim();
+
+            // Remove any markdown formatting (**, *, etc.)
+            iconName = iconName.replace(/\*+/g, '');
+
+            // Remove any extra whitespace
+            iconName = iconName.trim();
+
+            // If the response contains multiple words or lines, take the first word
+            iconName = iconName.split(/\s+/)[0];
+
+            return iconName;
+        } catch (error) {
+            console.error('Persona icon generation failed:', error);
+            throw new Error('Failed to generate persona icon. Please try again.');
+        }
+    }
+
+    /**
      * Enhances a user prompt using Nova 2 Omni based on the enhancement type
      * 
      * @param originalPrompt - The original user prompt

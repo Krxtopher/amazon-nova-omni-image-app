@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Wand2, X, Edit } from 'lucide-react';
 import { personaService } from '@/services/personaService';
+import { loadIcon } from '@/utils/iconLoader';
 import type { PromptEnhancement } from '@/types';
 
 interface PersonaSelectorProps {
@@ -49,12 +50,14 @@ const getPersonaDisplayData = async (personaId: PromptEnhancement) => {
         };
     }
 
-    // Custom persona
+    // Custom persona - load the icon dynamically
+    const persona = await personaService.getCustomPersona(personaId);
     const info = await personaService.getPersonaInfo(personaId);
+
     return {
         label: info?.label || 'Custom',
         description: info?.description || 'Custom persona',
-        icon: Edit // Use Edit icon for custom personas
+        icon: loadIcon(persona?.icon || 'Edit')
     };
 };
 

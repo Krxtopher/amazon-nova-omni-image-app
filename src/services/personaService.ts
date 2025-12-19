@@ -31,7 +31,24 @@ class PersonaService {
     async getCustomPersonas(): Promise<CustomPersona[]> {
         try {
             const personas = await sqliteService.getSetting(this.PERSONAS_KEY);
-            return personas ? JSON.parse(personas as string) : [];
+            const parsedPersonas = personas ? JSON.parse(personas as string) : [];
+
+            // Migrate personas that don't have an icon field
+            let needsMigration = false;
+            const migratedPersonas = parsedPersonas.map((persona: any) => {
+                if (!persona.icon) {
+                    needsMigration = true;
+                    return { ...persona, icon: 'Edit' }; // Default icon for existing personas
+                }
+                return persona;
+            });
+
+            // Save migrated personas if needed
+            if (needsMigration) {
+                await this.savePersonas(migratedPersonas);
+            }
+
+            return migratedPersonas;
         } catch (error) {
             console.error('Failed to load custom personas:', error);
             return [];
@@ -49,7 +66,7 @@ class PersonaService {
     /**
      * Create a new custom persona using the template
      */
-    async createCustomPersona(name: string, personaDescription: string, description?: string): Promise<CustomPersona> {
+    async createCustomPersona(name: string, personaDescription: string, description?: string, icon?: string): Promise<CustomPersona> {
         const personas = await this.getCustomPersonas();
 
         // Use the template with the user's persona description
@@ -60,6 +77,7 @@ class PersonaService {
             name: name.trim(),
             description: description?.trim() || 'Custom persona',
             systemPrompt: systemPrompt,
+            icon: icon || 'Edit', // Default to Edit icon if none provided
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -73,7 +91,7 @@ class PersonaService {
     /**
      * Update an existing custom persona
      */
-    async updateCustomPersona(id: string, updates: Partial<Pick<CustomPersona, 'name' | 'description'>> & { personaDescription?: string }): Promise<CustomPersona | null> {
+    async updateCustomPersona(id: string, updates: Partial<Pick<CustomPersona, 'name' | 'description' | 'icon'>> & { personaDescription?: string }): Promise<CustomPersona | null> {
         const personas = await this.getCustomPersonas();
         const index = personas.findIndex(p => p.id === id);
 
