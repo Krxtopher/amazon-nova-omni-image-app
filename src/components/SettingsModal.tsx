@@ -21,7 +21,9 @@ interface SettingsModalProps {
  */
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [showDeleteImagesConfirm, setShowDeleteImagesConfirm] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
+    const [isDeletingImages, setIsDeletingImages] = useState(false);
     const { initialize } = useImageStore();
 
     /**
@@ -53,6 +55,38 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             });
         } finally {
             setIsResetting(false);
+        }
+    };
+
+    /**
+     * Handle deleting images only (preserve settings and personas)
+     */
+    const handleDeleteImages = async () => {
+        setIsDeletingImages(true);
+        try {
+            // Delete all image metadata and data from SQLite
+            await sqliteService.deleteAllImages();
+
+            // Clear text items from localStorage
+            localStorage.removeItem('textItems');
+
+            // Reinitialize the store (this will reload settings and personas but clear images)
+            await initialize();
+
+            setShowDeleteImagesConfirm(false);
+            onClose(); // Close the settings modal
+
+            // Show success notification
+            toast.success('All images have been deleted', {
+                duration: 3000,
+            });
+        } catch (error) {
+            console.error('Failed to delete images:', error);
+            toast.error('Failed to delete images. Please try again.', {
+                duration: 3000,
+            });
+        } finally {
+            setIsDeletingImages(false);
         }
     };
 
@@ -101,6 +135,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
+                                    <p className="text-sm text-foreground">Delete Images Only</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Delete all generated images but keep settings and personas
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowDeleteImagesConfirm(true)}
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    aria-label="Delete images only"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Images
+                                </Button>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
                                     <p className="text-sm text-foreground">Reset All Data</p>
                                     <p className="text-xs text-muted-foreground">
                                         Permanently delete all generated images and settings
@@ -114,7 +166,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     aria-label="Reset all data"
                                 >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    Reset
+                                    Reset All
                                 </Button>
                             </div>
                         </div>
@@ -174,6 +226,61 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     )}
                                     {isResetting ? 'Resetting...' : 'Reset All Data'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Images Confirmation Dialog */}
+                {showDeleteImagesConfirm && (
+                    <div
+                        className="absolute inset-0 bg-[#352E50]/60 flex items-center justify-center p-4 rounded-2xl"
+                        onClick={() => !isDeletingImages && setShowDeleteImagesConfirm(false)}
+                    >
+                        <div
+                            className="bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl max-w-sm w-full p-6 space-y-4 transition-all duration-200"
+                            style={{
+                                boxShadow: '0 30px 80px rgba(0, 0, 0, 0.15)'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            role="dialog"
+                            aria-labelledby="delete-images-dialog-title"
+                            aria-describedby="delete-images-dialog-description"
+                        >
+                            <div className="space-y-2">
+                                <h3
+                                    id="delete-images-dialog-title"
+                                    className="text-lg font-semibold text-foreground special-gothic-label"
+                                >
+                                    Delete All Images?
+                                </h3>
+                                <p
+                                    id="delete-images-dialog-description"
+                                    className="text-sm text-muted-foreground"
+                                >
+                                    This will permanently delete all your generated images but keep your settings and custom personas.
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3 justify-end">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowDeleteImagesConfirm(false)}
+                                    disabled={isDeletingImages}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={handleDeleteImages}
+                                    disabled={isDeletingImages}
+                                >
+                                    {isDeletingImages && (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    )}
+                                    {isDeletingImages ? 'Deleting...' : 'Delete Images'}
                                 </Button>
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Wand2, X, Edit } from 'lucide-react';
+import { Sparkles, Wand2, X } from 'lucide-react';
 import { personaService } from '@/services/personaService';
 import { loadIcon } from '@/utils/iconLoader';
 import type { PromptEnhancement } from '@/types';

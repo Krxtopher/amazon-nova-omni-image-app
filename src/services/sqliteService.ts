@@ -466,6 +466,18 @@ class SQLiteService {
     }
 
     /**
+     * Delete all images but preserve settings
+     */
+    async deleteAllImages(): Promise<void> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        this.db.run('DELETE FROM image_metadata');
+        this.db.run('DELETE FROM image_data');
+        await this.saveToIndexedDB();
+    }
+
+    /**
      * Debug method to inspect database contents
      */
     async debugDatabase(): Promise<void> {
