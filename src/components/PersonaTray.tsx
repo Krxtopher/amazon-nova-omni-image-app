@@ -201,10 +201,10 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
     };
 
     return (
-        <div className="px-2 pb-3 border-t border-border/30 mt-2">
+        <div className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
             {!isCreating ? (
                 // Persona selection view
-                <div className="flex items-start justify-center gap-2 overflow-x-auto py-2">
+                <div className="flex flex-wrap items-start justify-center gap-2 py-2">
                     {/* Built-in personas */}
                     {BUILT_IN_PERSONAS.map((persona) => {
                         const IconComponent = persona.icon;

@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils"
 
 interface AutoExpandingTextareaProps extends React.ComponentProps<"textarea"> {
     maxHeight?: number;
+    forceExpanded?: boolean;
 }
 
 interface AutoExpandingTextareaRef extends HTMLTextAreaElement {
@@ -12,7 +13,7 @@ interface AutoExpandingTextareaRef extends HTMLTextAreaElement {
 const AutoExpandingTextarea = React.forwardRef<
     AutoExpandingTextareaRef,
     AutoExpandingTextareaProps
->(({ className, maxHeight, ...props }, ref) => {
+>(({ className, maxHeight, forceExpanded, ...props }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
     const [calculatedMaxHeight, setCalculatedMaxHeight] = React.useState<number | undefined>(maxHeight);
     const [isFocused, setIsFocused] = React.useState(false);
@@ -129,7 +130,10 @@ const AutoExpandingTextarea = React.forwardRef<
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-        setIsFocused(false);
+        // Only collapse if not forced to stay expanded
+        if (!forceExpanded) {
+            setIsFocused(false);
+        }
         props.onBlur?.(e);
     };
 
@@ -137,6 +141,19 @@ const AutoExpandingTextarea = React.forwardRef<
     const collapseTextarea = React.useCallback(() => {
         setIsFocused(false);
     }, []);
+
+    // Update isFocused based on forceExpanded prop
+    React.useEffect(() => {
+        if (forceExpanded) {
+            setIsFocused(true);
+        } else if (forceExpanded === false) {
+            // Only collapse if forceExpanded is explicitly false (not undefined)
+            // and the textarea doesn't currently have focus
+            if (!textareaRef.current || textareaRef.current !== document.activeElement) {
+                setIsFocused(false);
+            }
+        }
+    }, [forceExpanded]);
 
     // Check if content needs truncation (more than 2 lines when not focused)
     const needsTruncation = React.useMemo(() => {

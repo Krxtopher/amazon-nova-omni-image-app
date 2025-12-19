@@ -77,6 +77,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const [promptEnhancementExpanded, setPromptEnhancementExpanded] = useState(false);
     const [showTextResponseModal, setShowTextResponseModal] = useState(false);
     const [textResponsePrompt, setTextResponsePrompt] = useState('');
+    const [textareaExpanded, setTextareaExpanded] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputBarRef = useRef<HTMLDivElement>(null);
@@ -104,20 +105,21 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         onActiveRequestsChange?.(activeRequests);
     }, [activeRequests, onActiveRequestsChange]);
 
-    // Handle clicking outside to close expanded trays
+    // Handle clicking outside to close expanded trays and collapse textarea
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (inputBarRef.current && !inputBarRef.current.contains(event.target as Node)) {
                 setAspectRatioExpanded(false);
                 setPromptEnhancementExpanded(false);
+                setTextareaExpanded(false);
             }
         };
 
-        if (aspectRatioExpanded || promptEnhancementExpanded) {
+        if (aspectRatioExpanded || promptEnhancementExpanded || textareaExpanded) {
             document.addEventListener('mousedown', handleClickOutside);
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }
-    }, [aspectRatioExpanded, promptEnhancementExpanded]);
+    }, [aspectRatioExpanded, promptEnhancementExpanded, textareaExpanded]);
 
     /**
      * Validate prompt is non-empty and not just whitespace
@@ -145,6 +147,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
      */
     const handleSubmit = async () => {
         // Collapse the textarea when submitting via button click
+        setTextareaExpanded(false);
         if (textareaRef.current?.collapseTextarea) {
             textareaRef.current.collapseTextarea();
         }
@@ -308,6 +311,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             e.preventDefault();
             handleSubmit();
             // Collapse the textarea after submission
+            setTextareaExpanded(false);
             if (textareaRef.current?.collapseTextarea) {
                 textareaRef.current.collapseTextarea();
             }
@@ -503,7 +507,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             {/* Unified Compact Input Bar */}
             <div
                 ref={inputBarRef}
-                className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl transition-all duration-200"
+                className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl transition-all duration-200 max-h-[80vh] overflow-y-auto"
                 style={{
                     boxShadow: '0 12px 65px rgba(0, 0, 0, 0.15)'
                 }}
@@ -567,7 +571,9 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                         setValidationError(null);
                                     }
                                 }}
+                                onFocus={() => setTextareaExpanded(true)}
                                 onKeyDown={handleKeyDown}
+                                forceExpanded={textareaExpanded}
                                 className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200/60 placeholder:italic"
                                 aria-label="Image generation prompt"
                                 aria-invalid={!!validationError}
@@ -595,7 +601,13 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                     onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
                                     disabled={!!editSource}
                                     isExpanded={aspectRatioExpanded}
-                                    onExpandedChange={setAspectRatioExpanded}
+                                    onExpandedChange={(expanded) => {
+                                        setAspectRatioExpanded(expanded);
+                                        // Close persona drawer when aspect ratio drawer opens
+                                        if (expanded) {
+                                            setPromptEnhancementExpanded(false);
+                                        }
+                                    }}
                                 />
                             </div>
                             <div className="flex items-center gap-0">
@@ -604,7 +616,13 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                     selectedPersona={selectedPromptEnhancement}
                                     onPersonaChange={setPromptEnhancement}
                                     isExpanded={promptEnhancementExpanded}
-                                    onExpandedChange={setPromptEnhancementExpanded}
+                                    onExpandedChange={(expanded) => {
+                                        setPromptEnhancementExpanded(expanded);
+                                        // Close aspect ratio drawer when persona drawer opens
+                                        if (expanded) {
+                                            setAspectRatioExpanded(false);
+                                        }
+                                    }}
                                 />
                             </div>
                         </div>
@@ -613,8 +631,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 {/* Expanded aspect ratio tray - integrated within the input bar */}
                 {aspectRatioExpanded && (
-                    <div className="px-2 pb-3 border-t border-border/30 mt-2">
-                        <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
+                    <div className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
+                        <div className="flex flex-wrap items-center justify-center gap-2 py-2">
                             {ASPECT_RATIOS.map((ratio) => (
                                 <button
                                     key={ratio.value}
