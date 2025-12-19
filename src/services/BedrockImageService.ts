@@ -299,19 +299,17 @@ export class BedrockImageService {
         }
 
         try {
-            const systemPrompt = `You invent canny names for visual artistic archetypes.
+            const systemPrompt = `Are an expert in artistic style categorization. You have vast knowledge of mainstream as well as very niche styles and substyles. Your task is categorize a style based on a description of the style and/or the artist.
             
 ## Guidelines:
-- One or two word archetype names are most memorable
-- The name should personify the archetype
-- Never using camelCase or PascalCase for labels. Instead, put spaces between words and use Title Case
-- The word "and" should be replaced with "&"
-- Prefer single words over compound phrases when possible
-- You aviod mentioning artists by name and instead base the archetype name on their signature style.
-- Always return a single name as plain text. No formatting.
+- The style name you provide should be distinct.
+- The style name you provide should be limited 1-4 words long.
+- Avoid mentioning artists by name and instead name their style.
+- Always return a single style name as plain text. No formatting.
+- The style should use Title Case.
 `
 
-            const userPrompt = `Artistic Persona: ${personaDescription}\nPersona Name: `
+            const userPrompt = `Artist Prsona Description: ${personaDescription}\nStyle Name: `
 
             const commandParams: any = {
                 modelId: 'us.amazon.nova-2-lite-v1:0',
