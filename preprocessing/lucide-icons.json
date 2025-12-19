@@ -1,0 +1,2701 @@
+[
+    {
+        "iconId": "Accessibility",
+        "concepts": [
+            "accessibility",
+            "disability",
+            "inclusive",
+            "universal design",
+            "barrier-free",
+            "assistive"
+        ]
+    },
+    {
+        "iconId": "Activity",
+        "concepts": [
+            "activity",
+            "pulse",
+            "heartbeat",
+            "vital signs",
+            "health",
+            "monitoring",
+            "analytics"
+        ]
+    },
+    {
+        "iconId": "Airplay",
+        "concepts": [
+            "airplay",
+            "streaming",
+            "wireless",
+            "cast",
+            "mirror",
+            "display",
+            "broadcast"
+        ]
+    },
+    {
+        "iconId": "AlarmClock",
+        "concepts": [
+            "alarm",
+            "clock",
+            "time",
+            "wake up",
+            "schedule",
+            "reminder",
+            "timer"
+        ]
+    },
+    {
+        "iconId": "AlertCircle",
+        "concepts": [
+            "alert",
+            "warning",
+            "caution",
+            "attention",
+            "error",
+            "important",
+            "notice"
+        ]
+    },
+    {
+        "iconId": "AlertTriangle",
+        "concepts": [
+            "warning",
+            "danger",
+            "caution",
+            "alert",
+            "hazard",
+            "risk",
+            "attention"
+        ]
+    },
+    {
+        "iconId": "AlignCenter",
+        "concepts": [
+            "align",
+            "center",
+            "middle",
+            "balance",
+            "formatting",
+            "text",
+            "layout"
+        ]
+    },
+    {
+        "iconId": "AlignJustify",
+        "concepts": [
+            "justify",
+            "align",
+            "text",
+            "formatting",
+            "layout",
+            "paragraph",
+            "spacing"
+        ]
+    },
+    {
+        "iconId": "AlignLeft",
+        "concepts": [
+            "align",
+            "left",
+            "text",
+            "formatting",
+            "layout",
+            "paragraph",
+            "start"
+        ]
+    },
+    {
+        "iconId": "AlignRight",
+        "concepts": [
+            "align",
+            "right",
+            "text",
+            "formatting",
+            "layout",
+            "paragraph",
+            "end"
+        ]
+    },
+    {
+        "iconId": "Anchor",
+        "concepts": [
+            "anchor",
+            "maritime",
+            "stability",
+            "grounding",
+            "ship",
+            "nautical",
+            "secure"
+        ]
+    },
+    {
+        "iconId": "Aperture",
+        "concepts": [
+            "aperture",
+            "camera",
+            "photography",
+            "focus",
+            "lens",
+            "technical",
+            "precision"
+        ]
+    },
+    {
+        "iconId": "Apple",
+        "concepts": [
+            "apple",
+            "fruit",
+            "health",
+            "natural",
+            "fresh",
+            "organic",
+            "nutrition"
+        ]
+    },
+    {
+        "iconId": "Archive",
+        "concepts": [
+            "archive",
+            "storage",
+            "backup",
+            "organize",
+            "preserve",
+            "collection",
+            "library"
+        ]
+    },
+    {
+        "iconId": "ArrowDown",
+        "concepts": [
+            "down",
+            "arrow",
+            "direction",
+            "decrease",
+            "descend",
+            "below",
+            "south"
+        ]
+    },
+    {
+        "iconId": "ArrowLeft",
+        "concepts": [
+            "left",
+            "arrow",
+            "direction",
+            "back",
+            "previous",
+            "west",
+            "return"
+        ]
+    },
+    {
+        "iconId": "ArrowRight",
+        "concepts": [
+            "right",
+            "arrow",
+            "direction",
+            "forward",
+            "next",
+            "east",
+            "continue"
+        ]
+    },
+    {
+        "iconId": "ArrowUp",
+        "concepts": [
+            "up",
+            "arrow",
+            "direction",
+            "increase",
+            "ascend",
+            "above",
+            "north"
+        ]
+    },
+    {
+        "iconId": "AtSign",
+        "concepts": [
+            "at",
+            "email",
+            "mention",
+            "address",
+            "contact",
+            "communication",
+            "symbol"
+        ]
+    },
+    {
+        "iconId": "Award",
+        "concepts": [
+            "award",
+            "medal",
+            "recognition",
+            "achievement",
+            "excellence",
+            "honor",
+            "prize"
+        ]
+    },
+    {
+        "iconId": "Baby",
+        "concepts": [
+            "baby",
+            "infant",
+            "child",
+            "young",
+            "new",
+            "innocent",
+            "care"
+        ]
+    },
+    {
+        "iconId": "Backpack",
+        "concepts": [
+            "backpack",
+            "travel",
+            "adventure",
+            "hiking",
+            "school",
+            "carry",
+            "journey"
+        ]
+    },
+    {
+        "iconId": "Badge",
+        "concepts": [
+            "badge",
+            "identification",
+            "credential",
+            "authority",
+            "verification",
+            "status",
+            "rank"
+        ]
+    },
+    {
+        "iconId": "Banana",
+        "concepts": [
+            "banana",
+            "fruit",
+            "tropical",
+            "healthy",
+            "yellow",
+            "curved",
+            "nutrition"
+        ]
+    },
+    {
+        "iconId": "Banknote",
+        "concepts": [
+            "money",
+            "cash",
+            "currency",
+            "payment",
+            "finance",
+            "bill",
+            "wealth"
+        ]
+    },
+    {
+        "iconId": "BarChart",
+        "concepts": [
+            "chart",
+            "graph",
+            "data",
+            "analytics",
+            "statistics",
+            "visualization",
+            "metrics"
+        ]
+    },
+    {
+        "iconId": "Battery",
+        "concepts": [
+            "battery",
+            "power",
+            "energy",
+            "charge",
+            "electric",
+            "device",
+            "portable"
+        ]
+    },
+    {
+        "iconId": "Bed",
+        "concepts": [
+            "bed",
+            "sleep",
+            "rest",
+            "bedroom",
+            "comfort",
+            "hotel",
+            "accommodation"
+        ]
+    },
+    {
+        "iconId": "Bell",
+        "concepts": [
+            "bell",
+            "notification",
+            "alert",
+            "sound",
+            "attention",
+            "ring",
+            "alarm"
+        ]
+    },
+    {
+        "iconId": "Bike",
+        "concepts": [
+            "bicycle",
+            "bike",
+            "cycling",
+            "eco-friendly",
+            "exercise",
+            "transport",
+            "green"
+        ]
+    },
+    {
+        "iconId": "Bird",
+        "concepts": [
+            "bird",
+            "flight",
+            "freedom",
+            "nature",
+            "wings",
+            "sky",
+            "graceful"
+        ]
+    },
+    {
+        "iconId": "Bluetooth",
+        "concepts": [
+            "bluetooth",
+            "wireless",
+            "connectivity",
+            "pairing",
+            "device",
+            "technology",
+            "connection"
+        ]
+    },
+    {
+        "iconId": "Bold",
+        "concepts": [
+            "bold",
+            "text",
+            "formatting",
+            "emphasis",
+            "strong",
+            "weight",
+            "typography"
+        ]
+    },
+    {
+        "iconId": "Book",
+        "concepts": [
+            "book",
+            "reading",
+            "knowledge",
+            "education",
+            "literature",
+            "learning",
+            "study"
+        ]
+    },
+    {
+        "iconId": "BookOpen",
+        "concepts": [
+            "open book",
+            "reading",
+            "study",
+            "education",
+            "knowledge",
+            "learning",
+            "literature"
+        ]
+    },
+    {
+        "iconId": "Bookmark",
+        "concepts": [
+            "bookmark",
+            "save",
+            "favorite",
+            "mark",
+            "remember",
+            "collection",
+            "reference"
+        ]
+    },
+    {
+        "iconId": "Briefcase",
+        "concepts": [
+            "briefcase",
+            "business",
+            "work",
+            "professional",
+            "office",
+            "career",
+            "formal"
+        ]
+    },
+    {
+        "iconId": "Brush",
+        "concepts": [
+            "brush",
+            "paint",
+            "art",
+            "creative",
+            "design",
+            "painting",
+            "artistic"
+        ]
+    },
+    {
+        "iconId": "Bug",
+        "concepts": [
+            "bug",
+            "insect",
+            "error",
+            "debugging",
+            "problem",
+            "glitch",
+            "issue"
+        ]
+    },
+    {
+        "iconId": "Building",
+        "concepts": [
+            "building",
+            "architecture",
+            "structure",
+            "office",
+            "business",
+            "urban",
+            "construction"
+        ]
+    },
+    {
+        "iconId": "Cake",
+        "concepts": [
+            "cake",
+            "celebration",
+            "birthday",
+            "dessert",
+            "sweet",
+            "party",
+            "special"
+        ]
+    },
+    {
+        "iconId": "Calculator",
+        "concepts": [
+            "calculator",
+            "math",
+            "calculation",
+            "numbers",
+            "finance",
+            "accounting",
+            "compute"
+        ]
+    },
+    {
+        "iconId": "Calendar",
+        "concepts": [
+            "calendar",
+            "date",
+            "schedule",
+            "time",
+            "planning",
+            "appointment",
+            "organization"
+        ]
+    },
+    {
+        "iconId": "Camera",
+        "concepts": [
+            "camera",
+            "photography",
+            "picture",
+            "capture",
+            "image",
+            "visual",
+            "media"
+        ]
+    },
+    {
+        "iconId": "Car",
+        "concepts": [
+            "car",
+            "automobile",
+            "vehicle",
+            "transport",
+            "driving",
+            "travel",
+            "mobility"
+        ]
+    },
+    {
+        "iconId": "Cat",
+        "concepts": [
+            "cat",
+            "feline",
+            "pet",
+            "animal",
+            "independent",
+            "graceful",
+            "mysterious"
+        ]
+    },
+    {
+        "iconId": "Check",
+        "concepts": [
+            "check",
+            "checkmark",
+            "correct",
+            "done",
+            "complete",
+            "verified",
+            "approved"
+        ]
+    },
+    {
+        "iconId": "CheckCircle",
+        "concepts": [
+            "check",
+            "complete",
+            "success",
+            "verified",
+            "approved",
+            "done",
+            "correct"
+        ]
+    },
+    {
+        "iconId": "ChevronDown",
+        "concepts": [
+            "down",
+            "expand",
+            "dropdown",
+            "more",
+            "collapse",
+            "arrow",
+            "direction"
+        ]
+    },
+    {
+        "iconId": "ChevronLeft",
+        "concepts": [
+            "left",
+            "back",
+            "previous",
+            "arrow",
+            "navigation",
+            "return",
+            "west"
+        ]
+    },
+    {
+        "iconId": "ChevronRight",
+        "concepts": [
+            "right",
+            "forward",
+            "next",
+            "arrow",
+            "navigation",
+            "continue",
+            "east"
+        ]
+    },
+    {
+        "iconId": "ChevronUp",
+        "concepts": [
+            "up",
+            "collapse",
+            "less",
+            "minimize",
+            "arrow",
+            "direction",
+            "north"
+        ]
+    },
+    {
+        "iconId": "Circle",
+        "concepts": [
+            "circle",
+            "round",
+            "unity",
+            "complete",
+            "geometric",
+            "shape",
+            "wholeness"
+        ]
+    },
+    {
+        "iconId": "Clock",
+        "concepts": [
+            "clock",
+            "time",
+            "schedule",
+            "timing",
+            "hour",
+            "minute",
+            "temporal"
+        ]
+    },
+    {
+        "iconId": "Cloud",
+        "concepts": [
+            "cloud",
+            "weather",
+            "sky",
+            "storage",
+            "computing",
+            "atmosphere",
+            "digital"
+        ]
+    },
+    {
+        "iconId": "CloudRain",
+        "concepts": [
+            "rain",
+            "weather",
+            "storm",
+            "precipitation",
+            "cloudy",
+            "wet",
+            "atmosphere"
+        ]
+    },
+    {
+        "iconId": "Code",
+        "concepts": [
+            "code",
+            "programming",
+            "development",
+            "technical",
+            "software",
+            "coding",
+            "script"
+        ]
+    },
+    {
+        "iconId": "Coffee",
+        "concepts": [
+            "coffee",
+            "drink",
+            "caffeine",
+            "energy",
+            "morning",
+            "beverage",
+            "warm"
+        ]
+    },
+    {
+        "iconId": "Cog",
+        "concepts": [
+            "settings",
+            "gear",
+            "configuration",
+            "mechanical",
+            "system",
+            "control",
+            "options"
+        ]
+    },
+    {
+        "iconId": "Compass",
+        "concepts": [
+            "compass",
+            "navigation",
+            "direction",
+            "guidance",
+            "exploration",
+            "orientation",
+            "travel"
+        ]
+    },
+    {
+        "iconId": "Copy",
+        "concepts": [
+            "copy",
+            "duplicate",
+            "clone",
+            "reproduce",
+            "replicate",
+            "backup",
+            "identical"
+        ]
+    },
+    {
+        "iconId": "CreditCard",
+        "concepts": [
+            "credit card",
+            "payment",
+            "finance",
+            "money",
+            "transaction",
+            "banking",
+            "purchase"
+        ]
+    },
+    {
+        "iconId": "Crop",
+        "concepts": [
+            "crop",
+            "trim",
+            "edit",
+            "frame",
+            "cut",
+            "resize",
+            "adjust"
+        ]
+    },
+    {
+        "iconId": "Crown",
+        "concepts": [
+            "crown",
+            "royalty",
+            "king",
+            "queen",
+            "excellence",
+            "premium",
+            "authority"
+        ]
+    },
+    {
+        "iconId": "Database",
+        "concepts": [
+            "database",
+            "data",
+            "storage",
+            "information",
+            "server",
+            "repository",
+            "collection"
+        ]
+    },
+    {
+        "iconId": "Delete",
+        "concepts": [
+            "delete",
+            "remove",
+            "trash",
+            "erase",
+            "eliminate",
+            "clear",
+            "destroy"
+        ]
+    },
+    {
+        "iconId": "Diamond",
+        "concepts": [
+            "diamond",
+            "gem",
+            "precious",
+            "luxury",
+            "brilliant",
+            "valuable",
+            "crystal"
+        ]
+    },
+    {
+        "iconId": "Dog",
+        "concepts": [
+            "dog",
+            "pet",
+            "loyal",
+            "companion",
+            "friendly",
+            "canine",
+            "faithful"
+        ]
+    },
+    {
+        "iconId": "Download",
+        "concepts": [
+            "download",
+            "save",
+            "import",
+            "receive",
+            "get",
+            "transfer",
+            "retrieve"
+        ]
+    },
+    {
+        "iconId": "Droplets",
+        "concepts": [
+            "water",
+            "drops",
+            "liquid",
+            "rain",
+            "moisture",
+            "fluid",
+            "wet"
+        ]
+    },
+    {
+        "iconId": "Edit",
+        "concepts": [
+            "edit",
+            "modify",
+            "change",
+            "update",
+            "revise",
+            "alter",
+            "customize"
+        ]
+    },
+    {
+        "iconId": "Eye",
+        "concepts": [
+            "eye",
+            "vision",
+            "see",
+            "look",
+            "observe",
+            "watch",
+            "perception"
+        ]
+    },
+    {
+        "iconId": "EyeOff",
+        "concepts": [
+            "hidden",
+            "invisible",
+            "private",
+            "secret",
+            "blind",
+            "concealed",
+            "unseen"
+        ]
+    },
+    {
+        "iconId": "Facebook",
+        "concepts": [
+            "facebook",
+            "social",
+            "network",
+            "media",
+            "connection",
+            "sharing",
+            "community"
+        ]
+    },
+    {
+        "iconId": "Feather",
+        "concepts": [
+            "feather",
+            "light",
+            "delicate",
+            "writing",
+            "quill",
+            "elegant",
+            "soft"
+        ]
+    },
+    {
+        "iconId": "File",
+        "concepts": [
+            "file",
+            "document",
+            "paper",
+            "data",
+            "information",
+            "record",
+            "storage"
+        ]
+    },
+    {
+        "iconId": "FileText",
+        "concepts": [
+            "document",
+            "text",
+            "file",
+            "writing",
+            "content",
+            "paper",
+            "information"
+        ]
+    },
+    {
+        "iconId": "Filter",
+        "concepts": [
+            "filter",
+            "sort",
+            "refine",
+            "search",
+            "organize",
+            "select",
+            "narrow"
+        ]
+    },
+    {
+        "iconId": "Fish",
+        "concepts": [
+            "fish",
+            "aquatic",
+            "ocean",
+            "sea",
+            "swimming",
+            "marine",
+            "water"
+        ]
+    },
+    {
+        "iconId": "Flag",
+        "concepts": [
+            "flag",
+            "country",
+            "nation",
+            "identity",
+            "marker",
+            "symbol",
+            "representation"
+        ]
+    },
+    {
+        "iconId": "Flame",
+        "concepts": [
+            "fire",
+            "flame",
+            "heat",
+            "passion",
+            "energy",
+            "burn",
+            "intensity"
+        ]
+    },
+    {
+        "iconId": "Flashlight",
+        "concepts": [
+            "flashlight",
+            "torch",
+            "light",
+            "illumination",
+            "bright",
+            "beam",
+            "guidance"
+        ]
+    },
+    {
+        "iconId": "Flower",
+        "concepts": [
+            "flower",
+            "bloom",
+            "nature",
+            "beauty",
+            "garden",
+            "plant",
+            "organic"
+        ]
+    },
+    {
+        "iconId": "Flower2",
+        "concepts": [
+            "flower",
+            "blossom",
+            "nature",
+            "decorative",
+            "beauty",
+            "floral",
+            "ornamental"
+        ]
+    },
+    {
+        "iconId": "Focus",
+        "concepts": [
+            "focus",
+            "target",
+            "center",
+            "attention",
+            "concentration",
+            "precision",
+            "aim"
+        ]
+    },
+    {
+        "iconId": "Folder",
+        "concepts": [
+            "folder",
+            "directory",
+            "organize",
+            "storage",
+            "collection",
+            "category",
+            "group"
+        ]
+    },
+    {
+        "iconId": "FolderOpen",
+        "concepts": [
+            "open folder",
+            "directory",
+            "access",
+            "browse",
+            "explore",
+            "contents",
+            "files"
+        ]
+    },
+    {
+        "iconId": "Frown",
+        "concepts": [
+            "sad",
+            "unhappy",
+            "disappointed",
+            "negative",
+            "down",
+            "upset",
+            "melancholy"
+        ]
+    },
+    {
+        "iconId": "Gamepad2",
+        "concepts": [
+            "gaming",
+            "controller",
+            "play",
+            "entertainment",
+            "video games",
+            "fun",
+            "interactive"
+        ]
+    },
+    {
+        "iconId": "Gear",
+        "concepts": [
+            "gear",
+            "settings",
+            "mechanical",
+            "configuration",
+            "system",
+            "machinery",
+            "technical"
+        ]
+    },
+    {
+        "iconId": "Gift",
+        "concepts": [
+            "gift",
+            "present",
+            "surprise",
+            "celebration",
+            "giving",
+            "box",
+            "wrapped"
+        ]
+    },
+    {
+        "iconId": "Globe",
+        "concepts": [
+            "globe",
+            "world",
+            "earth",
+            "international",
+            "global",
+            "planet",
+            "universal"
+        ]
+    },
+    {
+        "iconId": "Grid",
+        "concepts": [
+            "grid",
+            "layout",
+            "structure",
+            "organize",
+            "pattern",
+            "matrix",
+            "arrangement"
+        ]
+    },
+    {
+        "iconId": "Guitar",
+        "concepts": [
+            "guitar",
+            "music",
+            "instrument",
+            "strings",
+            "melody",
+            "acoustic",
+            "musical"
+        ]
+    },
+    {
+        "iconId": "Hammer",
+        "concepts": [
+            "hammer",
+            "tool",
+            "construction",
+            "build",
+            "repair",
+            "craft",
+            "work"
+        ]
+    },
+    {
+        "iconId": "Hash",
+        "concepts": [
+            "hashtag",
+            "tag",
+            "social",
+            "category",
+            "label",
+            "symbol",
+            "number"
+        ]
+    },
+    {
+        "iconId": "Headphones",
+        "concepts": [
+            "headphones",
+            "audio",
+            "music",
+            "sound",
+            "listening",
+            "entertainment",
+            "private"
+        ]
+    },
+    {
+        "iconId": "Heart",
+        "concepts": [
+            "heart",
+            "love",
+            "like",
+            "favorite",
+            "emotion",
+            "care",
+            "affection"
+        ]
+    },
+    {
+        "iconId": "HelpCircle",
+        "concepts": [
+            "help",
+            "question",
+            "support",
+            "assistance",
+            "info",
+            "guidance",
+            "unknown"
+        ]
+    },
+    {
+        "iconId": "Hexagon",
+        "concepts": [
+            "hexagon",
+            "shape",
+            "geometric",
+            "structure",
+            "pattern",
+            "six-sided",
+            "angular"
+        ]
+    },
+    {
+        "iconId": "Home",
+        "concepts": [
+            "home",
+            "house",
+            "residence",
+            "main",
+            "start",
+            "beginning",
+            "base"
+        ]
+    },
+    {
+        "iconId": "Image",
+        "concepts": [
+            "image",
+            "picture",
+            "photo",
+            "visual",
+            "graphic",
+            "media",
+            "illustration"
+        ]
+    },
+    {
+        "iconId": "Inbox",
+        "concepts": [
+            "inbox",
+            "mail",
+            "messages",
+            "receive",
+            "communication",
+            "email",
+            "incoming"
+        ]
+    },
+    {
+        "iconId": "Info",
+        "concepts": [
+            "information",
+            "details",
+            "about",
+            "help",
+            "explanation",
+            "data",
+            "knowledge"
+        ]
+    },
+    {
+        "iconId": "Instagram",
+        "concepts": [
+            "instagram",
+            "social",
+            "photo",
+            "sharing",
+            "visual",
+            "media",
+            "network"
+        ]
+    },
+    {
+        "iconId": "Italic",
+        "concepts": [
+            "italic",
+            "text",
+            "formatting",
+            "emphasis",
+            "slanted",
+            "style",
+            "typography"
+        ]
+    },
+    {
+        "iconId": "Key",
+        "concepts": [
+            "key",
+            "unlock",
+            "access",
+            "security",
+            "password",
+            "authentication",
+            "entry"
+        ]
+    },
+    {
+        "iconId": "Laptop",
+        "concepts": [
+            "laptop",
+            "computer",
+            "portable",
+            "technology",
+            "work",
+            "digital",
+            "mobile"
+        ]
+    },
+    {
+        "iconId": "Layers",
+        "concepts": [
+            "layers",
+            "stack",
+            "levels",
+            "depth",
+            "organize",
+            "structure",
+            "hierarchy"
+        ]
+    },
+    {
+        "iconId": "Leaf",
+        "concepts": [
+            "leaf",
+            "nature",
+            "plant",
+            "green",
+            "organic",
+            "environment",
+            "natural"
+        ]
+    },
+    {
+        "iconId": "Library",
+        "concepts": [
+            "library",
+            "books",
+            "knowledge",
+            "learning",
+            "education",
+            "study",
+            "collection"
+        ]
+    },
+    {
+        "iconId": "Lightbulb",
+        "concepts": [
+            "idea",
+            "innovation",
+            "creativity",
+            "inspiration",
+            "bright",
+            "solution",
+            "eureka"
+        ]
+    },
+    {
+        "iconId": "Link",
+        "concepts": [
+            "link",
+            "connection",
+            "url",
+            "chain",
+            "connect",
+            "reference",
+            "hyperlink"
+        ]
+    },
+    {
+        "iconId": "List",
+        "concepts": [
+            "list",
+            "items",
+            "organize",
+            "bullet",
+            "menu",
+            "catalog",
+            "inventory"
+        ]
+    },
+    {
+        "iconId": "Lock",
+        "concepts": [
+            "lock",
+            "secure",
+            "private",
+            "protected",
+            "closed",
+            "safety",
+            "restricted"
+        ]
+    },
+    {
+        "iconId": "LogIn",
+        "concepts": [
+            "login",
+            "sign in",
+            "enter",
+            "access",
+            "authenticate",
+            "account",
+            "entry"
+        ]
+    },
+    {
+        "iconId": "LogOut",
+        "concepts": [
+            "logout",
+            "sign out",
+            "exit",
+            "leave",
+            "disconnect",
+            "end session",
+            "quit"
+        ]
+    },
+    {
+        "iconId": "Mail",
+        "concepts": [
+            "email",
+            "message",
+            "communication",
+            "letter",
+            "contact",
+            "send",
+            "correspondence"
+        ]
+    },
+    {
+        "iconId": "Map",
+        "concepts": [
+            "map",
+            "navigation",
+            "location",
+            "geography",
+            "directions",
+            "travel",
+            "route"
+        ]
+    },
+    {
+        "iconId": "MapPin",
+        "concepts": [
+            "location",
+            "pin",
+            "marker",
+            "place",
+            "position",
+            "address",
+            "point"
+        ]
+    },
+    {
+        "iconId": "Maximize",
+        "concepts": [
+            "maximize",
+            "expand",
+            "fullscreen",
+            "enlarge",
+            "bigger",
+            "zoom",
+            "grow"
+        ]
+    },
+    {
+        "iconId": "Medal",
+        "concepts": [
+            "medal",
+            "award",
+            "achievement",
+            "recognition",
+            "honor",
+            "prize",
+            "excellence"
+        ]
+    },
+    {
+        "iconId": "Meh",
+        "concepts": [
+            "neutral",
+            "indifferent",
+            "okay",
+            "average",
+            "mediocre",
+            "so-so",
+            "bland"
+        ]
+    },
+    {
+        "iconId": "Menu",
+        "concepts": [
+            "menu",
+            "hamburger",
+            "navigation",
+            "options",
+            "list",
+            "choices",
+            "sidebar"
+        ]
+    },
+    {
+        "iconId": "MessageCircle",
+        "concepts": [
+            "message",
+            "chat",
+            "conversation",
+            "talk",
+            "communication",
+            "bubble",
+            "discuss"
+        ]
+    },
+    {
+        "iconId": "Mic",
+        "concepts": [
+            "microphone",
+            "voice",
+            "audio",
+            "record",
+            "speak",
+            "sound",
+            "input"
+        ]
+    },
+    {
+        "iconId": "MicOff",
+        "concepts": [
+            "mute",
+            "silent",
+            "no audio",
+            "quiet",
+            "microphone off",
+            "disabled",
+            "hushed"
+        ]
+    },
+    {
+        "iconId": "Minimize",
+        "concepts": [
+            "minimize",
+            "reduce",
+            "shrink",
+            "smaller",
+            "collapse",
+            "compress",
+            "hide"
+        ]
+    },
+    {
+        "iconId": "Minus",
+        "concepts": [
+            "minus",
+            "subtract",
+            "remove",
+            "decrease",
+            "negative",
+            "less",
+            "reduce"
+        ]
+    },
+    {
+        "iconId": "Monitor",
+        "concepts": [
+            "monitor",
+            "screen",
+            "display",
+            "computer",
+            "desktop",
+            "technology",
+            "visual"
+        ]
+    },
+    {
+        "iconId": "Moon",
+        "concepts": [
+            "moon",
+            "night",
+            "dark",
+            "lunar",
+            "celestial",
+            "sleep",
+            "evening"
+        ]
+    },
+    {
+        "iconId": "MoreHorizontal",
+        "concepts": [
+            "more",
+            "options",
+            "menu",
+            "additional",
+            "ellipsis",
+            "extra",
+            "actions"
+        ]
+    },
+    {
+        "iconId": "MoreVertical",
+        "concepts": [
+            "more",
+            "options",
+            "menu",
+            "vertical",
+            "additional",
+            "ellipsis",
+            "actions"
+        ]
+    },
+    {
+        "iconId": "Mountain",
+        "concepts": [
+            "mountain",
+            "peak",
+            "high",
+            "nature",
+            "landscape",
+            "adventure",
+            "climb"
+        ]
+    },
+    {
+        "iconId": "Mouse",
+        "concepts": [
+            "mouse",
+            "cursor",
+            "click",
+            "pointer",
+            "computer",
+            "input",
+            "device"
+        ]
+    },
+    {
+        "iconId": "Move",
+        "concepts": [
+            "move",
+            "drag",
+            "relocate",
+            "position",
+            "transfer",
+            "shift",
+            "transport"
+        ]
+    },
+    {
+        "iconId": "Music",
+        "concepts": [
+            "music",
+            "note",
+            "melody",
+            "song",
+            "audio",
+            "sound",
+            "musical"
+        ]
+    },
+    {
+        "iconId": "Navigation",
+        "concepts": [
+            "navigation",
+            "compass",
+            "direction",
+            "guide",
+            "route",
+            "path",
+            "travel"
+        ]
+    },
+    {
+        "iconId": "Octagon",
+        "concepts": [
+            "octagon",
+            "stop",
+            "eight-sided",
+            "geometric",
+            "shape",
+            "warning",
+            "halt"
+        ]
+    },
+    {
+        "iconId": "Package",
+        "concepts": [
+            "package",
+            "box",
+            "delivery",
+            "shipping",
+            "parcel",
+            "container",
+            "wrapped"
+        ]
+    },
+    {
+        "iconId": "Paintbrush",
+        "concepts": [
+            "paintbrush",
+            "art",
+            "creative",
+            "design",
+            "painting",
+            "artistic",
+            "color"
+        ]
+    },
+    {
+        "iconId": "Palette",
+        "concepts": [
+            "palette",
+            "colors",
+            "art",
+            "design",
+            "creative",
+            "painting",
+            "artistic"
+        ]
+    },
+    {
+        "iconId": "Paperclip",
+        "concepts": [
+            "attachment",
+            "clip",
+            "file",
+            "document",
+            "connect",
+            "fasten",
+            "link"
+        ]
+    },
+    {
+        "iconId": "Pause",
+        "concepts": [
+            "pause",
+            "stop",
+            "break",
+            "halt",
+            "suspend",
+            "wait",
+            "interrupt"
+        ]
+    },
+    {
+        "iconId": "Pen",
+        "concepts": [
+            "pen",
+            "write",
+            "edit",
+            "draw",
+            "ink",
+            "writing",
+            "signature"
+        ]
+    },
+    {
+        "iconId": "PenTool",
+        "concepts": [
+            "pen tool",
+            "vector",
+            "design",
+            "precision",
+            "drawing",
+            "illustration",
+            "path"
+        ]
+    },
+    {
+        "iconId": "Pentagon",
+        "concepts": [
+            "pentagon",
+            "five-sided",
+            "geometric",
+            "shape",
+            "angular",
+            "military",
+            "defense"
+        ]
+    },
+    {
+        "iconId": "Phone",
+        "concepts": [
+            "phone",
+            "call",
+            "telephone",
+            "communication",
+            "contact",
+            "mobile",
+            "ring"
+        ]
+    },
+    {
+        "iconId": "PieChart",
+        "concepts": [
+            "pie chart",
+            "graph",
+            "data",
+            "statistics",
+            "analytics",
+            "percentage",
+            "circular"
+        ]
+    },
+    {
+        "iconId": "Pin",
+        "concepts": [
+            "pin",
+            "attach",
+            "fix",
+            "mark",
+            "location",
+            "point",
+            "secure"
+        ]
+    },
+    {
+        "iconId": "Pizza",
+        "concepts": [
+            "pizza",
+            "food",
+            "italian",
+            "slice",
+            "meal",
+            "cheese",
+            "delicious"
+        ]
+    },
+    {
+        "iconId": "Plane",
+        "concepts": [
+            "airplane",
+            "flight",
+            "travel",
+            "aviation",
+            "sky",
+            "transport",
+            "journey"
+        ]
+    },
+    {
+        "iconId": "Play",
+        "concepts": [
+            "play",
+            "start",
+            "begin",
+            "run",
+            "execute",
+            "media",
+            "video"
+        ]
+    },
+    {
+        "iconId": "Plus",
+        "concepts": [
+            "plus",
+            "add",
+            "create",
+            "new",
+            "increase",
+            "positive",
+            "more"
+        ]
+    },
+    {
+        "iconId": "Power",
+        "concepts": [
+            "power",
+            "on",
+            "off",
+            "energy",
+            "electricity",
+            "start",
+            "shutdown"
+        ]
+    },
+    {
+        "iconId": "Printer",
+        "concepts": [
+            "printer",
+            "print",
+            "paper",
+            "document",
+            "output",
+            "hard copy",
+            "office"
+        ]
+    },
+    {
+        "iconId": "Radio",
+        "concepts": [
+            "radio",
+            "broadcast",
+            "audio",
+            "music",
+            "frequency",
+            "wireless",
+            "transmission"
+        ]
+    },
+    {
+        "iconId": "Refresh",
+        "concepts": [
+            "refresh",
+            "reload",
+            "update",
+            "sync",
+            "renew",
+            "restart",
+            "cycle"
+        ]
+    },
+    {
+        "iconId": "Repeat",
+        "concepts": [
+            "repeat",
+            "loop",
+            "cycle",
+            "again",
+            "continuous",
+            "recurring",
+            "replay"
+        ]
+    },
+    {
+        "iconId": "Rocket",
+        "concepts": [
+            "rocket",
+            "launch",
+            "space",
+            "fast",
+            "startup",
+            "innovation",
+            "boost"
+        ]
+    },
+    {
+        "iconId": "RotateCcw",
+        "concepts": [
+            "rotate",
+            "counterclockwise",
+            "undo",
+            "reverse",
+            "turn",
+            "spin",
+            "left"
+        ]
+    },
+    {
+        "iconId": "RotateCw",
+        "concepts": [
+            "rotate",
+            "clockwise",
+            "redo",
+            "forward",
+            "turn",
+            "spin",
+            "right"
+        ]
+    },
+    {
+        "iconId": "Ruler",
+        "concepts": [
+            "ruler",
+            "measure",
+            "length",
+            "precision",
+            "scale",
+            "dimension",
+            "tool"
+        ]
+    },
+    {
+        "iconId": "Save",
+        "concepts": [
+            "save",
+            "store",
+            "preserve",
+            "keep",
+            "backup",
+            "disk",
+            "floppy"
+        ]
+    },
+    {
+        "iconId": "Scissors",
+        "concepts": [
+            "scissors",
+            "cut",
+            "trim",
+            "clip",
+            "snip",
+            "divide",
+            "separate"
+        ]
+    },
+    {
+        "iconId": "Search",
+        "concepts": [
+            "search",
+            "find",
+            "look",
+            "magnify",
+            "explore",
+            "seek",
+            "discover"
+        ]
+    },
+    {
+        "iconId": "Send",
+        "concepts": [
+            "send",
+            "submit",
+            "deliver",
+            "transmit",
+            "forward",
+            "dispatch",
+            "mail"
+        ]
+    },
+    {
+        "iconId": "Server",
+        "concepts": [
+            "server",
+            "database",
+            "hosting",
+            "network",
+            "computer",
+            "data center",
+            "cloud"
+        ]
+    },
+    {
+        "iconId": "Settings",
+        "concepts": [
+            "settings",
+            "configuration",
+            "preferences",
+            "options",
+            "control",
+            "adjust",
+            "customize"
+        ]
+    },
+    {
+        "iconId": "Share",
+        "concepts": [
+            "share",
+            "distribute",
+            "spread",
+            "social",
+            "network",
+            "connect",
+            "give"
+        ]
+    },
+    {
+        "iconId": "Shield",
+        "concepts": [
+            "shield",
+            "protection",
+            "security",
+            "defense",
+            "safe",
+            "guard",
+            "armor"
+        ]
+    },
+    {
+        "iconId": "Ship",
+        "concepts": [
+            "ship",
+            "boat",
+            "maritime",
+            "ocean",
+            "sailing",
+            "voyage",
+            "nautical"
+        ]
+    },
+    {
+        "iconId": "ShoppingBag",
+        "concepts": [
+            "shopping",
+            "bag",
+            "purchase",
+            "buy",
+            "retail",
+            "store",
+            "commerce"
+        ]
+    },
+    {
+        "iconId": "ShoppingCart",
+        "concepts": [
+            "cart",
+            "shopping",
+            "buy",
+            "purchase",
+            "ecommerce",
+            "basket",
+            "store"
+        ]
+    },
+    {
+        "iconId": "Shuffle",
+        "concepts": [
+            "shuffle",
+            "random",
+            "mix",
+            "disorder",
+            "rearrange",
+            "chaos",
+            "variety"
+        ]
+    },
+    {
+        "iconId": "SkipBack",
+        "concepts": [
+            "skip back",
+            "previous",
+            "rewind",
+            "backward",
+            "earlier",
+            "return",
+            "reverse"
+        ]
+    },
+    {
+        "iconId": "SkipForward",
+        "concepts": [
+            "skip forward",
+            "next",
+            "advance",
+            "forward",
+            "later",
+            "continue",
+            "progress"
+        ]
+    },
+    {
+        "iconId": "Slash",
+        "concepts": [
+            "slash",
+            "divide",
+            "separate",
+            "diagonal",
+            "line",
+            "cut",
+            "through"
+        ]
+    },
+    {
+        "iconId": "Sliders",
+        "concepts": [
+            "sliders",
+            "controls",
+            "adjust",
+            "settings",
+            "levels",
+            "parameters",
+            "tune"
+        ]
+    },
+    {
+        "iconId": "Smartphone",
+        "concepts": [
+            "smartphone",
+            "mobile",
+            "phone",
+            "device",
+            "cellular",
+            "portable",
+            "communication"
+        ]
+    },
+    {
+        "iconId": "Smile",
+        "concepts": [
+            "smile",
+            "happy",
+            "joy",
+            "positive",
+            "cheerful",
+            "pleased",
+            "content"
+        ]
+    },
+    {
+        "iconId": "Snowflake",
+        "concepts": [
+            "snowflake",
+            "winter",
+            "cold",
+            "ice",
+            "unique",
+            "frozen",
+            "crystal"
+        ]
+    },
+    {
+        "iconId": "Sparkles",
+        "concepts": [
+            "sparkles",
+            "magic",
+            "shine",
+            "glitter",
+            "special",
+            "enchanted",
+            "brilliant"
+        ]
+    },
+    {
+        "iconId": "Square",
+        "concepts": [
+            "square",
+            "box",
+            "rectangle",
+            "geometric",
+            "shape",
+            "equal",
+            "balanced"
+        ]
+    },
+    {
+        "iconId": "Star",
+        "concepts": [
+            "star",
+            "favorite",
+            "rating",
+            "excellence",
+            "celestial",
+            "bright",
+            "outstanding"
+        ]
+    },
+    {
+        "iconId": "Sun",
+        "concepts": [
+            "sun",
+            "sunny",
+            "bright",
+            "day",
+            "light",
+            "warm",
+            "solar"
+        ]
+    },
+    {
+        "iconId": "Tablet",
+        "concepts": [
+            "tablet",
+            "ipad",
+            "touch",
+            "portable",
+            "device",
+            "screen",
+            "digital"
+        ]
+    },
+    {
+        "iconId": "Tag",
+        "concepts": [
+            "tag",
+            "label",
+            "category",
+            "mark",
+            "classify",
+            "organize",
+            "identifier"
+        ]
+    },
+    {
+        "iconId": "Target",
+        "concepts": [
+            "target",
+            "goal",
+            "aim",
+            "focus",
+            "objective",
+            "bullseye",
+            "precision"
+        ]
+    },
+    {
+        "iconId": "Terminal",
+        "concepts": [
+            "terminal",
+            "command",
+            "console",
+            "code",
+            "developer",
+            "shell",
+            "CLI"
+        ]
+    },
+    {
+        "iconId": "ThumbsDown",
+        "concepts": [
+            "thumbs down",
+            "dislike",
+            "negative",
+            "bad",
+            "disapprove",
+            "reject",
+            "poor"
+        ]
+    },
+    {
+        "iconId": "ThumbsUp",
+        "concepts": [
+            "thumbs up",
+            "like",
+            "approve",
+            "good",
+            "positive",
+            "agree",
+            "excellent"
+        ]
+    },
+    {
+        "iconId": "Timer",
+        "concepts": [
+            "timer",
+            "countdown",
+            "stopwatch",
+            "time",
+            "duration",
+            "clock",
+            "measure"
+        ]
+    },
+    {
+        "iconId": "ToggleLeft",
+        "concepts": [
+            "toggle",
+            "switch",
+            "off",
+            "disable",
+            "inactive",
+            "left",
+            "false"
+        ]
+    },
+    {
+        "iconId": "ToggleRight",
+        "concepts": [
+            "toggle",
+            "switch",
+            "on",
+            "enable",
+            "active",
+            "right",
+            "true"
+        ]
+    },
+    {
+        "iconId": "Train",
+        "concepts": [
+            "train",
+            "railway",
+            "transport",
+            "travel",
+            "locomotive",
+            "track",
+            "journey"
+        ]
+    },
+    {
+        "iconId": "Trash",
+        "concepts": [
+            "trash",
+            "delete",
+            "remove",
+            "garbage",
+            "bin",
+            "waste",
+            "discard"
+        ]
+    },
+    {
+        "iconId": "Tree",
+        "concepts": [
+            "tree",
+            "nature",
+            "forest",
+            "growth",
+            "branch",
+            "leaf",
+            "organic"
+        ]
+    },
+    {
+        "iconId": "Triangle",
+        "concepts": [
+            "triangle",
+            "three-sided",
+            "geometric",
+            "shape",
+            "pointed",
+            "angular",
+            "delta"
+        ]
+    },
+    {
+        "iconId": "Trophy",
+        "concepts": [
+            "trophy",
+            "award",
+            "winner",
+            "champion",
+            "achievement",
+            "success",
+            "prize"
+        ]
+    },
+    {
+        "iconId": "Truck",
+        "concepts": [
+            "truck",
+            "delivery",
+            "transport",
+            "cargo",
+            "shipping",
+            "vehicle",
+            "freight"
+        ]
+    },
+    {
+        "iconId": "Tv",
+        "concepts": [
+            "television",
+            "tv",
+            "screen",
+            "entertainment",
+            "media",
+            "broadcast",
+            "watch"
+        ]
+    },
+    {
+        "iconId": "Twitter",
+        "concepts": [
+            "twitter",
+            "social",
+            "tweet",
+            "bird",
+            "microblog",
+            "network",
+            "share"
+        ]
+    },
+    {
+        "iconId": "Type",
+        "concepts": [
+            "type",
+            "text",
+            "font",
+            "typography",
+            "writing",
+            "letters",
+            "alphabet"
+        ]
+    },
+    {
+        "iconId": "Umbrella",
+        "concepts": [
+            "umbrella",
+            "rain",
+            "protection",
+            "weather",
+            "cover",
+            "shelter",
+            "shade"
+        ]
+    },
+    {
+        "iconId": "Underline",
+        "concepts": [
+            "underline",
+            "text",
+            "formatting",
+            "emphasis",
+            "decoration",
+            "style",
+            "line"
+        ]
+    },
+    {
+        "iconId": "Unlock",
+        "concepts": [
+            "unlock",
+            "open",
+            "access",
+            "free",
+            "available",
+            "unrestricted",
+            "public"
+        ]
+    },
+    {
+        "iconId": "Upload",
+        "concepts": [
+            "upload",
+            "send",
+            "transfer",
+            "share",
+            "publish",
+            "submit",
+            "post"
+        ]
+    },
+    {
+        "iconId": "User",
+        "concepts": [
+            "user",
+            "person",
+            "profile",
+            "account",
+            "individual",
+            "human",
+            "avatar"
+        ]
+    },
+    {
+        "iconId": "Users",
+        "concepts": [
+            "users",
+            "people",
+            "group",
+            "team",
+            "community",
+            "multiple",
+            "crowd"
+        ]
+    },
+    {
+        "iconId": "Video",
+        "concepts": [
+            "video",
+            "camera",
+            "record",
+            "film",
+            "movie",
+            "media",
+            "visual"
+        ]
+    },
+    {
+        "iconId": "Volume2",
+        "concepts": [
+            "volume",
+            "sound",
+            "audio",
+            "speaker",
+            "loud",
+            "music",
+            "noise"
+        ]
+    },
+    {
+        "iconId": "VolumeX",
+        "concepts": [
+            "mute",
+            "silent",
+            "no sound",
+            "quiet",
+            "volume off",
+            "hushed",
+            "soundless"
+        ]
+    },
+    {
+        "iconId": "Wand2",
+        "concepts": [
+            "magic wand",
+            "wizard",
+            "spell",
+            "enchant",
+            "transform",
+            "mystical",
+            "power"
+        ]
+    },
+    {
+        "iconId": "Watch",
+        "concepts": [
+            "watch",
+            "time",
+            "wrist",
+            "clock",
+            "timepiece",
+            "schedule",
+            "punctual"
+        ]
+    },
+    {
+        "iconId": "Waves",
+        "concepts": [
+            "waves",
+            "water",
+            "ocean",
+            "sea",
+            "flow",
+            "rhythm",
+            "motion"
+        ]
+    },
+    {
+        "iconId": "Wifi",
+        "concepts": [
+            "wifi",
+            "wireless",
+            "internet",
+            "connection",
+            "network",
+            "signal",
+            "online"
+        ]
+    },
+    {
+        "iconId": "Wind",
+        "concepts": [
+            "wind",
+            "air",
+            "breeze",
+            "weather",
+            "movement",
+            "flow",
+            "atmosphere"
+        ]
+    },
+    {
+        "iconId": "Wine",
+        "concepts": [
+            "wine",
+            "glass",
+            "alcohol",
+            "drink",
+            "celebration",
+            "elegant",
+            "sophisticated"
+        ]
+    },
+    {
+        "iconId": "Wrench",
+        "concepts": [
+            "wrench",
+            "tool",
+            "repair",
+            "fix",
+            "mechanical",
+            "maintenance",
+            "adjust"
+        ]
+    },
+    {
+        "iconId": "X",
+        "concepts": [
+            "close",
+            "cancel",
+            "delete",
+            "remove",
+            "exit",
+            "stop",
+            "cross"
+        ]
+    },
+    {
+        "iconId": "Youtube",
+        "concepts": [
+            "youtube",
+            "video",
+            "streaming",
+            "media",
+            "entertainment",
+            "watch",
+            "channel"
+        ]
+    },
+    {
+        "iconId": "Zap",
+        "concepts": [
+            "lightning",
+            "electric",
+            "energy",
+            "power",
+            "fast",
+            "shock",
+            "bolt"
+        ]
+    },
+    {
+        "iconId": "ZoomIn",
+        "concepts": [
+            "zoom in",
+            "magnify",
+            "enlarge",
+            "closer",
+            "detail",
+            "focus",
+            "expand"
+        ]
+    },
+    {
+        "iconId": "ZoomOut",
+        "concepts": [
+            "zoom out",
+            "shrink",
+            "overview",
+            "distant",
+            "reduce",
+            "minimize",
+            "wide"
+        ]
+    }
+]
