@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { X, Trash2, Loader2 } from 'lucide-react';
 import { sqliteService } from '@/services/sqliteService';
 import { useImageStore } from '@/stores/imageStore';
-import { useRateLimit } from '@/hooks/useRateLimit';
+
 import { toast } from 'sonner';
 
 interface SettingsModalProps {
@@ -14,72 +12,7 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
-/**
- * Rate Limit Setting Component
- */
-function RateLimitSetting() {
-    const { rateLimitConfig, updateRateLimit } = useRateLimit();
-    const [inputValue, setInputValue] = useState(rateLimitConfig.requestsPerMinute.toString());
-    const [isUpdating, setIsUpdating] = useState(false);
 
-    const handleUpdate = async () => {
-        const value = parseInt(inputValue, 10);
-        if (isNaN(value) || value < 1 || value > 100) {
-            toast.error('Rate limit must be between 1 and 100 requests per minute');
-            setInputValue(rateLimitConfig.requestsPerMinute.toString());
-            return;
-        }
-
-        setIsUpdating(true);
-        try {
-            await updateRateLimit(value);
-            toast.success('Rate limit updated successfully');
-        } catch (error) {
-            toast.error('Failed to update rate limit');
-            setInputValue(rateLimitConfig.requestsPerMinute.toString());
-        } finally {
-            setIsUpdating(false);
-        }
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleUpdate();
-        }
-    };
-
-    // Update input when config changes
-    React.useEffect(() => {
-        setInputValue(rateLimitConfig.requestsPerMinute.toString());
-    }, [rateLimitConfig.requestsPerMinute]);
-
-    return (
-        <div className="flex items-center justify-between">
-            <div className="space-y-1">
-                <p className="text-sm text-foreground">Rate Limit</p>
-                <p className="text-xs text-muted-foreground">
-                    Maximum requests per minute (1-100)
-                </p>
-            </div>
-            <div className="flex items-center gap-2">
-                <Input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onBlur={handleUpdate}
-                    className="w-20 text-center"
-                    disabled={isUpdating}
-                />
-                {isUpdating && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-            </div>
-        </div>
-    );
-}
 
 /**
  * Settings Modal Component
@@ -187,15 +120,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
                     </div>
 
-                    {/* Rate Limiting Section */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
-                            Rate Limiting
-                        </h3>
-                        <div className="space-y-3">
-                            <RateLimitSetting />
-                        </div>
-                    </div>
+
 
                     {/* Future settings sections can be added here */}
                 </div>

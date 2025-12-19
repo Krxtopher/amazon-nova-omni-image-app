@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
-import { useRateLimit } from '@/hooks/useRateLimit';
+
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
@@ -82,7 +82,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const inputBarRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<any>(null);
 
-    const { queueRequest, canMakeRequest, recordRequest } = useRateLimit();
+
 
     const {
         selectedAspectRatio,
@@ -173,7 +173,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         // Create placeholder image immediately (optimistic UI)
         // Requirements: 1.3
         const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-        const initialStatus = canMakeRequest ? 'generating' : 'queued';
+        const initialStatus = 'generating';
         const placeholderImage: GeneratedImage = {
             id: placeholderId,
             url: '', // Empty URL for placeholder
@@ -296,15 +296,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             }
         };
 
-        // Queue or execute the request based on rate limiting
-        if (canMakeRequest) {
-            // Execute immediately and record timestamp
-            recordRequest(placeholderId);
-            executeGeneration();
-        } else {
-            // Queue the request
-            queueRequest(placeholderId, executeGeneration);
-        }
+        // Execute the request immediately
+        executeGeneration();
     };
 
     /**
