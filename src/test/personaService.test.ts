@@ -166,35 +166,4 @@ Take inspiration from the user's prompt and create your own unique vision. Be su
             expect(updated?.systemPrompt).toContain('a new artistic style');
         });
     });
-
-    describe('Migration', () => {
-        it('should migrate old custom persona', async () => {
-            vi.mocked(sqliteService.getSetting)
-                .mockResolvedValueOnce('Old custom persona prompt') // old persona
-                .mockResolvedValueOnce('[]'); // existing personas (empty)
-
-            vi.mocked(sqliteService.setSetting).mockResolvedValue();
-            vi.mocked(sqliteService.deleteSetting).mockResolvedValue();
-
-            await personaService.migrateOldCustomPersona();
-
-            // Should create new persona
-            expect(sqliteService.setSetting).toHaveBeenCalledWith(
-                'customPersonas',
-                expect.stringContaining('My Custom Persona')
-            );
-
-            // Should delete old setting
-            expect(sqliteService.deleteSetting).toHaveBeenCalledWith('customPromptEnhancementPersona');
-        });
-
-        it('should not migrate if no old persona exists', async () => {
-            vi.mocked(sqliteService.getSetting).mockResolvedValue(null);
-
-            await personaService.migrateOldCustomPersona();
-
-            expect(sqliteService.setSetting).not.toHaveBeenCalled();
-            expect(sqliteService.deleteSetting).not.toHaveBeenCalled();
-        });
-    });
 });

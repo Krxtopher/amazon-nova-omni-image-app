@@ -31,24 +31,7 @@ class PersonaService {
     async getCustomPersonas(): Promise<CustomPersona[]> {
         try {
             const personas = await sqliteService.getSetting(this.PERSONAS_KEY);
-            const parsedPersonas = personas ? JSON.parse(personas as string) : [];
-
-            // Migrate personas that don't have an icon field
-            let needsMigration = false;
-            const migratedPersonas = parsedPersonas.map((persona: any) => {
-                if (!persona.icon) {
-                    needsMigration = true;
-                    return { ...persona, icon: 'Edit' }; // Default icon for existing personas
-                }
-                return persona;
-            });
-
-            // Save migrated personas if needed
-            if (needsMigration) {
-                await this.savePersonas(migratedPersonas);
-            }
-
-            return migratedPersonas;
+            return personas ? JSON.parse(personas as string) : [];
         } catch (error) {
             console.error('Failed to load custom personas:', error);
             return [];
@@ -206,35 +189,6 @@ Take inspiration from the user's prompt and create your own unique vision. Be su
      */
     private async savePersonas(personas: CustomPersona[]): Promise<void> {
         await sqliteService.setSetting(this.PERSONAS_KEY, JSON.stringify(personas));
-    }
-
-    /**
-     * Migrate old single custom persona to new system
-     */
-    async migrateOldCustomPersona(): Promise<void> {
-        try {
-            const oldPersona = await sqliteService.getSetting('customPromptEnhancementPersona');
-            if (!oldPersona) {
-                return; // No old persona to migrate
-            }
-
-            const existingPersonas = await this.getCustomPersonas();
-            if (existingPersonas.length > 0) {
-                return; // Already migrated or has new personas
-            }
-
-            // Create a new persona from the old one
-            await this.createCustomPersona(
-                'My Custom Persona',
-                oldPersona as string,
-                'Migrated from previous custom persona'
-            );
-
-            // Remove the old setting
-            await sqliteService.deleteSetting('customPromptEnhancementPersona');
-        } catch (error) {
-            console.error('Failed to migrate old custom persona:', error);
-        }
     }
 }
 

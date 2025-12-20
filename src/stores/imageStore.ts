@@ -102,9 +102,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
             const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
 
-            // Migrate old custom persona if needed
-            await personaService.migrateOldCustomPersona();
-
             // Load persona setting
             const savedEnhancement = await sqliteService.getSetting('selectedPromptEnhancement');
             let promptEnhancement = (savedEnhancement as PromptEnhancement) || DEFAULT_PROMPT_ENHANCEMENT;
