@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { startTransition } from 'react';
 import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
@@ -638,8 +639,11 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                     key={ratio.value}
                                     onClick={() => {
                                         if (!editSource) {
-                                            setAspectRatio(ratio.value);
-                                            setAspectRatioExpanded(false);
+                                            // 🚀 PERFORMANCE FIX: Batch state updates to prevent multiple renders
+                                            startTransition(() => {
+                                                setAspectRatio(ratio.value);
+                                                setAspectRatioExpanded(false);
+                                            });
                                         }
                                     }}
                                     disabled={!!editSource}

@@ -20,20 +20,11 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
     onTextDelete: _onTextDelete, // Kept for compatibility but not used
     onImageEdit
 }: SimpleVirtualizedGalleryProps) {
-    const { images, layoutMode } = useImageStore();
+    // 🚀 PERFORMANCE FIX: Use selective subscriptions to prevent unnecessary re-renders
+    // Only subscribe to the data this component actually needs
+    const images = useImageStore(state => state.images);
+    const layoutMode = useImageStore(state => state.layoutMode);
     const containerRef = useRef<HTMLDivElement>(null);
-
-    // Debug: Log gallery render
-    React.useEffect(() => {
-        console.log('🖼️ Gallery component mounted at:', new Date().toISOString());
-        console.timeEnd('🚀 App Load Time');
-        console.log('🎯 Gallery first render completed - App fully loaded!');
-    }, []);
-
-    // Debug: Log when images change
-    React.useEffect(() => {
-        console.log('📸 Gallery images updated:', images.length, 'images at', new Date().toISOString());
-    }, [images]);
 
     // Memoized sorted images (only sort once when data changes)
     const sortedImages = useMemo(() => {

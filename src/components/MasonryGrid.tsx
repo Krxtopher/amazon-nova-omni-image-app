@@ -110,27 +110,43 @@ function VMasonryGrid({
     const columnCount = getColumnCount(containerWidth);
     const itemWidth = Math.floor((containerWidth - (columnCount + 1) * gap) / columnCount);
 
-    const newItemsLayout = items.map((item) => {
-      const displayWidth = itemWidth;
-      const displayHeight = (item.height / item.width) * itemWidth;
-      return {
-        item,
-        displayWidth,
-        displayHeight,
-        top: 0,
-        left: 0
-      };
-    });
+    // 🚀 PERFORMANCE OPTIMIZATION: Use requestIdleCallback for expensive layout calculations
+    const performLayout = () => {
+      const newItemsLayout = items.map((item) => {
+        const displayWidth = itemWidth;
+        const displayHeight = (item.height / item.width) * itemWidth;
+        return {
+          item,
+          displayWidth,
+          displayHeight,
+          top: 0,
+          left: 0
+        };
+      });
 
-    const columnHeights = Array(columnCount).fill(0);
-    newItemsLayout.forEach((itemInfo) => {
-      const columnIndex = columnHeights.indexOf(Math.min(...columnHeights));
-      itemInfo.left = columnIndex * (itemWidth + gap) + gap;
-      itemInfo.top = columnHeights[columnIndex] + gap;
-      columnHeights[columnIndex] = itemInfo.top + itemInfo.displayHeight;
-    });
+      const columnHeights = Array(columnCount).fill(0);
+      newItemsLayout.forEach((itemInfo) => {
+        const columnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+        itemInfo.left = columnIndex * (itemWidth + gap) + gap;
+        itemInfo.top = columnHeights[columnIndex] + gap;
+        columnHeights[columnIndex] = itemInfo.top + itemInfo.displayHeight;
+      });
 
-    setItemsLayout(newItemsLayout);
+      setItemsLayout(newItemsLayout);
+    };
+
+    // For small numbers of items, calculate immediately
+    // For large numbers, defer to avoid blocking the UI
+    if (items.length <= 20) {
+      performLayout();
+    } else {
+      // Use requestIdleCallback if available, otherwise setTimeout
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(performLayout, { timeout: 100 });
+      } else {
+        setTimeout(performLayout, 0);
+      }
+    }
   }, [containerWidth, gap, items, getColumnCount]);
 
   return (
