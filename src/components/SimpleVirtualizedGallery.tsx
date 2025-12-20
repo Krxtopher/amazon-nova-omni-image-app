@@ -112,14 +112,6 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
                 </div>
             )}
 
-            {/* End of content indicator */}
-            {!hasMoreImages && sortedImages.length > 4 && (
-                <div className="flex items-center justify-center py-8">
-                    <p className="text-sm text-muted-foreground">
-                        You've reached the end of your gallery
-                    </p>
-                </div>
-            )}
         </div>
     );
 });

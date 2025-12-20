@@ -67,31 +67,17 @@ export const useImageStore = create<ImageStore>()((set) => ({
      */
     initialize: async () => {
         try {
-            console.log('🏪 Store initialization beginning at:', new Date().toISOString());
-            const initStartTime = performance.now();
-
             set({ isLoading: true });
 
-            console.log('🔧 Starting SQLite service init...');
-            const sqliteStartTime = performance.now();
             await sqliteService.init();
-            const sqliteEndTime = performance.now();
-            console.log('💾 SQLite service initialized in', (sqliteEndTime - sqliteStartTime).toFixed(2), 'ms');
 
-            console.log('📊 Getting total image count...');
-            const countStartTime = performance.now();
             // Get total count for pagination (only complete images)
             const totalCount = await sqliteService.getCompleteImageMetadataCount();
-            const countEndTime = performance.now();
-            console.log('📊 Total count query completed in', (countEndTime - countStartTime).toFixed(2), 'ms. Total complete images:', totalCount);
 
             // Load zero images initially for maximum startup performance
             const initialBatchSize = 0;
             const imageMetadata = await sqliteService.getCompleteImageMetadataPaginated(0, initialBatchSize);
-            console.log('📊 Initial image metadata loaded:', imageMetadata.length, 'images (zero for maximum startup performance) at', new Date().toISOString());
 
-            console.log('📱 Loading text items from localStorage...');
-            const textStartTime = performance.now();
             // Load text items from localStorage (temporary solution)
             const textItemsJson = localStorage.getItem('textItems');
             const textItems: GeneratedText[] = textItemsJson ?
@@ -99,8 +85,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
                     ...item,
                     createdAt: new Date(item.createdAt)
                 })) : [];
-            const textEndTime = performance.now();
-            console.log('📱 Text items loaded in', (textEndTime - textStartTime).toFixed(2), 'ms');
 
             set({
                 images: imageMetadata,
@@ -109,13 +93,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 hasMoreImages: imageMetadata.length < totalCount,
                 isLoading: false
             });
-
-            const initEndTime = performance.now();
-            const totalInitTime = initEndTime - initStartTime;
-            console.log('✅ Store initialization completed in', totalInitTime.toFixed(2), 'ms at:', new Date().toISOString());
-            console.log('📊 Loaded', imageMetadata.length, 'of', totalCount, 'total images. Has more:', imageMetadata.length < totalCount);
         } catch (error) {
-            console.error('❌ Failed to initialize store:', error);
+            console.error('Failed to initialize store:', error);
             set({ isLoading: false });
         }
     },
@@ -152,33 +131,21 @@ export const useImageStore = create<ImageStore>()((set) => ({
             set({ isLoadingMore: true });
 
             const currentOffset = state.images.length;
-            // Use larger batch size for first load, smaller for subsequent loads
-            const batchSize = currentOffset === 0 ? 12 : 8;
-
-            console.log('📊 Loading more images, offset:', currentOffset, 'batch size:', batchSize);
-
-            // EXPERIMENT: Add artificial delay for first batch to test if this is the bottleneck
-            if (currentOffset === 0) {
-                console.log('🧪 EXPERIMENT: Adding 3 second delay before first batch load...');
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                console.log('🧪 EXPERIMENT: Delay complete, now loading first batch...');
-            }
+            const batchSize = 10;
 
             const moreImageMetadata = await sqliteService.getCompleteImageMetadataPaginated(currentOffset, batchSize);
 
             if (moreImageMetadata.length > 0) {
                 set((state) => ({
                     images: [...state.images, ...moreImageMetadata],
-                    hasMoreImages: moreImageMetadata.length === batchSize, // If we got less than batch size, no more images
+                    hasMoreImages: moreImageMetadata.length === batchSize,
                     isLoadingMore: false
                 }));
-                console.log('📊 Loaded', moreImageMetadata.length, 'more images. Total:', state.images.length + moreImageMetadata.length);
             } else {
                 set({
                     hasMoreImages: false,
                     isLoadingMore: false
                 });
-                console.log('📊 No more images to load');
             }
         } catch (error) {
             console.error('Failed to load more images:', error);
