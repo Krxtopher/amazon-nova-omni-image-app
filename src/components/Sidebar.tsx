@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/SettingsModal';
 import { useNavigate } from 'react-router-dom';
-import { useImageStore } from '@/stores/imageStore';
+import { useUIStore } from '@/stores/uiStore';
 import { VerticalMasonryIcon, HorizontalMasonryIcon } from '@/components/icons/MasonryIcons';
 import {
     Home,
@@ -25,7 +25,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
     const [activeButton, setActiveButton] = useState<string | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const navigate = useNavigate();
-    const { layoutMode, setLayoutMode } = useImageStore();
+    const { layoutMode, setLayoutMode } = useUIStore();
 
     const sidebarButtons = [
         {

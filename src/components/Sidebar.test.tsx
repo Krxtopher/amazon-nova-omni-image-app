@@ -3,10 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 
-// Mock the useImageStore hook
+// Mock the useUIStore hook
 const mockSetLayoutMode = vi.fn();
-vi.mock('@/stores/imageStore', () => ({
-    useImageStore: () => ({
+vi.mock('@/stores/uiStore', () => ({
+    useUIStore: () => ({
         layoutMode: 'vertical',
         setLayoutMode: mockSetLayoutMode
     })

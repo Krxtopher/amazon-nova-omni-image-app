@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useImageStore } from '@/stores/imageStore';
+import { useUIStore } from '@/stores/uiStore';
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
 import { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
@@ -32,7 +33,8 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
     onTextDelete,
     onImageEdit
 }: VirtualizedGalleryProps) {
-    const { images, textItems, layoutMode } = useImageStore();
+    const { images, textItems } = useImageStore();
+    const { layoutMode } = useUIStore();
     const [visibleItems, setVisibleItems] = useState<GalleryItem[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);

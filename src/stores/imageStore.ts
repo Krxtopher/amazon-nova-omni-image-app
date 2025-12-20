@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GeneratedImage, GeneratedText, GalleryItem, EditSource, AspectRatio, PromptEnhancement } from '../types';
+import type { GeneratedImage, GeneratedText, GalleryItem, EditSource } from '../types';
 import { personaService } from '../services/personaService';
 import { sqliteService } from '../services/sqliteService';
 
@@ -10,14 +10,11 @@ interface ImageStoreState {
     // State
     images: GeneratedImage[]; // Metadata only, URLs loaded on demand
     textItems: GeneratedText[];
-    selectedAspectRatio: AspectRatio;
-    selectedPromptEnhancement: PromptEnhancement;
     editSource: EditSource | null;
     isGenerating: boolean;
     isLoading: boolean;
     // Cache for loaded image URLs
     imageDataCache: Map<string, string>;
-    layoutMode: 'vertical' | 'horizontal';
 }
 
 /**
@@ -30,8 +27,6 @@ interface ImageStoreActions {
     updateImage: (id: string, updates: Partial<GeneratedImage>) => Promise<void>;
     deleteImage: (id: string) => Promise<void>;
     deleteTextItem: (id: string) => void;
-    setAspectRatio: (ratio: AspectRatio) => Promise<void>;
-    setPromptEnhancement: (persona: PromptEnhancement) => Promise<void>;
     setEditSource: (source: EditSource | null) => void;
     clearEditSource: () => void;
     loadImages: () => Promise<void>;
@@ -40,7 +35,6 @@ interface ImageStoreActions {
     getItemsPaginated: (offset: number, limit: number) => Promise<GalleryItem[]>;
     getTotalItemCount: () => number;
     initialize: () => Promise<void>;
-    setLayoutMode: (mode: 'vertical' | 'horizontal') => Promise<void>;
 }
 
 /**
@@ -49,31 +43,19 @@ interface ImageStoreActions {
 export type ImageStore = ImageStoreState & ImageStoreActions;
 
 /**
- * Default aspect ratio
- */
-const DEFAULT_ASPECT_RATIO: AspectRatio = 'random';
-
-/**
- * Default persona
- */
-const DEFAULT_PROMPT_ENHANCEMENT: PromptEnhancement = 'off';
-
-/**
  * Image store using Zustand with SQLite persistence
- * Manages the state for generated images, aspect ratio selection, and edit source
+ * Manages the state for generated images and edit source
+ * UI state (aspect ratio, layout mode, etc.) moved to separate uiStore for better performance
  * Requirements: 3.1 - Persist images to SQLite database via IndexedDB
  */
 export const useImageStore = create<ImageStore>()((set) => ({
     // Initial state
     images: [],
     textItems: [],
-    selectedAspectRatio: DEFAULT_ASPECT_RATIO,
-    selectedPromptEnhancement: DEFAULT_PROMPT_ENHANCEMENT,
     editSource: null,
     isGenerating: false,
     isLoading: true,
     imageDataCache: new Map(),
-    layoutMode: 'vertical',
 
     // Actions
 
@@ -94,8 +76,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const imageMetadata = await sqliteService.getAllImageMetadata();
             console.log('📊 Image metadata loaded:', imageMetadata.length, 'images at', new Date().toISOString());
 
-
-
             // Load text items from localStorage (temporary solution)
             const textItemsJson = localStorage.getItem('textItems');
             const textItems: GeneratedText[] = textItemsJson ?
@@ -104,35 +84,9 @@ export const useImageStore = create<ImageStore>()((set) => ({
                     createdAt: new Date(item.createdAt)
                 })) : [];
 
-            // Load aspect ratio setting
-            const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
-            const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
-
-            // Load layout mode setting
-            const savedLayoutMode = await sqliteService.getSetting('layoutMode');
-            const layoutMode = (savedLayoutMode as 'vertical' | 'horizontal') || 'vertical';
-
-            // Load persona setting
-            const savedEnhancement = await sqliteService.getSetting('selectedPromptEnhancement');
-            let promptEnhancement = (savedEnhancement as PromptEnhancement) || DEFAULT_PROMPT_ENHANCEMENT;
-
-            // If the saved enhancement was 'custom', we need to check if we have any custom personas
-            // and select the first one, or fall back to 'off'
-            if (promptEnhancement === 'custom') {
-                const customPersonas = await personaService.getCustomPersonas();
-                if (customPersonas.length > 0) {
-                    promptEnhancement = customPersonas[0].id;
-                } else {
-                    promptEnhancement = 'off';
-                }
-            }
-
             set({
                 images: imageMetadata,
                 textItems,
-                selectedAspectRatio: aspectRatio,
-                selectedPromptEnhancement: promptEnhancement,
-                layoutMode: layoutMode,
                 isLoading: false
             });
             console.log('✅ Store initialization completed at:', new Date().toISOString());
@@ -291,39 +245,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Set the selected aspect ratio for new image generation
-     * UI update is immediate, database persistence happens asynchronously
-     * Requirements: 2.1, 2.5
-     */
-    setAspectRatio: async (ratio: AspectRatio) => {
-        // Update UI immediately for responsive feel
-        set({ selectedAspectRatio: ratio });
-
-        // Persist to database asynchronously (don't block UI)
-        sqliteService.setSetting('selectedAspectRatio', ratio).catch((error) => {
-            console.error('Failed to persist aspect ratio setting to database:', error);
-            // In a production app, you might want to show a toast notification
-            // or implement retry logic here
-        });
-    },
-
-    /**
-     * Set the selected persona for new image generation
-     * UI update is immediate, database persistence happens asynchronously
-     */
-    setPromptEnhancement: async (persona: PromptEnhancement) => {
-        // Update UI immediately for responsive feel
-        set({ selectedPromptEnhancement: persona });
-
-        // Persist to database asynchronously (don't block UI)
-        sqliteService.setSetting('selectedPromptEnhancement', persona).catch((error) => {
-            console.error('Failed to persist persona setting to database:', error);
-            // In a production app, you might want to show a toast notification
-            // or implement retry logic here
-        });
-    },
-
-    /**
      * Set the edit source image
      * Requirements: 5.2, 6.3
      */
@@ -365,21 +286,5 @@ export const useImageStore = create<ImageStore>()((set) => ({
     getTotalItemCount: (): number => {
         const state = useImageStore.getState();
         return state.images.length + state.textItems.length;
-    },
-
-    /**
-     * Set the layout mode for the gallery (vertical or horizontal masonry)
-     * UI update is immediate, database persistence happens asynchronously
-     */
-    setLayoutMode: async (mode: 'vertical' | 'horizontal') => {
-        // Update UI immediately for responsive feel
-        set({ layoutMode: mode });
-
-        // Persist to database asynchronously (don't block UI)
-        sqliteService.setSetting('layoutMode', mode).catch((error) => {
-            console.error('Failed to persist layout mode setting to database:', error);
-            // In a production app, you might want to show a toast notification
-            // or implement retry logic here
-        });
     },
 }));

@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
+import { migrateUISettings } from '@/utils/migrateUISettings';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -57,10 +58,19 @@ function AppContent() {
 
   const [activeRequests, setActiveRequests] = useState(0);
 
-  // Initialize the store
+  // Initialize the store and migrate UI settings
   useEffect(() => {
-    console.log('🏪 Store initialization starting at:', new Date().toISOString());
-    initialize();
+    const initializeApp = async () => {
+      console.log('🏪 Store initialization starting at:', new Date().toISOString());
+
+      // First migrate UI settings from SQLite to localStorage
+      await migrateUISettings();
+
+      // Then initialize the main image store
+      await initialize();
+    };
+
+    initializeApp();
   }, [initialize]);
 
   /**

@@ -3,12 +3,12 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
 
-// Mock the useImageStore hook
+// Mock the useUIStore hook
 const mockSetLayoutMode = vi.fn();
 let mockLayoutMode = 'vertical';
 
-vi.mock('@/stores/imageStore', () => ({
-    useImageStore: () => ({
+vi.mock('@/stores/uiStore', () => ({
+    useUIStore: () => ({
         layoutMode: mockLayoutMode,
         setLayoutMode: mockSetLayoutMode
     })

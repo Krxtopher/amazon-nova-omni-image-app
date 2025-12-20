@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useImageStore } from '@/stores/imageStore';
+import { useUIStore } from '@/stores/uiStore';
 import type { GeneratedImage } from '../types';
 import { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
@@ -23,7 +24,7 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
     // 🚀 PERFORMANCE FIX: Use selective subscriptions to prevent unnecessary re-renders
     // Only subscribe to the data this component actually needs
     const images = useImageStore(state => state.images);
-    const layoutMode = useImageStore(state => state.layoutMode);
+    const layoutMode = useUIStore(state => state.layoutMode);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Memoized sorted images (only sort once when data changes)
