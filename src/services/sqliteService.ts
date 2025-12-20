@@ -23,8 +23,8 @@ class SQLiteService {
                 // Initialize SQL.js
                 const SQL = await initSqlJs({
                     locateFile: (file: string) => {
-                        // Use CDN for production
-                        return `https://sql.js.org/dist/${file}`;
+                        // Use local wasm file from public directory
+                        return `/${file}`;
                     },
                 });
 
