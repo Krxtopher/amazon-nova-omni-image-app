@@ -1,4 +1,4 @@
-# UI Store Migration Summary
+# UI Store Performance Optimization Summary
 
 ## 🎯 **Problem Solved**
 
@@ -10,23 +10,17 @@ Created a new lightweight `uiStore` using Zustand with localStorage persistence 
 
 ## 📁 **Files Created**
 
-### 1. **src/stores/uiStore.ts**
+### **src/stores/uiStore.ts**
 - New Zustand store with localStorage persistence
 - Handles: `selectedAspectRatio`, `selectedPromptEnhancement`, `layoutMode`
 - All actions are synchronous for instant UI updates
 - Uses Zustand's `persist` middleware for automatic localStorage sync
 
-### 2. **src/utils/migrateUISettings.ts**
-- Migration utility to move existing SQLite UI settings to localStorage
-- Ensures existing users don't lose their preferences
-- Handles legacy 'custom' persona migration
-- Runs once and marks completion to avoid repeated attempts
-
 ## 📝 **Files Modified**
 
 ### **Store Layer**
 - **src/stores/imageStore.ts**: Removed UI state and related methods, kept only image/content data
-- **src/App.tsx**: Added migration call during app initialization
+- **src/App.tsx**: Simplified initialization (no migration needed)
 
 ### **Components Updated**
 - **src/components/PromptInputArea.tsx**: Now uses both `useImageStore` and `useUIStore`
@@ -38,14 +32,6 @@ Created a new lightweight `uiStore` using Zustand with localStorage persistence 
 ### **Tests Updated**
 - **src/test/layoutToggle.test.tsx**: Updated to mock `useUIStore`
 - **src/components/Sidebar.test.tsx**: Updated to mock `useUIStore`
-
-## 🔄 **Migration Process**
-
-1. **App starts** → `migrateUISettings()` runs first
-2. **Reads existing SQLite settings** (aspect ratio, layout mode, prompt enhancement)
-3. **Writes to localStorage** in Zustand persist format
-4. **Marks migration complete** to avoid future runs
-5. **uiStore loads** with migrated values automatically
 
 ## ⚡ **Performance Improvements**
 
@@ -76,14 +62,12 @@ Created a new lightweight `uiStore` using Zustand with localStorage persistence 
 1. **Select different aspect ratios** - Should feel instant now
 2. **Toggle layout modes** - No delay
 3. **Change prompt enhancements** - Immediate response
-4. **Existing users** - Settings preserved after migration
 
 ## 📊 **Expected Results**
 
 - **Aspect ratio selection**: From slight delay to instant
 - **Layout toggle**: From slight delay to instant  
 - **Prompt enhancement**: From slight delay to instant
-- **App startup**: Existing settings preserved
 - **New users**: Default values work immediately
 
 ## 🔧 **Technical Details**
@@ -99,7 +83,6 @@ Created a new lightweight `uiStore` using Zustand with localStorage persistence 
 
 ### **localStorage Key**
 - Stored as: `ui-store`
-- Migration flag: `ui-settings-migrated`
 
 ### **Zustand Persist**
 - Automatic serialization/deserialization
