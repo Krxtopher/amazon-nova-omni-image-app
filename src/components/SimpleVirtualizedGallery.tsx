@@ -23,6 +23,18 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
     const { images } = useImageStore();
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // Debug: Log gallery render
+    React.useEffect(() => {
+        console.log('🖼️ Gallery component mounted at:', new Date().toISOString());
+        console.timeEnd('🚀 App Load Time');
+        console.log('🎯 Gallery first render completed - App fully loaded!');
+    }, []);
+
+    // Debug: Log when images change
+    React.useEffect(() => {
+        console.log('📸 Gallery images updated:', images.length, 'images at', new Date().toISOString());
+    }, [images]);
+
     // Memoized sorted images (only sort once when data changes)
     const sortedImages = useMemo(() => {
         return [...images].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

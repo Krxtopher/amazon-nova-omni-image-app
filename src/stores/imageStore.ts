@@ -79,14 +79,17 @@ export const useImageStore = create<ImageStore>()((set) => ({
      */
     initialize: async () => {
         try {
+            console.log('🏪 Store initialization beginning at:', new Date().toISOString());
             set({ isLoading: true });
             await sqliteService.init();
+            console.log('💾 SQLite service initialized at:', new Date().toISOString());
 
             // Delete incomplete images from database first
             await sqliteService.deleteImagesByStatus(['pending', 'queued', 'generating', 'error']);
 
             // Load only image metadata (not the actual image data)
             const imageMetadata = await sqliteService.getAllImageMetadata();
+            console.log('📊 Image metadata loaded:', imageMetadata.length, 'images at', new Date().toISOString());
 
 
 
@@ -124,8 +127,9 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 selectedPromptEnhancement: promptEnhancement,
                 isLoading: false
             });
+            console.log('✅ Store initialization completed at:', new Date().toISOString());
         } catch (error) {
-            console.error('Failed to initialize store:', error);
+            console.error('❌ Failed to initialize store:', error);
             set({ isLoading: false });
         }
     },

@@ -218,7 +218,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 let finalPrompt = enhancedPrompt;
                 if (!currentEditSource) {
                     // Only append aspect ratio for new generation, not for edits
-                    finalPrompt = `${enhancedPrompt} --ar ${aspectRatioToUse}`;
+                    finalPrompt = `${enhancedPrompt}(${aspectRatioToUse})`;
                 }
 
                 // Call BedrockImageService to generate content
