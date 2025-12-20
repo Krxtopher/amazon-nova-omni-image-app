@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useImageStore } from '@/stores/imageStore';
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
-import { VMasonryGrid } from './MasonryGrid';
+import { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
 import { TextCard } from './TextCard';
 import type { MasonryItemRendererProps } from './MasonryGrid';
@@ -32,7 +32,7 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
     onTextDelete,
     onImageEdit
 }: VirtualizedGalleryProps) {
-    const { images, textItems } = useImageStore();
+    const { images, textItems, layoutMode } = useImageStore();
     const [visibleItems, setVisibleItems] = useState<GalleryItem[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -181,13 +181,22 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
 
     return (
         <div ref={containerRef} className="w-full">
-            <VMasonryGrid
-                items={masonryItems}
-                renderer={renderer}
-                maxItemSize={350}
-                gap={22}
-                className="w-full"
-            />
+            {layoutMode === 'vertical' ? (
+                <VMasonryGrid
+                    items={masonryItems}
+                    renderer={renderer}
+                    gap={22}
+                    className="w-full"
+                />
+            ) : (
+                <HMasonryGrid
+                    items={masonryItems}
+                    renderer={renderer}
+                    maxItemSize={350}
+                    gap={22}
+                    className="w-full"
+                />
+            )}
 
             {/* Loading indicator and sentinel for infinite scroll */}
             {hasMore && (

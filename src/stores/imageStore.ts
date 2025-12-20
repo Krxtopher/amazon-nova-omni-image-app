@@ -17,6 +17,7 @@ interface ImageStoreState {
     isLoading: boolean;
     // Cache for loaded image URLs
     imageDataCache: Map<string, string>;
+    layoutMode: 'vertical' | 'horizontal';
 }
 
 /**
@@ -39,6 +40,7 @@ interface ImageStoreActions {
     getItemsPaginated: (offset: number, limit: number) => Promise<GalleryItem[]>;
     getTotalItemCount: () => number;
     initialize: () => Promise<void>;
+    setLayoutMode: (mode: 'vertical' | 'horizontal') => Promise<void>;
 }
 
 /**
@@ -71,6 +73,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
     isGenerating: false,
     isLoading: true,
     imageDataCache: new Map(),
+    layoutMode: 'vertical',
 
     // Actions
 
@@ -105,6 +108,10 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const savedRatio = await sqliteService.getSetting('selectedAspectRatio');
             const aspectRatio = (savedRatio as AspectRatio) || DEFAULT_ASPECT_RATIO;
 
+            // Load layout mode setting
+            const savedLayoutMode = await sqliteService.getSetting('layoutMode');
+            const layoutMode = (savedLayoutMode as 'vertical' | 'horizontal') || 'vertical';
+
             // Load persona setting
             const savedEnhancement = await sqliteService.getSetting('selectedPromptEnhancement');
             let promptEnhancement = (savedEnhancement as PromptEnhancement) || DEFAULT_PROMPT_ENHANCEMENT;
@@ -125,6 +132,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 textItems,
                 selectedAspectRatio: aspectRatio,
                 selectedPromptEnhancement: promptEnhancement,
+                layoutMode: layoutMode,
                 isLoading: false
             });
             console.log('✅ Store initialization completed at:', new Date().toISOString());
@@ -357,5 +365,21 @@ export const useImageStore = create<ImageStore>()((set) => ({
     getTotalItemCount: (): number => {
         const state = useImageStore.getState();
         return state.images.length + state.textItems.length;
+    },
+
+    /**
+     * Set the layout mode for the gallery (vertical or horizontal masonry)
+     * UI update is immediate, database persistence happens asynchronously
+     */
+    setLayoutMode: async (mode: 'vertical' | 'horizontal') => {
+        // Update UI immediately for responsive feel
+        set({ layoutMode: mode });
+
+        // Persist to database asynchronously (don't block UI)
+        sqliteService.setSetting('layoutMode', mode).catch((error) => {
+            console.error('Failed to persist layout mode setting to database:', error);
+            // In a production app, you might want to show a toast notification
+            // or implement retry logic here
+        });
     },
 }));

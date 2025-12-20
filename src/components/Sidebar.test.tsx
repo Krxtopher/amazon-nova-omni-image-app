@@ -1,17 +1,40 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+
+// Mock the useImageStore hook
+const mockSetLayoutMode = vi.fn();
+vi.mock('@/stores/imageStore', () => ({
+    useImageStore: () => ({
+        layoutMode: 'vertical',
+        setLayoutMode: mockSetLayoutMode
+    })
+}));
 
 // Mock console.log to test button clicks
 const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
+// Helper function to render Sidebar with Router
+const renderSidebar = (props = {}) => {
+    return render(
+        <BrowserRouter>
+            <Sidebar {...props} />
+        </BrowserRouter>
+    );
+};
+
 describe('Sidebar', () => {
+    beforeEach(() => {
+        mockSetLayoutMode.mockClear();
+    });
+
     afterEach(() => {
         consoleSpy.mockClear();
     });
 
     it('renders the Amazon Nova logo', () => {
-        render(<Sidebar />);
+        renderSidebar();
 
         const logo = screen.getByAltText('Amazon Nova');
         expect(logo).toBeInTheDocument();
@@ -19,15 +42,17 @@ describe('Sidebar', () => {
     });
 
     it('renders all navigation buttons', () => {
-        render(<Sidebar />);
+        renderSidebar();
 
         // Check that all buttons are present by their aria-labels
         expect(screen.getByLabelText('Home')).toBeInTheDocument();
         expect(screen.getByLabelText('Gallery')).toBeInTheDocument();
+        expect(screen.getByLabelText('Switch to Horizontal Layout')).toBeInTheDocument();
         expect(screen.getByLabelText('Colors')).toBeInTheDocument();
         expect(screen.getByLabelText('Download')).toBeInTheDocument();
         expect(screen.getByLabelText('Settings')).toBeInTheDocument();
         expect(screen.getByLabelText('Help')).toBeInTheDocument();
+        expect(screen.getByLabelText('Demo Effects')).toBeInTheDocument();
     });
 
     it('handles button clicks correctly', () => {
@@ -35,7 +60,7 @@ describe('Sidebar', () => {
         const scrollToSpy = vi.fn();
         Object.defineProperty(window, 'scrollTo', { value: scrollToSpy });
 
-        render(<Sidebar />);
+        renderSidebar();
 
         const homeButton = screen.getByLabelText('Home');
         fireEvent.click(homeButton);
@@ -48,7 +73,7 @@ describe('Sidebar', () => {
         const mockElement = { scrollIntoView: vi.fn() };
         const querySelectorSpy = vi.spyOn(document, 'querySelector').mockReturnValue(mockElement as any);
 
-        render(<Sidebar />);
+        renderSidebar();
 
         const galleryButton = screen.getByLabelText('Gallery');
         fireEvent.click(galleryButton);
@@ -58,16 +83,27 @@ describe('Sidebar', () => {
     });
 
     it('handles future feature buttons correctly', () => {
-        render(<Sidebar />);
+        renderSidebar();
 
         const colorsButton = screen.getByLabelText('Colors');
         fireEvent.click(colorsButton);
 
-        expect(consoleSpy).toHaveBeenCalledWith('Colors clicked - feature coming soon');
+        // Colors button doesn't log anymore, it's a placeholder
+        // Just verify it doesn't crash
+        expect(colorsButton).toBeInTheDocument();
+    });
+
+    it('handles layout toggle correctly', () => {
+        renderSidebar();
+
+        const layoutButton = screen.getByLabelText('Switch to Horizontal Layout');
+        fireEvent.click(layoutButton);
+
+        expect(mockSetLayoutMode).toHaveBeenCalledWith('horizontal');
     });
 
     it('applies active state to clicked buttons', () => {
-        render(<Sidebar />);
+        renderSidebar();
 
         const homeButton = screen.getByLabelText('Home');
         fireEvent.click(homeButton);
@@ -77,7 +113,7 @@ describe('Sidebar', () => {
     });
 
     it('applies custom className when provided', () => {
-        const { container } = render(<Sidebar className="custom-class" />);
+        const { container } = renderSidebar({ className: 'custom-class' });
 
         const sidebar = container.querySelector('aside');
         expect(sidebar).toHaveClass('custom-class');

@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useImageStore } from '@/stores/imageStore';
 import type { GeneratedImage } from '../types';
-import { VMasonryGrid } from './MasonryGrid';
+import { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
 
 interface SimpleVirtualizedGalleryProps {
@@ -20,7 +20,7 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
     onTextDelete: _onTextDelete, // Kept for compatibility but not used
     onImageEdit
 }: SimpleVirtualizedGalleryProps) {
-    const { images } = useImageStore();
+    const { images, layoutMode } = useImageStore();
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Debug: Log gallery render
@@ -63,13 +63,22 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
 
     return (
         <div ref={containerRef} className="w-full">
-            <VMasonryGrid
-                items={sortedImages}
-                renderer={renderer}
-                maxItemSize={350}
-                gap={22}
-                className="w-full"
-            />
+            {layoutMode === 'vertical' ? (
+                <VMasonryGrid
+                    items={sortedImages}
+                    renderer={renderer}
+                    gap={22}
+                    className="w-full"
+                />
+            ) : (
+                <HMasonryGrid
+                    items={sortedImages}
+                    renderer={renderer}
+                    maxItemSize={350}
+                    gap={22}
+                    className="w-full"
+                />
+            )}
         </div>
     );
 });

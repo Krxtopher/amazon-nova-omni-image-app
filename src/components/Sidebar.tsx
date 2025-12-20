@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/SettingsModal';
 import { useNavigate } from 'react-router-dom';
+import { useImageStore } from '@/stores/imageStore';
+import { VerticalMasonryIcon, HorizontalMasonryIcon } from '@/components/icons/MasonryIcons';
 import {
     Home,
     Settings,
@@ -23,6 +25,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
     const [activeButton, setActiveButton] = useState<string | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const navigate = useNavigate();
+    const { layoutMode, setLayoutMode } = useImageStore();
 
     const sidebarButtons = [
         {
@@ -40,6 +43,15 @@ export function Sidebar({ className = '' }: SidebarProps) {
             action: () => {
                 const gallery = document.querySelector('[aria-label="Generated images gallery"]');
                 gallery?.scrollIntoView({ behavior: 'smooth' });
+            }
+        },
+        {
+            id: 'layout',
+            icon: layoutMode === 'vertical' ? VerticalMasonryIcon : HorizontalMasonryIcon,
+            label: `Switch to ${layoutMode === 'vertical' ? 'Horizontal' : 'Vertical'} Layout`,
+            action: () => {
+                const newMode = layoutMode === 'vertical' ? 'horizontal' : 'vertical';
+                setLayoutMode(newMode);
             }
         },
         {

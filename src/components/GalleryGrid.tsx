@@ -1,7 +1,8 @@
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
-import { VMasonryGrid } from './MasonryGrid';
+import { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
 import { TextCard } from './TextCard';
+import { useImageStore } from '@/stores/imageStore';
 import type { MasonryItemRendererProps } from './MasonryGrid';
 
 interface GalleryGridProps {
@@ -30,6 +31,7 @@ function isGeneratedText(item: GalleryItem): item is GeneratedText {
  * Requirements: 3.1, 3.2, 3.3, 3.4, 8.4
  */
 export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit }: GalleryGridProps) {
+    const { layoutMode } = useImageStore();
     // Handle empty state
     if (items.length === 0) {
         return (
@@ -89,13 +91,22 @@ export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit }:
 
     return (
         <div className="w-full">
-            <VMasonryGrid
-                items={masonryItems}
-                renderer={renderer}
-                maxItemSize={350}
-                gap={22}
-                className="w-full"
-            />
+            {layoutMode === 'vertical' ? (
+                <VMasonryGrid
+                    items={masonryItems}
+                    renderer={renderer}
+                    gap={22}
+                    className="w-full"
+                />
+            ) : (
+                <HMasonryGrid
+                    items={masonryItems}
+                    renderer={renderer}
+                    maxItemSize={350}
+                    gap={22}
+                    className="w-full"
+                />
+            )}
         </div>
     );
 }
