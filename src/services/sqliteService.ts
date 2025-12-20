@@ -21,21 +21,15 @@ class SQLiteService {
         this.initPromise = (async () => {
             try {
                 // Initialize SQL.js
-                // In test environment, use local file; in browser, use CDN
-                const isTest = typeof process !== 'undefined' && process?.env?.NODE_ENV === 'test';
                 const SQL = await initSqlJs({
                     locateFile: (file: string) => {
-                        if (isTest) {
-                            // For Node.js/test environment, use the local file
-                            return `node_modules/sql.js/dist/${file}`;
-                        }
-                        // For browser, use CDN
+                        // Use CDN for production
                         return `https://sql.js.org/dist/${file}`;
                     },
                 });
 
-                // Try to load existing database from IndexedDB (skip in test environment)
-                const savedDb = !isTest ? await this.loadFromIndexedDB() : null;
+                // Try to load existing database from IndexedDB
+                const savedDb = await this.loadFromIndexedDB();
 
                 if (savedDb) {
                     this.db = new SQL.Database(savedDb);
@@ -108,10 +102,6 @@ class SQLiteService {
      */
     private async saveToIndexedDB(): Promise<void> {
         if (!this.db) return;
-
-        // Skip in test environment
-        const isTest = typeof process !== 'undefined' && process?.env?.NODE_ENV === 'test';
-        if (isTest) return;
 
         const data = this.db.export();
         const blob = new Blob([data as BlobPart], { type: 'application/x-sqlite3' });
@@ -338,7 +328,116 @@ class SQLiteService {
 
         const result = this.db.exec('SELECT * FROM image_metadata ORDER BY createdAt DESC');
 
+        if (result.length === 0) return [];
 
+        const images: ImageMetadata[] = [];
+        const columns = result[0].columns;
+        const values = result[0].values;
+
+        for (const row of values) {
+            const image: Record<string, any> = {};
+            columns.forEach((col: string, idx: number) => {
+                image[col] = row[idx];
+            });
+
+            images.push({
+                id: image.id,
+                prompt: image.prompt,
+                status: image.status,
+                aspectRatio: image.aspectRatio,
+                width: image.width,
+                height: image.height,
+                createdAt: new Date(image.createdAt),
+                error: image.error || undefined,
+                converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+            });
+        }
+
+        return images;
+    }
+
+    /**
+     * Get paginated image metadata (without image data for performance)
+     */
+    async getImageMetadataPaginated(offset: number = 0, limit: number = 20): Promise<ImageMetadata[]> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        const result = this.db.exec(
+            'SELECT * FROM image_metadata ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+            [limit, offset]
+        );
+
+        if (result.length === 0) return [];
+
+        const images: ImageMetadata[] = [];
+        const columns = result[0].columns;
+        const values = result[0].values;
+
+        for (const row of values) {
+            const image: Record<string, any> = {};
+            columns.forEach((col: string, idx: number) => {
+                image[col] = row[idx];
+            });
+
+            images.push({
+                id: image.id,
+                prompt: image.prompt,
+                status: image.status,
+                aspectRatio: image.aspectRatio,
+                width: image.width,
+                height: image.height,
+                createdAt: new Date(image.createdAt),
+                error: image.error || undefined,
+                converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+            });
+        }
+
+        return images;
+    }
+
+    /**
+     * Get total count of complete image metadata records (excludes incomplete images)
+     */
+    async getCompleteImageMetadataCount(): Promise<number> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        const result = this.db.exec("SELECT COUNT(*) FROM image_metadata WHERE status = 'complete'");
+        return result.length > 0 ? result[0].values[0][0] as number : 0;
+    }
+
+    /**
+     * Get paginated complete image metadata (excludes incomplete images and deletes them)
+     */
+    async getCompleteImageMetadataPaginated(offset: number = 0, limit: number = 20): Promise<ImageMetadata[]> {
+        await this.init();
+        if (!this.db) throw new Error('Database not initialized');
+
+        // First, delete any incomplete images we encounter (limit to avoid performance issues)
+        const incompleteResult = this.db.exec(
+            "SELECT id FROM image_metadata WHERE status IN ('pending', 'queued', 'generating', 'error') LIMIT 20"
+        );
+
+        if (incompleteResult.length > 0 && incompleteResult[0].values.length > 0) {
+            const incompleteIds = incompleteResult[0].values.map(row => row[0] as string);
+            console.log('🧹 Found', incompleteIds.length, 'incomplete images, deleting them...');
+
+            const placeholders = incompleteIds.map(() => '?').join(',');
+            this.db.run(`DELETE FROM image_metadata WHERE id IN (${placeholders})`, incompleteIds);
+            this.db.run(`DELETE FROM image_data WHERE id IN (${placeholders})`, incompleteIds);
+
+            // Save changes asynchronously to avoid blocking
+            this.saveToIndexedDB().catch(error => {
+                console.error('Failed to save after cleanup:', error);
+            });
+        }
+
+        // Now get complete images
+        const result = this.db.exec(
+            "SELECT * FROM image_metadata WHERE status = 'complete' ORDER BY createdAt DESC LIMIT ? OFFSET ?",
+            [limit, offset]
+        );
 
         if (result.length === 0) return [];
 

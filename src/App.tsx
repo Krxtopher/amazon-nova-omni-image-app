@@ -62,7 +62,12 @@ function AppContent() {
   // Initialize the store
   useEffect(() => {
     console.log('🏪 Store initialization starting at:', new Date().toISOString());
-    initialize();
+    const storeInitStartTime = performance.now();
+
+    initialize().then(() => {
+      const storeInitEndTime = performance.now();
+      console.log('🏪 Store initialization promise resolved in', (storeInitEndTime - storeInitStartTime).toFixed(2), 'ms');
+    });
   }, [initialize]);
 
   /**
@@ -215,7 +220,8 @@ function App() {
 
   useEffect(() => {
     // Debug: Mark App component mount
-    console.log('📱 App component mounted at:', new Date().toISOString());
+    const appMountTime = performance.now();
+    console.log('📱 App component mounted at:', new Date().toISOString(), 'Performance timestamp:', appMountTime.toFixed(2));
     // Initialize application
   }, []);
 

@@ -11,6 +11,10 @@ interface ImageStoreState {
     textItems: GeneratedText[];
     isGenerating: boolean;
     isLoading: boolean;
+    // Progressive loading state
+    hasMoreImages: boolean;
+    isLoadingMore: boolean;
+    totalImageCount: number;
     // Cache for loaded image URLs
     imageDataCache: Map<string, string>;
 }
@@ -26,6 +30,7 @@ interface ImageStoreActions {
     deleteImage: (id: string) => Promise<void>;
     deleteTextItem: (id: string) => void;
     loadImages: () => Promise<void>;
+    loadMoreImages: () => Promise<void>; // Progressive loading
     loadImageData: (id: string) => Promise<string | null>; // Load image URL on demand
     getAllItems: () => GalleryItem[];
     getItemsPaginated: (offset: number, limit: number) => Promise<GalleryItem[]>;
@@ -50,6 +55,9 @@ export const useImageStore = create<ImageStore>()((set) => ({
     textItems: [],
     isGenerating: false,
     isLoading: true,
+    hasMoreImages: true,
+    isLoadingMore: false,
+    totalImageCount: 0,
     imageDataCache: new Map(),
 
     // Actions
@@ -60,17 +68,30 @@ export const useImageStore = create<ImageStore>()((set) => ({
     initialize: async () => {
         try {
             console.log('🏪 Store initialization beginning at:', new Date().toISOString());
+            const initStartTime = performance.now();
+
             set({ isLoading: true });
+
+            console.log('🔧 Starting SQLite service init...');
+            const sqliteStartTime = performance.now();
             await sqliteService.init();
-            console.log('💾 SQLite service initialized at:', new Date().toISOString());
+            const sqliteEndTime = performance.now();
+            console.log('💾 SQLite service initialized in', (sqliteEndTime - sqliteStartTime).toFixed(2), 'ms');
 
-            // Delete incomplete images from database first
-            await sqliteService.deleteImagesByStatus(['pending', 'queued', 'generating', 'error']);
+            console.log('📊 Getting total image count...');
+            const countStartTime = performance.now();
+            // Get total count for pagination (only complete images)
+            const totalCount = await sqliteService.getCompleteImageMetadataCount();
+            const countEndTime = performance.now();
+            console.log('📊 Total count query completed in', (countEndTime - countStartTime).toFixed(2), 'ms. Total complete images:', totalCount);
 
-            // Load only image metadata (not the actual image data)
-            const imageMetadata = await sqliteService.getAllImageMetadata();
-            console.log('📊 Image metadata loaded:', imageMetadata.length, 'images at', new Date().toISOString());
+            // Load zero images initially for maximum startup performance
+            const initialBatchSize = 0;
+            const imageMetadata = await sqliteService.getCompleteImageMetadataPaginated(0, initialBatchSize);
+            console.log('📊 Initial image metadata loaded:', imageMetadata.length, 'images (zero for maximum startup performance) at', new Date().toISOString());
 
+            console.log('📱 Loading text items from localStorage...');
+            const textStartTime = performance.now();
             // Load text items from localStorage (temporary solution)
             const textItemsJson = localStorage.getItem('textItems');
             const textItems: GeneratedText[] = textItemsJson ?
@@ -78,13 +99,21 @@ export const useImageStore = create<ImageStore>()((set) => ({
                     ...item,
                     createdAt: new Date(item.createdAt)
                 })) : [];
+            const textEndTime = performance.now();
+            console.log('📱 Text items loaded in', (textEndTime - textStartTime).toFixed(2), 'ms');
 
             set({
                 images: imageMetadata,
                 textItems,
+                totalImageCount: totalCount,
+                hasMoreImages: imageMetadata.length < totalCount,
                 isLoading: false
             });
-            console.log('✅ Store initialization completed at:', new Date().toISOString());
+
+            const initEndTime = performance.now();
+            const totalInitTime = initEndTime - initStartTime;
+            console.log('✅ Store initialization completed in', totalInitTime.toFixed(2), 'ms at:', new Date().toISOString());
+            console.log('📊 Loaded', imageMetadata.length, 'of', totalCount, 'total images. Has more:', imageMetadata.length < totalCount);
         } catch (error) {
             console.error('❌ Failed to initialize store:', error);
             set({ isLoading: false });
@@ -97,9 +126,63 @@ export const useImageStore = create<ImageStore>()((set) => ({
     loadImages: async () => {
         try {
             const imageMetadata = await sqliteService.getAllImageMetadata();
-            set({ images: imageMetadata });
+            const totalCount = await sqliteService.getCompleteImageMetadataCount();
+            set({
+                images: imageMetadata.filter(img => img.status === 'complete'), // Filter to complete only
+                totalImageCount: totalCount,
+                hasMoreImages: false // All loaded
+            });
         } catch (error) {
             console.error('Failed to load images:', error);
+        }
+    },
+
+    /**
+     * Load more image metadata progressively
+     */
+    loadMoreImages: async () => {
+        const state = useImageStore.getState();
+
+        // Don't load if already loading or no more images
+        if (state.isLoadingMore || !state.hasMoreImages) {
+            return;
+        }
+
+        try {
+            set({ isLoadingMore: true });
+
+            const currentOffset = state.images.length;
+            // Use larger batch size for first load, smaller for subsequent loads
+            const batchSize = currentOffset === 0 ? 12 : 8;
+
+            console.log('📊 Loading more images, offset:', currentOffset, 'batch size:', batchSize);
+
+            // EXPERIMENT: Add artificial delay for first batch to test if this is the bottleneck
+            if (currentOffset === 0) {
+                console.log('🧪 EXPERIMENT: Adding 3 second delay before first batch load...');
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                console.log('🧪 EXPERIMENT: Delay complete, now loading first batch...');
+            }
+
+            const moreImageMetadata = await sqliteService.getCompleteImageMetadataPaginated(currentOffset, batchSize);
+
+            if (moreImageMetadata.length > 0) {
+                set((state) => ({
+                    images: [...state.images, ...moreImageMetadata],
+                    hasMoreImages: moreImageMetadata.length === batchSize, // If we got less than batch size, no more images
+                    isLoadingMore: false
+                }));
+                console.log('📊 Loaded', moreImageMetadata.length, 'more images. Total:', state.images.length + moreImageMetadata.length);
+            } else {
+                set({
+                    hasMoreImages: false,
+                    isLoadingMore: false
+                });
+                console.log('📊 No more images to load');
+            }
+        } catch (error) {
+            console.error('Failed to load more images:', error);
+            set({ isLoadingMore: false });
         }
     },
 
@@ -140,6 +223,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
         // Update UI immediately for responsive feel
         set((state) => ({
             images: [image, ...state.images],
+            totalImageCount: state.totalImageCount + 1,
         }));
 
         // Persist to database asynchronously (don't block UI)
@@ -204,9 +288,12 @@ export const useImageStore = create<ImageStore>()((set) => ({
         set((state) => {
             const newCache = new Map(state.imageDataCache);
             newCache.delete(id); // Remove from cache
+            const filteredImages = state.images.filter((img) => img.id !== id);
+            const wasDeleted = filteredImages.length < state.images.length;
             return {
-                images: state.images.filter((img) => img.id !== id),
+                images: filteredImages,
                 imageDataCache: newCache,
+                totalImageCount: wasDeleted ? state.totalImageCount - 1 : state.totalImageCount,
             };
         });
 
