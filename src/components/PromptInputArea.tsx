@@ -3,7 +3,7 @@ import { startTransition } from 'react';
 import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
 
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
@@ -88,9 +88,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
 
     const {
-        editSource,
-        setEditSource,
-        clearEditSource,
         addImage,
         updateImage,
         deleteImage,
@@ -102,6 +99,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         setAspectRatio,
         setPromptEnhancement,
     } = useUIStore();
+
+    const { editSource, setEditSource, clearEditSource } = useEditSourceStore();
 
 
 

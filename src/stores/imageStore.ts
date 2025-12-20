@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import type { GeneratedImage, GeneratedText, GalleryItem, EditSource } from '../types';
-import { personaService } from '../services/personaService';
+import type { GeneratedImage, GeneratedText, GalleryItem } from '../types';
 import { sqliteService } from '../services/sqliteService';
 
 /**
@@ -10,7 +9,6 @@ interface ImageStoreState {
     // State
     images: GeneratedImage[]; // Metadata only, URLs loaded on demand
     textItems: GeneratedText[];
-    editSource: EditSource | null;
     isGenerating: boolean;
     isLoading: boolean;
     // Cache for loaded image URLs
@@ -27,8 +25,6 @@ interface ImageStoreActions {
     updateImage: (id: string, updates: Partial<GeneratedImage>) => Promise<void>;
     deleteImage: (id: string) => Promise<void>;
     deleteTextItem: (id: string) => void;
-    setEditSource: (source: EditSource | null) => void;
-    clearEditSource: () => void;
     loadImages: () => Promise<void>;
     loadImageData: (id: string) => Promise<string | null>; // Load image URL on demand
     getAllItems: () => GalleryItem[];
@@ -44,15 +40,14 @@ export type ImageStore = ImageStoreState & ImageStoreActions;
 
 /**
  * Image store using Zustand with SQLite persistence
- * Manages the state for generated images and edit source
- * UI state (aspect ratio, layout mode, etc.) moved to separate uiStore for better performance
+ * Manages the state for generated images
+ * UI state (aspect ratio, layout mode, etc.) and edit source moved to separate uiStore for better performance
  * Requirements: 3.1 - Persist images to SQLite database via IndexedDB
  */
 export const useImageStore = create<ImageStore>()((set) => ({
     // Initial state
     images: [],
     textItems: [],
-    editSource: null,
     isGenerating: false,
     isLoading: true,
     imageDataCache: new Map(),
@@ -242,22 +237,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
             // In a production app, you might want to show a toast notification
             // or implement retry logic here
         }
-    },
-
-    /**
-     * Set the edit source image
-     * Requirements: 5.2, 6.3
-     */
-    setEditSource: (source: EditSource | null) => {
-        set({ editSource: source });
-    },
-
-    /**
-     * Clear the edit source and return to generation mode
-     * Requirements: 7.2
-     */
-    clearEditSource: () => {
-        set({ editSource: null });
     },
 
     /**

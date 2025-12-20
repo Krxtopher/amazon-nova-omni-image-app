@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
+import { useEditSourceStore } from '@/stores/uiStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -53,7 +54,8 @@ function createBedrockService(): BedrockImageService {
  */
 function AppContent() {
   const bedrockService = useBedrockService();
-  const { deleteImage, setEditSource, initialize, isLoading } = useImageStore();
+  const { deleteImage, initialize, isLoading } = useImageStore();
+  const { setEditSource } = useEditSourceStore();
 
   const [activeRequests, setActiveRequests] = useState(0);
 

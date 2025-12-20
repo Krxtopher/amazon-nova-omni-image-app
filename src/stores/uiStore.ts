@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AspectRatio, PromptEnhancement } from '../types';
+import type { AspectRatio, PromptEnhancement, EditSource } from '../types';
 
 /**
  * UI state interface for app preferences and settings
@@ -18,6 +18,21 @@ interface UIActions {
     setAspectRatio: (ratio: AspectRatio) => void;
     setPromptEnhancement: (enhancement: PromptEnhancement) => void;
     setLayoutMode: (mode: 'vertical' | 'horizontal') => void;
+}
+
+/**
+ * Edit source state interface (non-persisted)
+ */
+interface EditSourceState {
+    editSource: EditSource | null;
+}
+
+/**
+ * Edit source actions interface
+ */
+interface EditSourceActions {
+    setEditSource: (source: EditSource | null) => void;
+    clearEditSource: () => void;
 }
 
 /**
@@ -68,3 +83,24 @@ export const useUIStore = create<UIState & UIActions>()(
         }
     )
 );
+
+/**
+ * Edit source store - non-persisted transient state
+ * 
+ * This store handles edit source data that should not persist between sessions.
+ * Separated from the persisted UI store to ensure edit source data is always
+ * cleared when the app is reloaded.
+ */
+export const useEditSourceStore = create<EditSourceState & EditSourceActions>()((set) => ({
+    // State
+    editSource: null,
+
+    // Actions
+    setEditSource: (source: EditSource | null) => {
+        set({ editSource: source });
+    },
+
+    clearEditSource: () => {
+        set({ editSource: null });
+    },
+}));

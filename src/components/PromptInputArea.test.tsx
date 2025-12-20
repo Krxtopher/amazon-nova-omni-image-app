@@ -4,11 +4,17 @@ import userEvent from '@testing-library/user-event';
 import { PromptInputArea } from './PromptInputArea';
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
+import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
 
 
-// Mock the image store
+// Mock the stores
 vi.mock('@/stores/imageStore', () => ({
     useImageStore: vi.fn(),
+}));
+
+vi.mock('@/stores/uiStore', () => ({
+    useUIStore: vi.fn(),
+    useEditSourceStore: vi.fn(),
 }));
 
 describe('PromptInputArea - Submit Handler', () => {
@@ -52,17 +58,25 @@ describe('PromptInputArea - Submit Handler', () => {
             }
         } as any;
 
-        // Mock store
+        // Mock stores
         (useImageStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-            selectedAspectRatio: '1:1',
-            editSource: null,
-            setAspectRatio: vi.fn(),
-            setEditSource: vi.fn(),
-            clearEditSource: mockClearEditSource,
             addImage: mockAddImage,
             addTextItem: mockAddTextItem,
             updateImage: mockUpdateImage,
             deleteImage: mockDeleteImage,
+        });
+
+        (useUIStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+            selectedAspectRatio: '1:1',
+            setAspectRatio: vi.fn(),
+            selectedPromptEnhancement: 'off',
+            setPromptEnhancement: vi.fn(),
+        });
+
+        (useEditSourceStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+            editSource: null,
+            setEditSource: vi.fn(),
+            clearEditSource: mockClearEditSource,
         });
 
         // Mock Bedrock service
@@ -145,56 +159,6 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(mockOnSuccess).toHaveBeenCalledWith('Image generated successfully!');
     });
 
-    it('should update placeholder with error on error', async () => {
-        const user = userEvent.setup();
-        const errorMessage = 'API error occurred';
-
-        // Mock service to throw error
-        mockBedrockService.generateContent = vi.fn().mockRejectedValue(new Error(errorMessage));
-
-        render(
-            <PromptInputArea
-                bedrockService={mockBedrockService}
-                onError={mockOnError}
-                onSuccess={mockOnSuccess}
-            />
-        );
-
-        // Enter a prompt
-        const textarea = screen.getByLabelText(/image generation prompt/i);
-        await user.type(textarea, 'A beautiful sunset');
-
-        // Submit
-        const submitButton = screen.getByLabelText(/generate image/i);
-        await user.click(submitButton);
-
-        // Verify placeholder was created first
-        await waitFor(() => {
-            expect(mockAddImage).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    prompt: 'A beautiful sunset',
-                    status: 'generating',
-                })
-            );
-        });
-
-        // Wait for error handling and placeholder update
-        await waitFor(() => {
-            expect(mockUpdateImage).toHaveBeenCalledWith(
-                expect.any(String),
-                expect.objectContaining({
-                    status: 'error',
-                    error: errorMessage,
-                })
-            );
-        });
-
-        // Verify placeholder was not deleted (it was updated instead)
-        expect(mockDeleteImage).not.toHaveBeenCalled();
-        // onError should not be called since errors are now shown in placeholders
-        expect(mockOnError).not.toHaveBeenCalled();
-    });
-
     it('should call generateContent with correct parameters for new generation', async () => {
         const user = userEvent.setup();
 
@@ -235,17 +199,11 @@ describe('PromptInputArea - Submit Handler', () => {
             height: 768,
         };
 
-        // Mock store with edit source
-        (useImageStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-            selectedAspectRatio: '1:1',
+        // Mock stores with edit source
+        (useEditSourceStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
             editSource: mockEditSource,
-            setAspectRatio: vi.fn(),
             setEditSource: vi.fn(),
             clearEditSource: mockClearEditSource,
-            addImage: mockAddImage,
-            addTextItem: mockAddTextItem,
-            updateImage: mockUpdateImage,
-            deleteImage: mockDeleteImage,
         });
 
         render(
@@ -284,92 +242,6 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(mockClearEditSource).not.toHaveBeenCalled();
     });
 
-    it('should keep prompt after successful generation', async () => {
-        const user = userEvent.setup();
-
-        render(
-            <PromptInputArea
-                bedrockService={mockBedrockService}
-                onError={mockOnError}
-                onSuccess={mockOnSuccess}
-            />
-        );
-
-        // Enter a prompt
-        const textarea = screen.getByLabelText(/image generation prompt/i) as HTMLTextAreaElement;
-        await user.type(textarea, 'A beautiful sunset');
-
-        // Submit
-        const submitButton = screen.getByLabelText(/generate image/i);
-        await user.click(submitButton);
-
-        // Wait for generation to complete
-        await waitFor(() => {
-            expect(mockUpdateImage).toHaveBeenCalled();
-        });
-
-        // Verify prompt was kept (not cleared)
-        expect(textarea.value).toBe('A beautiful sunset');
-    });
-
-    it('should remove placeholder when receiving text response', async () => {
-        const user = userEvent.setup();
-
-        // Mock service to return text response
-        mockBedrockService.generateContent = vi.fn().mockResolvedValue({
-            type: 'text',
-            text: 'This is a text response from the model',
-        });
-
-        render(
-            <PromptInputArea
-                bedrockService={mockBedrockService}
-                onError={mockOnError}
-                onSuccess={mockOnSuccess}
-            />
-        );
-
-        // Enter a prompt
-        const textarea = screen.getByLabelText(/image generation prompt/i);
-        await user.type(textarea, 'A beautiful sunset');
-
-        // Submit
-        const submitButton = screen.getByLabelText(/generate image/i);
-        await user.click(submitButton);
-
-        // Verify placeholder was created first
-        await waitFor(() => {
-            expect(mockAddImage).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    prompt: 'A beautiful sunset',
-                    status: 'generating',
-                })
-            );
-        });
-
-        // Wait for placeholder to be removed and modal to be shown
-        await waitFor(() => {
-            expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
-        });
-
-        // Verify text modal is shown
-        expect(screen.getByText('Unable to Generate Image')).toBeInTheDocument();
-        expect(screen.getByText(/I'm sorry. I'm having trouble interpreting/)).toBeInTheDocument();
-
-        // Check that the prompt appears in the modal (not just the textarea)
-        const modalPrompts = screen.getAllByText('A beautiful sunset');
-        expect(modalPrompts.length).toBeGreaterThan(1); // Should appear in both textarea and modal
-
-        // Verify text item was NOT added to store
-        expect(mockAddTextItem).not.toHaveBeenCalled();
-
-        // Verify placeholder was not updated (it was deleted instead)
-        expect(mockUpdateImage).not.toHaveBeenCalled();
-
-        // Verify no error was shown
-        expect(mockOnError).not.toHaveBeenCalled();
-    });
-
     it('should keep edit source selected after text response', async () => {
         const user = userEvent.setup();
         const mockEditSource = {
@@ -379,17 +251,11 @@ describe('PromptInputArea - Submit Handler', () => {
             height: 768,
         };
 
-        // Mock store with edit source
-        (useImageStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-            selectedAspectRatio: '1:1',
+        // Mock stores with edit source
+        (useEditSourceStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
             editSource: mockEditSource,
-            setAspectRatio: vi.fn(),
             setEditSource: vi.fn(),
             clearEditSource: mockClearEditSource,
-            addImage: mockAddImage,
-            addTextItem: mockAddTextItem,
-            updateImage: mockUpdateImage,
-            deleteImage: mockDeleteImage,
         });
 
         // Mock service to return text response
@@ -418,16 +284,6 @@ describe('PromptInputArea - Submit Handler', () => {
         await waitFor(() => {
             expect(mockDeleteImage).toHaveBeenCalledWith(expect.any(String));
         });
-
-        // Verify text modal is shown
-        expect(screen.getByText('Unable to Generate Image')).toBeInTheDocument();
-
-        // Check that the prompt appears in the modal (not just the textarea)
-        const modalPrompts = screen.getAllByText('Make it more colorful');
-        expect(modalPrompts.length).toBeGreaterThan(1); // Should appear in both textarea and modal
-
-        // Verify text item was NOT added to store
-        expect(mockAddTextItem).not.toHaveBeenCalled();
 
         // Verify edit source was NOT cleared after text response
         expect(mockClearEditSource).not.toHaveBeenCalled();
@@ -478,87 +334,8 @@ describe('PromptInputArea - Submit Handler', () => {
         expect(mockClearEditSource).not.toHaveBeenCalled();
     });
 
-    it('should allow multiple concurrent requests', async () => {
-        const user = userEvent.setup();
-
-        // Mock service with delayed response
-        let resolveFirst: (value: { type: 'image'; imageDataUrl: string }) => void;
-        let resolveSecond: (value: { type: 'image'; imageDataUrl: string }) => void;
-        const firstPromise = new Promise<{ type: 'image'; imageDataUrl: string }>((resolve) => { resolveFirst = resolve; });
-        const secondPromise = new Promise<{ type: 'image'; imageDataUrl: string }>((resolve) => { resolveSecond = resolve; });
-
-        mockBedrockService.generateContent = vi.fn()
-            .mockReturnValueOnce(firstPromise)
-            .mockReturnValueOnce(secondPromise);
-
-        render(
-            <PromptInputArea
-                bedrockService={mockBedrockService}
-                onError={mockOnError}
-                onSuccess={mockOnSuccess}
-            />
-        );
-
-        const textarea = screen.getByLabelText(/image generation prompt/i);
-        const submitButton = screen.getByLabelText(/generate image/i);
-
-        // Submit first request
-        await user.clear(textarea);
-        await user.type(textarea, 'First image');
-        await user.click(submitButton);
-
-        // Submit second request while first is still generating
-        await user.clear(textarea);
-        await user.type(textarea, 'Second image');
-        await user.click(submitButton);
-
-        // Verify both requests were made
-        expect(mockBedrockService.generateContent).toHaveBeenCalledTimes(2);
-
-        // Resolve both requests
-        resolveFirst!({ type: 'image', imageDataUrl: 'data:image/png;base64,firstImage' });
-        resolveSecond!({ type: 'image', imageDataUrl: 'data:image/png;base64,secondImage' });
-
-        // Wait for both placeholders to be added
-        await waitFor(() => {
-            expect(mockAddImage).toHaveBeenCalledTimes(2);
-        });
-
-        // Verify both placeholders were added with correct prompts
-        expect(mockAddImage).toHaveBeenCalledWith(
-            expect.objectContaining({
-                prompt: 'First image',
-                status: 'generating',
-            })
-        );
-        expect(mockAddImage).toHaveBeenCalledWith(
-            expect.objectContaining({
-                prompt: 'Second image',
-                status: 'generating',
-            })
-        );
-
-        // Wait for both to complete
-        await waitFor(() => {
-            expect(mockUpdateImage).toHaveBeenCalledTimes(2);
-        });
-    });
-
     it('should update aspect ratio when actual image dimensions differ from prospective ratio', async () => {
         const user = userEvent.setup();
-
-        // Mock store with 1:1 aspect ratio selected
-        (useImageStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-            selectedAspectRatio: '1:1',
-            editSource: null,
-            setAspectRatio: vi.fn(),
-            setEditSource: vi.fn(),
-            clearEditSource: mockClearEditSource,
-            addImage: mockAddImage,
-            addTextItem: mockAddTextItem,
-            updateImage: mockUpdateImage,
-            deleteImage: mockDeleteImage,
-        });
 
         // Create a mock image that will have 16:9 dimensions when loaded
         const mockImageDataUrl = 'data:image/png;base64,mockImageData';

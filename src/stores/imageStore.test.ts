@@ -12,10 +12,10 @@ describe('ImageStore Persistence', () => {
         // Reset store to initial state
         useImageStore.setState({
             images: [],
-            selectedAspectRatio: '1:1',
-            editSource: null,
             isGenerating: false,
             isLoading: false,
+            textItems: [],
+            imageDataCache: new Map(),
         });
     });
 
@@ -41,15 +41,6 @@ describe('ImageStore Persistence', () => {
         expect(images[0].prompt).toBe('test prompt');
     });
 
-    it('should persist selectedAspectRatio to database', async () => {
-        // Set aspect ratio
-        await useImageStore.getState().setAspectRatio('2:1');
-
-        // Check database
-        const stored = await sqliteService.getSetting('selectedAspectRatio');
-        expect(stored).toBe('2:1');
-    });
-
     it('should handle Date objects correctly', async () => {
         const testDate = new Date('2024-01-15T12:30:00.000Z');
         const testImage: GeneratedImage = {
@@ -68,51 +59,6 @@ describe('ImageStore Persistence', () => {
         const images = await sqliteService.getAllImages();
         expect(images[0].createdAt).toBeInstanceOf(Date);
         expect(images[0].createdAt.getTime()).toBe(testDate.getTime());
-    });
-
-    it('should not persist transient state (editSource, isGenerating)', async () => {
-        // Add an image first
-        const testImage: GeneratedImage = {
-            id: 'test-transient',
-            url: 'data:image/png;base64,test',
-            prompt: 'test prompt',
-            status: 'complete',
-            aspectRatio: '1:1',
-            width: 1024,
-            height: 1024,
-            createdAt: new Date(),
-        };
-        await useImageStore.getState().addImage(testImage);
-
-        // Set transient state
-        useImageStore.setState({
-            editSource: {
-                url: 'test-url',
-                aspectRatio: '1:1',
-                width: 1024,
-                height: 1024,
-            },
-            isGenerating: true,
-        });
-
-        // Clear the store state and reinitialize (simulating app restart)
-        useImageStore.setState({
-            images: [],
-            selectedAspectRatio: '1:1',
-            editSource: null,
-            isGenerating: false,
-            isLoading: false,
-        });
-
-        // Initialize store (which loads from database)
-        await useImageStore.getState().initialize();
-
-        // Transient state should not be persisted (should be reset to defaults)
-        const state = useImageStore.getState();
-        expect(state.editSource).toBeNull();
-        expect(state.isGenerating).toBe(false);
-        // But images should be loaded
-        expect(state.images).toHaveLength(1);
     });
 
     it('should update images in database', async () => {
