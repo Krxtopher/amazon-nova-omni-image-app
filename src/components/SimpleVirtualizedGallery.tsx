@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useImageStore } from '@/stores/imageStore';
 import type { GeneratedImage } from '../types';
-import { FixedMasonryGrid } from './FixedMasonryGrid';
+import { VMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
 
 interface SimpleVirtualizedGalleryProps {
@@ -63,13 +63,11 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
 
     return (
         <div ref={containerRef} className="w-full">
-            <FixedMasonryGrid
+            <VMasonryGrid
                 items={sortedImages}
                 renderer={renderer}
-                columnWidth={350}
+                maxItemSize={350}
                 gap={22}
-                overscan={5}
-                bufferSize={200}
                 className="w-full"
             />
         </div>

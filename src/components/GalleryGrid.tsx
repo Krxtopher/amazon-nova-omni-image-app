@@ -1,8 +1,8 @@
 import type { GalleryItem, GeneratedImage, GeneratedText } from '../types';
-import { FixedMasonryGrid } from './FixedMasonryGrid';
+import { VMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
 import { TextCard } from './TextCard';
-import type { MasonryItemRendererProps } from './FixedMasonryGrid';
+import type { MasonryItemRendererProps } from './MasonryGrid';
 
 interface GalleryGridProps {
     items: GalleryItem[];
@@ -89,13 +89,11 @@ export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit }:
 
     return (
         <div className="w-full">
-            <FixedMasonryGrid
+            <VMasonryGrid
                 items={masonryItems}
                 renderer={renderer}
-                columnWidth={350}
+                maxItemSize={350}
                 gap={22}
-                overscan={5}
-                bufferSize={200}
                 className="w-full"
             />
         </div>
