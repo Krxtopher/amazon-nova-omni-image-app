@@ -4,6 +4,7 @@ import {
   useRef,
   useEffect,
   useState,
+  useMemo,
   type HTMLAttributes,
 } from "react";
 
@@ -22,13 +23,6 @@ export interface MasonryItemRendererProps {
 
 type MasonryItemRenderer = (props: MasonryItemRendererProps) => React.JSX.Element;
 
-interface MasonryGridProps extends React.HTMLAttributes<HTMLDivElement> {
-  items: MasonryItem[];
-  renderer: MasonryItemRenderer;
-  columnWidth?: number;
-  gap?: number;
-}
-
 interface ItemBounds {
   item: MasonryItem;
   displayWidth: number;
@@ -37,7 +31,24 @@ interface ItemBounds {
   left: number;
 }
 
-interface MasonryGridProps extends React.HTMLAttributes<HTMLDivElement> {
+interface VMasonryGridProps extends React.HTMLAttributes<HTMLDivElement> {
+  items: MasonryItem[];
+  renderer: MasonryItemRenderer;
+  gap?: number;
+  breakpoints?: {
+    sm?: number;  // width threshold for small screens (default: 640px)
+    md?: number;  // width threshold for medium screens (default: 768px)
+    lg?: number;  // width threshold for large screens (default: 1024px)
+  };
+  columns?: {
+    xs?: number;  // columns for extra small screens (default: 1)
+    sm?: number;  // columns for small screens (default: 2)
+    md?: number;  // columns for medium screens (default: 3)
+    lg?: number;  // columns for large screens (default: 4)
+  };
+}
+
+interface HMasonryGridProps extends React.HTMLAttributes<HTMLDivElement> {
   items: MasonryItem[];
   renderer: MasonryItemRenderer;
   maxItemSize?: number;
@@ -47,58 +58,85 @@ interface MasonryGridProps extends React.HTMLAttributes<HTMLDivElement> {
 function VMasonryGrid({
   items,
   renderer,
-  maxItemSize = 250,
   gap = 4,
+  breakpoints,
+  columns,
   ...props
-}: MasonryGridProps) {
+}: VMasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [itemsLayout, setItemsLayout] = useState<ItemBounds[]>([]);
-  const [forceRerender, setForceRerender] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Memoize breakpoints and columns to prevent infinite loops
+  const stableBreakpoints = useMemo(() =>
+    breakpoints || { sm: 480, md: 768, lg: 1600 },
+    [breakpoints]
+  );
+
+  const stableColumns = useMemo(() =>
+    columns || { xs: 1, sm: 2, md: 3, lg: 4 },
+    [columns]
+  );
+
+  // Function to determine column count based on container width
+  const getColumnCount = useMemo(() => (width: number): number => {
+    if (width >= (stableBreakpoints.lg || 1024)) return stableColumns.lg || 4;
+    if (width >= (stableBreakpoints.md || 768)) return stableColumns.md || 3;
+    if (width >= (stableBreakpoints.sm || 640)) return stableColumns.sm || 2;
+    return stableColumns.xs || 1;
+  }, [stableBreakpoints, stableColumns]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const resizeObserver = new ResizeObserver(() => setForceRerender(true));
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateWidth);
     resizeObserver.observe(containerRef.current);
 
+    // Initial width calculation
+    updateWidth();
+
     return () => resizeObserver.disconnect();
-  }, [containerRef]);
+  }, []);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerWidth) return;
 
-    const containerWidth = Math.max(
-      containerRef.current.offsetWidth,
-      maxItemSize + gap * 2
-    );
-    const columnCount = Math.floor(containerWidth / (maxItemSize + gap));
-    const itemWidth = Math.floor(
-      (containerWidth - (columnCount + 1) * gap) / columnCount
-    );
+    const columnCount = getColumnCount(containerWidth);
+    const itemWidth = Math.floor((containerWidth - (columnCount + 1) * gap) / columnCount);
 
     const newItemsLayout = items.map((item) => {
-      const top = 0;
-      const left = 0;
       const displayWidth = itemWidth;
       const displayHeight = (item.height / item.width) * itemWidth;
-      return { item, displayWidth, displayHeight, top, left };
+      return {
+        item,
+        displayWidth,
+        displayHeight,
+        top: 0,
+        left: 0
+      };
     });
 
     const columnHeights = Array(columnCount).fill(0);
     newItemsLayout.forEach((itemInfo) => {
       const columnIndex = columnHeights.indexOf(Math.min(...columnHeights));
-      itemInfo.left = columnIndex * (itemWidth + gap);
-      itemInfo.top = columnHeights[columnIndex];
-      columnHeights[columnIndex] = itemInfo.top + itemInfo.displayHeight + gap;
+      itemInfo.left = columnIndex * (itemWidth + gap) + gap;
+      itemInfo.top = columnHeights[columnIndex] + gap;
+      columnHeights[columnIndex] = itemInfo.top + itemInfo.displayHeight;
     });
+
     setItemsLayout(newItemsLayout);
-    setForceRerender(false);
-  }, [containerRef, gap, items, forceRerender, maxItemSize]);
+  }, [containerWidth, gap, items, getColumnCount]);
 
   return (
     <div
       {...props}
-      className={"masonry-grid " + props.className || ""}
+      className={"masonry-grid " + (props.className || "")}
       style={{ position: "relative", ...props.style }}
       ref={containerRef}
     >
@@ -111,7 +149,7 @@ function VMasonryGrid({
           renderer={renderer}
           left={itemLayout.left}
           top={itemLayout.top}
-          gap={gap}
+          gap={0}
         />
       ))}
     </div>
@@ -124,7 +162,7 @@ function HMasonryGrid({
   maxItemSize = 250,
   gap = 4,
   ...props
-}: MasonryGridProps) {
+}: HMasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [rows, setRows] = useState<MasonryItemRendererProps[][]>([]);
   const [forceRerender, setForceRerender] = useState(false);
@@ -206,7 +244,7 @@ function HMasonryGrid({
   return (
     <div
       {...props}
-      className={"masonry-grid " + props.className || ""}
+      className={"masonry-grid " + (props.className || "")}
       style={{ position: "relative", ...props.style }}
       ref={containerRef}
     >
@@ -256,10 +294,9 @@ function MasonryItemContainer({
         left,
         width: displayWidth,
         height: displayHeight,
-        margin: gap,
+        margin: gap > 0 ? gap : undefined,
       }}
     >
-      {/* {isVisible ? renderer(rendererProps) : null} */}
       {renderer(rendererProps)}
     </div>
   );
