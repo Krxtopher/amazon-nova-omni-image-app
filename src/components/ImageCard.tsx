@@ -93,15 +93,20 @@ export function ImageCard({
     const hasFadedInRef = useRef(false);
 
     useEffect(() => {
-        if (item.status === 'complete' && displayUrl && !isLoadingImage && !hasFadedInRef.current) {
-            setShouldFadeIn(false);
-            if (isVisible) {
+        if (item.status === 'complete' && displayUrl && !isLoadingImage) {
+            if (isVisible && !hasFadedInRef.current) {
+                setShouldFadeIn(false);
                 // Longer delay to ensure the opacity-0 class is applied first and visible
                 const timer = setTimeout(() => {
                     setShouldFadeIn(true);
                     hasFadedInRef.current = true;
                 }, 200);
                 return () => clearTimeout(timer);
+            } else if (!isVisible) {
+                // Reset fade-in state when image goes out of view
+                // This allows the fade-in animation to trigger again when scrolling back into view
+                setShouldFadeIn(false);
+                hasFadedInRef.current = false;
             }
         }
     }, [displayUrl, isVisible, item.status, isLoadingImage]);
@@ -280,7 +285,7 @@ export function ImageCard({
                         loading="eager"
                         onClick={() => navigate(`/image/${item.id}`)}
                         onLoad={() => {
-                            // Ensure fade-in happens when image loads, but only if we haven't already faded in
+                            // Ensure fade-in happens when image loads, but only if visible and we haven't already faded in
                             if (isVisible && !shouldFadeIn && !hasFadedInRef.current) {
                                 setTimeout(() => {
                                     setShouldFadeIn(true);
