@@ -306,11 +306,11 @@ function MasonryItemContainer({
       {...props}
       style={{
         position: "absolute",
-        top,
-        left,
+        transform: `translate3d(${left}px, ${top}px, 0)`,
         width: displayWidth,
         height: displayHeight,
         margin: gap > 0 ? gap : undefined,
+        willChange: "transform",
       }}
     >
       {renderer(rendererProps)}
