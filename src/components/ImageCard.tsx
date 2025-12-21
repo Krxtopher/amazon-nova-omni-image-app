@@ -313,9 +313,11 @@ export function ImageCard({
 
     return (
         <div
-            className={`relative rounded-lg overflow-hidden bg-muted w-full h-full ${item.status === 'complete' ? 'group' : ''}`}
+            className={`relative rounded-lg overflow-hidden w-full h-full bg-linear-to-b from-white/1 to-transparent
+
+ ${item.status === 'complete' ? 'group' : ''}`}
             style={{
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.3)'
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.3)',
             }}
             onMouseEnter={() => item.status === 'complete' && setIsHovered(true)}
             onMouseLeave={() => item.status === 'complete' && setIsHovered(false)}
