@@ -74,8 +74,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
             // Get total count for pagination (only complete images)
             const totalCount = await sqliteService.getCompleteImageMetadataCount();
 
-            // Load zero images initially for maximum startup performance
-            const initialBatchSize = 0;
+            const initialBatchSize = 20;
             const imageMetadata = await sqliteService.getCompleteImageMetadataPaginated(0, initialBatchSize);
 
             // Load text items from localStorage (temporary solution)
@@ -187,17 +186,47 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Requirements: 2.1, 3.3
      */
     addImage: async (image: GeneratedImage) => {
+        // 🕐 HYPOTHESIS 1 TEST: Comprehensive timing for addImage
+        const addImageStartTime = performance.now();
+        console.log('🏪 [H1-TEST] addImage called at:', new Date().toISOString(), 'for image:', image.id);
+        console.time('addImage-total');
+        console.time('store-state-update');
+
         // Update UI immediately for responsive feel
-        set((state) => ({
-            images: [image, ...state.images],
-            totalImageCount: state.totalImageCount + 1,
-        }));
+        set((state) => {
+            const storeStateUpdateTime = performance.now();
+            console.log('📊 [H1-TEST] Store state update starting, time since addImage call:', (storeStateUpdateTime - addImageStartTime).toFixed(2), 'ms');
+
+            const newState = {
+                images: [image, ...state.images],
+                totalImageCount: state.totalImageCount + 1,
+            };
+
+            const storeStateUpdateEndTime = performance.now();
+            console.timeEnd('store-state-update');
+            console.log('✅ [H1-TEST] Store state updated in:', (storeStateUpdateEndTime - storeStateUpdateTime).toFixed(2), 'ms');
+
+            return newState;
+        });
+
+        // 🕐 HYPOTHESIS 1 TEST: Time the SQLite persistence separately
+        console.time('sqlite-persist');
+        const sqliteStartTime = performance.now();
+        console.log('💾 [H1-TEST] Starting SQLite persistence at:', (sqliteStartTime - addImageStartTime).toFixed(2), 'ms after addImage call');
 
         // Persist to database asynchronously (don't block UI)
-        sqliteService.addImage(image).catch((error) => {
+        sqliteService.addImage(image).then(() => {
+            const sqliteEndTime = performance.now();
+            console.timeEnd('sqlite-persist');
+            console.timeEnd('addImage-total');
+            console.log('💾 [H1-TEST] SQLite persistence completed in:', (sqliteEndTime - sqliteStartTime).toFixed(2), 'ms');
+            console.log('🏁 [H1-TEST] Total addImage time:', (sqliteEndTime - addImageStartTime).toFixed(2), 'ms');
+        }).catch((error) => {
+            const sqliteErrorTime = performance.now();
+            console.timeEnd('sqlite-persist');
+            console.timeEnd('addImage-total');
+            console.error('💾 [H1-TEST] SQLite persistence failed after:', (sqliteErrorTime - sqliteStartTime).toFixed(2), 'ms', error);
             console.error('Failed to persist image to database:', error);
-            // In a production app, you might want to show a toast notification
-            // or implement retry logic here
         });
     },
 

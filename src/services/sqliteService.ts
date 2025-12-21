@@ -10,6 +10,8 @@ class SQLiteService {
     private db: Database | null = null;
     private initialized = false;
     private initPromise: Promise<void> | null = null;
+    private saveTimeout: NodeJS.Timeout | null = null;
+    private pendingSave = false;
 
     /**
      * Initialize the SQLite database
@@ -20,6 +22,12 @@ class SQLiteService {
 
         this.initPromise = (async () => {
             try {
+                // 🕐 HYPOTHESIS 1 TEST: Time SQLite initialization
+                const initStartTime = performance.now();
+                console.log('🗄️ [H1-TEST] SQLite init starting');
+                console.time('sqlite-init-total');
+                console.time('sqljs-load');
+
                 // Initialize SQL.js
                 const SQL = await initSqlJs({
                     locateFile: (file: string) => {
@@ -28,19 +36,33 @@ class SQLiteService {
                     },
                 });
 
+                console.timeEnd('sqljs-load');
+                console.time('indexeddb-load');
+
                 // Try to load existing database from IndexedDB
                 const savedDb = await this.loadFromIndexedDB();
 
+                console.timeEnd('indexeddb-load');
+                console.time('db-setup');
+
                 if (savedDb) {
+                    console.log('🗄️ [H1-TEST] Loading existing database, size:', (savedDb.length / 1024 / 1024).toFixed(2), 'MB');
                     this.db = new SQL.Database(savedDb);
                     // Ensure new tables exist first
                     this.createTables();
                     // Save the database back to IndexedDB
                     await this.saveToIndexedDB();
                 } else {
+                    console.log('🗄️ [H1-TEST] Creating new database');
                     this.db = new SQL.Database();
                     this.createTables();
                 }
+
+                console.timeEnd('db-setup');
+                console.timeEnd('sqlite-init-total');
+
+                const initEndTime = performance.now();
+                console.log('🗄️ [H1-TEST] SQLite init completed in:', (initEndTime - initStartTime).toFixed(2), 'ms');
 
                 this.initialized = true;
             } catch (error) {
@@ -103,10 +125,29 @@ class SQLiteService {
     private async saveToIndexedDB(): Promise<void> {
         if (!this.db) return;
 
+        // 🕐 HYPOTHESIS 1 TEST: Time IndexedDB operations in detail
+        console.time('db-export');
+        const exportStart = performance.now();
+
         const data = this.db.export();
+
+        const exportEnd = performance.now();
+        console.timeEnd('db-export');
+        console.log('💾 [H1-TEST] Database export took:', (exportEnd - exportStart).toFixed(2), 'ms, size:', (data.length / 1024 / 1024).toFixed(2), 'MB');
+
+        console.time('blob-creation');
+        const blobStart = performance.now();
+
         const blob = new Blob([data as BlobPart], { type: 'application/x-sqlite3' });
 
+        const blobEnd = performance.now();
+        console.timeEnd('blob-creation');
+        console.log('💾 [H1-TEST] Blob creation took:', (blobEnd - blobStart).toFixed(2), 'ms');
+
         return new Promise((resolve, reject) => {
+            console.time('indexeddb-transaction');
+            const transactionStart = performance.now();
+
             const request = indexedDB.open('ImageGeneratorDB', 1);
 
             request.onerror = () => reject(request.error);
@@ -114,9 +155,20 @@ class SQLiteService {
                 const db = request.result;
                 const transaction = db.transaction(['database'], 'readwrite');
                 const store = transaction.objectStore('database');
+
+                console.time('indexeddb-put');
+                const putStart = performance.now();
+
                 store.put(blob, 'sqlite-db');
 
-                transaction.oncomplete = () => resolve();
+                transaction.oncomplete = () => {
+                    const putEnd = performance.now();
+                    console.timeEnd('indexeddb-put');
+                    console.timeEnd('indexeddb-transaction');
+                    console.log('💾 [H1-TEST] IndexedDB put operation took:', (putEnd - putStart).toFixed(2), 'ms');
+                    console.log('💾 [H1-TEST] Total IndexedDB transaction took:', (putEnd - transactionStart).toFixed(2), 'ms');
+                    resolve();
+                };
                 transaction.onerror = () => reject(transaction.error);
             };
 
@@ -134,16 +186,24 @@ class SQLiteService {
      */
     private async loadFromIndexedDB(): Promise<Uint8Array | null> {
         return new Promise((resolve, reject) => {
+            // 🕐 HYPOTHESIS 1 TEST: Time IndexedDB load operations
+            console.time('indexeddb-open');
+
             const request = indexedDB.open('ImageGeneratorDB', 1);
 
             request.onerror = () => reject(request.error);
             request.onsuccess = () => {
+                console.timeEnd('indexeddb-open');
                 const db = request.result;
 
                 if (!db.objectStoreNames.contains('database')) {
+                    console.log('💾 [H1-TEST] No existing database found in IndexedDB');
                     resolve(null);
                     return;
                 }
+
+                console.time('indexeddb-read');
+                const readStart = performance.now();
 
                 const transaction = db.transaction(['database'], 'readonly');
                 const store = transaction.objectStore('database');
@@ -151,10 +211,23 @@ class SQLiteService {
 
                 getRequest.onsuccess = async () => {
                     if (getRequest.result) {
+                        console.time('blob-to-array');
+                        const blobStart = performance.now();
+
                         const blob = getRequest.result as Blob;
+                        console.log('💾 [H1-TEST] Found existing database blob, size:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
                         const arrayBuffer = await blob.arrayBuffer();
+
+                        const blobEnd = performance.now();
+                        console.timeEnd('blob-to-array');
+                        console.timeEnd('indexeddb-read');
+                        console.log('💾 [H1-TEST] Blob to ArrayBuffer conversion took:', (blobEnd - blobStart).toFixed(2), 'ms');
+                        console.log('💾 [H1-TEST] Total IndexedDB read took:', (blobEnd - readStart).toFixed(2), 'ms');
+
                         resolve(new Uint8Array(arrayBuffer));
                     } else {
+                        console.timeEnd('indexeddb-read');
+                        console.log('💾 [H1-TEST] No database data found in IndexedDB');
                         resolve(null);
                     }
                 };
@@ -175,8 +248,18 @@ class SQLiteService {
      * Add a new image (metadata and data separately)
      */
     async addImage(image: GeneratedImage): Promise<void> {
+        // 🕐 HYPOTHESIS 1 TEST: Time SQLite operations
+        const sqliteAddImageStart = performance.now();
+        console.log('🗄️ [H1-TEST] SQLiteService.addImage called for:', image.id);
+        console.time('sqlite-init');
+
         await this.init();
+        console.timeEnd('sqlite-init');
+
         if (!this.db) throw new Error('Database not initialized');
+
+        console.time('sqlite-insert-operations');
+        const insertStart = performance.now();
 
         // Insert metadata
         this.db.run(
@@ -203,7 +286,54 @@ class SQLiteService {
             );
         }
 
-        await this.saveToIndexedDB();
+        const insertEnd = performance.now();
+        console.timeEnd('sqlite-insert-operations');
+        console.log('🗄️ [H1-TEST] SQLite insert operations took:', (insertEnd - insertStart).toFixed(2), 'ms');
+
+        // 🚀 PERFORMANCE FIX: Use debounced save instead of immediate save
+        // This prevents blocking the UI thread with massive database exports
+        const saveStart = performance.now();
+        console.log('💾 [PERFORMANCE-FIX] Using debounced save to prevent UI blocking');
+        this.debouncedSaveToIndexedDB();
+
+        const saveEnd = performance.now();
+        console.log('💾 [PERFORMANCE-FIX] Debounced save scheduled in:', (saveEnd - saveStart).toFixed(2), 'ms');
+
+        const totalSqliteTime = saveEnd - sqliteAddImageStart;
+        console.log('🗄️ [H1-TEST] Total SQLiteService.addImage time:', totalSqliteTime.toFixed(2), 'ms');
+
+        // Log database size for correlation analysis
+        if (this.db) {
+            const dbSize = this.db.export().length;
+            console.log('📊 [H1-TEST] Current database size:', (dbSize / 1024 / 1024).toFixed(2), 'MB');
+        }
+    }
+
+    /**
+     * Debounced save to IndexedDB - prevents excessive saves during rapid operations
+     */
+    private debouncedSaveToIndexedDB(): void {
+        // Clear existing timeout
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+
+        // Set new timeout - save after 1 second of inactivity
+        this.saveTimeout = setTimeout(async () => {
+            if (!this.pendingSave) {
+                this.pendingSave = true;
+                try {
+                    console.log('💾 [DEBOUNCED] Performing batched IndexedDB save');
+                    console.time('debounced-indexeddb-save');
+                    await this.saveToIndexedDB();
+                    console.timeEnd('debounced-indexeddb-save');
+                } catch (error) {
+                    console.error('💾 [DEBOUNCED] Failed to save to IndexedDB:', error);
+                } finally {
+                    this.pendingSave = false;
+                }
+            }
+        }, 1000);
     }
 
     /**
@@ -266,7 +396,7 @@ class SQLiteService {
             );
         }
 
-        await this.saveToIndexedDB();
+        this.debouncedSaveToIndexedDB();
     }
 
     /**
@@ -278,7 +408,7 @@ class SQLiteService {
 
         this.db.run('DELETE FROM image_metadata WHERE id = ?', [id]);
         this.db.run('DELETE FROM image_data WHERE id = ?', [id]);
-        await this.saveToIndexedDB();
+        this.debouncedSaveToIndexedDB();
     }
 
     /**

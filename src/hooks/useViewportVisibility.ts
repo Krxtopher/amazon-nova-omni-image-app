@@ -8,7 +8,7 @@ interface UseViewportVisibilityOptions {
 function useViewportVisibility<T extends HTMLElement>(
   options: UseViewportVisibilityOptions = {}
 ) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const elementRef = useRef<T>(null);
 
   useEffect(() => {

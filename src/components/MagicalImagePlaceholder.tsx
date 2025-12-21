@@ -10,7 +10,7 @@ interface MagicalImagePlaceholderProps {
 }
 
 /**
- * A magical placeholder for image generation with animated color mixing
+ * Magical placeholder for image generation with animated color mixing
  * Supports both WebGL shader effects and CSS fallback
  */
 export function MagicalImagePlaceholder({

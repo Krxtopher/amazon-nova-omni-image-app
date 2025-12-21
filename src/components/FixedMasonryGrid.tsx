@@ -228,8 +228,12 @@ export function FixedMasonryGrid({
     // Render visible items
     const renderItems = () => {
         return visibleItems.map((itemLayout) => {
-            // Simple visibility check - if it's rendered, it's visible
-            const isVisible = true;
+            // Check if item is actually visible in viewport for lazy loading optimizations
+            const itemTop = itemLayout.top;
+            const itemBottom = itemTop + itemLayout.displayHeight;
+            const visibleTop = scrollTop;
+            const visibleBottom = scrollTop + viewportHeight;
+            const isVisible = itemBottom >= visibleTop && itemTop <= visibleBottom;
 
             // Use only the item ID as key to maintain component identity across position changes
             const uniqueKey = itemLayout.item.id;
