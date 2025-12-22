@@ -9,6 +9,15 @@ import type { GeneratedImage } from '../types';
 vi.mock('../stores/imageStore');
 const mockUseImageStore = vi.mocked(useImageStore);
 
+// Mock the useImageData hook
+vi.mock('../hooks/useImageData', () => ({
+    useImageData: vi.fn((imageId: string) => ({
+        imageUrl: imageId === 'test-image-1' ? 'data:image/png;base64,test1' : 'data:image/png;base64,test2',
+        isLoading: false,
+        error: null
+    }))
+}));
+
 // Mock react-router-dom
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -48,7 +57,27 @@ describe('Lightbox', () => {
         vi.clearAllMocks();
         mockUseImageStore.mockReturnValue({
             images: mockImages,
-            // Add other store properties as needed
+            textItems: [],
+            isGenerating: false,
+            isLoading: false,
+            hasMoreImages: false,
+            isLoadingMore: false,
+            totalImageCount: mockImages.length,
+            imageDataCache: new Map(),
+            cacheAccessTimes: new Map(),
+            addImage: vi.fn(),
+            addTextItem: vi.fn(),
+            updateImage: vi.fn(),
+            deleteImage: vi.fn(),
+            deleteTextItem: vi.fn(),
+            loadImages: vi.fn(),
+            loadMoreImages: vi.fn(),
+            loadImageData: vi.fn().mockResolvedValue('data:image/png;base64,test'),
+            clearImageDataCache: vi.fn(),
+            getAllItems: vi.fn().mockReturnValue([]),
+            getItemsPaginated: vi.fn().mockResolvedValue([]),
+            getTotalItemCount: vi.fn().mockReturnValue(0),
+            initialize: vi.fn()
         } as any);
     });
 

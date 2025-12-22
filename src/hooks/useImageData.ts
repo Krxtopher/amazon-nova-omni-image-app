@@ -11,7 +11,7 @@ export function useImageData(imageId: string) {
     const [error, setError] = useState<string | null>(null);
 
     const loadImageData = useImageStore((state) => state.loadImageData);
-    const imageDataCache = useImageStore((state) => state.imageDataCache) || new Map();
+    const imageDataCache = useImageStore((state) => state.imageDataCache);
 
     useEffect(() => {
         // Don't load if no imageId provided
@@ -22,9 +22,12 @@ export function useImageData(imageId: string) {
             return;
         }
 
+        // Ensure cache is initialized
+        const cache = imageDataCache instanceof Map ? imageDataCache : new Map();
+
         // Check if already in cache
-        if (imageDataCache.has(imageId)) {
-            setImageUrl(imageDataCache.get(imageId)!);
+        if (cache.has && cache.has(imageId)) {
+            setImageUrl(cache.get(imageId)!);
             setIsLoading(false);
             return;
         }

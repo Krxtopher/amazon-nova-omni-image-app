@@ -118,7 +118,7 @@ export function ImageCard({
                 setIsCopied(true);
                 setTimeout(() => setIsCopied(false), 2000);
             } catch (err) {
-                console.error('Failed to copy prompt:', err);
+                // Silently handle copy errors
             }
         }
     };

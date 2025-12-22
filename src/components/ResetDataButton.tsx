@@ -36,7 +36,6 @@ export function ResetDataButton() {
                 duration: 3000,
             });
         } catch (error) {
-            console.error('Failed to reset data:', error);
             toast.error('Failed to reset data. Please try again.', {
                 duration: 3000,
             });

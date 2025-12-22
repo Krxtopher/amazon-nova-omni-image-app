@@ -33,7 +33,6 @@ class PersonaService {
             const personas = await sqliteService.getSetting(this.PERSONAS_KEY);
             return personas ? JSON.parse(personas as string) : [];
         } catch (error) {
-            console.error('Failed to load custom personas:', error);
             return [];
         }
     }

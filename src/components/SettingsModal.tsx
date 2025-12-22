@@ -49,7 +49,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 duration: 3000,
             });
         } catch (error) {
-            console.error('Failed to reset data:', error);
             toast.error('Failed to reset data. Please try again.', {
                 duration: 3000,
             });
@@ -81,7 +80,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 duration: 3000,
             });
         } catch (error) {
-            console.error('Failed to delete images:', error);
             toast.error('Failed to delete images. Please try again.', {
                 duration: 3000,
             });

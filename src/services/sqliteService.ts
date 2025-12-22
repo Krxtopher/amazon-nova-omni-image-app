@@ -1,6 +1,7 @@
 import initSqlJs from 'sql.js';
 import type { Database } from 'sql.js';
-import type { GeneratedImage, ImageMetadata, ImageData } from '../types';
+import type { GeneratedImage, ImageMetadata } from '../types';
+import { storageLogger } from '../utils/StorageLogger';
 
 /**
  * SQLite database service for storing generated images
@@ -20,14 +21,10 @@ class SQLiteService {
         if (this.initialized) return;
         if (this.initPromise) return this.initPromise;
 
+        const timer = storageLogger.startOperation('init', 'sqlite');
+
         this.initPromise = (async () => {
             try {
-                // 🕐 HYPOTHESIS 1 TEST: Time SQLite initialization
-                const initStartTime = performance.now();
-                console.log('🗄️ [H1-TEST] SQLite init starting');
-                console.time('sqlite-init-total');
-                console.time('sqljs-load');
-
                 // Initialize SQL.js
                 const SQL = await initSqlJs({
                     locateFile: (file: string) => {
@@ -36,37 +33,24 @@ class SQLiteService {
                     },
                 });
 
-                console.timeEnd('sqljs-load');
-                console.time('indexeddb-load');
-
                 // Try to load existing database from IndexedDB
                 const savedDb = await this.loadFromIndexedDB();
 
-                console.timeEnd('indexeddb-load');
-                console.time('db-setup');
-
                 if (savedDb) {
-                    console.log('🗄️ [H1-TEST] Loading existing database, size:', (savedDb.length / 1024 / 1024).toFixed(2), 'MB');
                     this.db = new SQL.Database(savedDb);
                     // Ensure new tables exist first
                     this.createTables();
                     // Save the database back to IndexedDB
                     await this.saveToIndexedDB();
                 } else {
-                    console.log('🗄️ [H1-TEST] Creating new database');
                     this.db = new SQL.Database();
                     this.createTables();
                 }
 
-                console.timeEnd('db-setup');
-                console.timeEnd('sqlite-init-total');
-
-                const initEndTime = performance.now();
-                console.log('🗄️ [H1-TEST] SQLite init completed in:', (initEndTime - initStartTime).toFixed(2), 'ms');
-
                 this.initialized = true;
+                timer.success(savedDb?.length);
             } catch (error) {
-                console.error('Failed to initialize SQLite:', error);
+                timer.error(error instanceof Error ? error : new Error(String(error)));
                 throw error;
             }
         })();
@@ -80,7 +64,7 @@ class SQLiteService {
     private createTables(): void {
         if (!this.db) return;
 
-        // Separate table for image metadata (loaded immediately)
+        // Metadata-only table for image information (binary data stored separately in IndexedDB)
         this.db.run(`
             CREATE TABLE IF NOT EXISTS image_metadata (
                 id TEXT PRIMARY KEY,
@@ -91,15 +75,9 @@ class SQLiteService {
                 height INTEGER NOT NULL,
                 createdAt INTEGER NOT NULL,
                 error TEXT,
-                converseParams TEXT
-            )
-        `);
-
-        // Separate table for image data (loaded on demand)
-        this.db.run(`
-            CREATE TABLE IF NOT EXISTS image_data (
-                id TEXT PRIMARY KEY,
-                url TEXT NOT NULL
+                converseParams TEXT,
+                hasBinaryData BOOLEAN DEFAULT FALSE,
+                binaryDataSize INTEGER DEFAULT 0
             )
         `);
 
@@ -114,7 +92,50 @@ class SQLiteService {
             CREATE INDEX IF NOT EXISTS idx_image_metadata_createdAt ON image_metadata(createdAt DESC)
         `);
 
+        this.db.run(`
+            CREATE INDEX IF NOT EXISTS idx_image_metadata_status ON image_metadata(status)
+        `);
 
+        // Migration: Add new columns to existing tables if they don't exist
+        this.migrateSchema();
+    }
+
+    /**
+     * Migrate existing database schema to metadata-only format
+     */
+    private migrateSchema(): void {
+        if (!this.db) return;
+
+        try {
+            // Check if hasBinaryData column exists
+            const tableInfo = this.db.exec("PRAGMA table_info(image_metadata)");
+            const columns = tableInfo.length > 0 ? tableInfo[0].values.map(row => row[1] as string) : [];
+
+            if (!columns.includes('hasBinaryData')) {
+                this.db.run('ALTER TABLE image_metadata ADD COLUMN hasBinaryData BOOLEAN DEFAULT FALSE');
+            }
+
+            if (!columns.includes('binaryDataSize')) {
+                this.db.run('ALTER TABLE image_metadata ADD COLUMN binaryDataSize INTEGER DEFAULT 0');
+            }
+
+            // If image_data table exists, migrate data and drop it
+            const tables = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='image_data'");
+            if (tables.length > 0) {
+                // Update hasBinaryData flag for records that have image data
+                this.db.run(`
+                    UPDATE image_metadata 
+                    SET hasBinaryData = TRUE, binaryDataSize = LENGTH(url) 
+                    FROM image_data 
+                    WHERE image_metadata.id = image_data.id
+                `);
+
+                // Drop the image_data table to save space
+                this.db.run('DROP TABLE IF EXISTS image_data');
+            }
+        } catch (error) {
+            // Silently handle migration errors
+        }
     }
 
 
@@ -125,60 +146,42 @@ class SQLiteService {
     private async saveToIndexedDB(): Promise<void> {
         if (!this.db) return;
 
-        // 🕐 HYPOTHESIS 1 TEST: Time IndexedDB operations in detail
-        console.time('db-export');
-        const exportStart = performance.now();
+        const timer = storageLogger.startOperation('saveToIndexedDB', 'sqlite');
 
-        const data = this.db.export();
+        try {
+            const data = this.db.export();
+            const blob = new Blob([data as BlobPart], { type: 'application/x-sqlite3' });
 
-        const exportEnd = performance.now();
-        console.timeEnd('db-export');
-        console.log('💾 [H1-TEST] Database export took:', (exportEnd - exportStart).toFixed(2), 'ms, size:', (data.length / 1024 / 1024).toFixed(2), 'MB');
+            await new Promise<void>((resolve, reject) => {
+                const request = indexedDB.open('ImageGeneratorDB', 1);
 
-        console.time('blob-creation');
-        const blobStart = performance.now();
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    const db = request.result;
+                    const transaction = db.transaction(['database'], 'readwrite');
+                    const store = transaction.objectStore('database');
 
-        const blob = new Blob([data as BlobPart], { type: 'application/x-sqlite3' });
+                    store.put(blob, 'sqlite-db');
 
-        const blobEnd = performance.now();
-        console.timeEnd('blob-creation');
-        console.log('💾 [H1-TEST] Blob creation took:', (blobEnd - blobStart).toFixed(2), 'ms');
-
-        return new Promise((resolve, reject) => {
-            console.time('indexeddb-transaction');
-            const transactionStart = performance.now();
-
-            const request = indexedDB.open('ImageGeneratorDB', 1);
-
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                const db = request.result;
-                const transaction = db.transaction(['database'], 'readwrite');
-                const store = transaction.objectStore('database');
-
-                console.time('indexeddb-put');
-                const putStart = performance.now();
-
-                store.put(blob, 'sqlite-db');
-
-                transaction.oncomplete = () => {
-                    const putEnd = performance.now();
-                    console.timeEnd('indexeddb-put');
-                    console.timeEnd('indexeddb-transaction');
-                    console.log('💾 [H1-TEST] IndexedDB put operation took:', (putEnd - putStart).toFixed(2), 'ms');
-                    console.log('💾 [H1-TEST] Total IndexedDB transaction took:', (putEnd - transactionStart).toFixed(2), 'ms');
-                    resolve();
+                    transaction.oncomplete = () => {
+                        resolve();
+                    };
+                    transaction.onerror = () => reject(transaction.error);
                 };
-                transaction.onerror = () => reject(transaction.error);
-            };
 
-            request.onupgradeneeded = (event) => {
-                const db = (event.target as IDBOpenDBRequest).result;
-                if (!db.objectStoreNames.contains('database')) {
-                    db.createObjectStore('database');
-                }
-            };
-        });
+                request.onupgradeneeded = (event) => {
+                    const db = (event.target as IDBOpenDBRequest).result;
+                    if (!Array.from(db.objectStoreNames).includes('database')) {
+                        db.createObjectStore('database');
+                    }
+                };
+            });
+
+            timer.success(blob.size);
+        } catch (error) {
+            timer.error(error instanceof Error ? error : new Error(String(error)));
+            throw error;
+        }
     }
 
     /**
@@ -186,24 +189,16 @@ class SQLiteService {
      */
     private async loadFromIndexedDB(): Promise<Uint8Array | null> {
         return new Promise((resolve, reject) => {
-            // 🕐 HYPOTHESIS 1 TEST: Time IndexedDB load operations
-            console.time('indexeddb-open');
-
             const request = indexedDB.open('ImageGeneratorDB', 1);
 
             request.onerror = () => reject(request.error);
             request.onsuccess = () => {
-                console.timeEnd('indexeddb-open');
                 const db = request.result;
 
-                if (!db.objectStoreNames.contains('database')) {
-                    console.log('💾 [H1-TEST] No existing database found in IndexedDB');
+                if (!Array.from(db.objectStoreNames).includes('database')) {
                     resolve(null);
                     return;
                 }
-
-                console.time('indexeddb-read');
-                const readStart = performance.now();
 
                 const transaction = db.transaction(['database'], 'readonly');
                 const store = transaction.objectStore('database');
@@ -211,23 +206,10 @@ class SQLiteService {
 
                 getRequest.onsuccess = async () => {
                     if (getRequest.result) {
-                        console.time('blob-to-array');
-                        const blobStart = performance.now();
-
                         const blob = getRequest.result as Blob;
-                        console.log('💾 [H1-TEST] Found existing database blob, size:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
                         const arrayBuffer = await blob.arrayBuffer();
-
-                        const blobEnd = performance.now();
-                        console.timeEnd('blob-to-array');
-                        console.timeEnd('indexeddb-read');
-                        console.log('💾 [H1-TEST] Blob to ArrayBuffer conversion took:', (blobEnd - blobStart).toFixed(2), 'ms');
-                        console.log('💾 [H1-TEST] Total IndexedDB read took:', (blobEnd - readStart).toFixed(2), 'ms');
-
                         resolve(new Uint8Array(arrayBuffer));
                     } else {
-                        console.timeEnd('indexeddb-read');
-                        console.log('💾 [H1-TEST] No database data found in IndexedDB');
                         resolve(null);
                     }
                 };
@@ -237,7 +219,7 @@ class SQLiteService {
 
             request.onupgradeneeded = (event) => {
                 const db = (event.target as IDBOpenDBRequest).result;
-                if (!db.objectStoreNames.contains('database')) {
+                if (!Array.from(db.objectStoreNames).includes('database')) {
                     db.createObjectStore('database');
                 }
             };
@@ -245,67 +227,43 @@ class SQLiteService {
     }
 
     /**
-     * Add a new image (metadata and data separately)
+     * Add image metadata only (binary data handled separately by BinaryStorageService)
      */
     async addImage(image: GeneratedImage): Promise<void> {
-        // 🕐 HYPOTHESIS 1 TEST: Time SQLite operations
-        const sqliteAddImageStart = performance.now();
-        console.log('🗄️ [H1-TEST] SQLiteService.addImage called for:', image.id);
-        console.time('sqlite-init');
+        const timer = storageLogger.startOperation('addImage', 'sqlite', { imageId: image.id });
 
-        await this.init();
-        console.timeEnd('sqlite-init');
+        try {
+            await this.init();
 
-        if (!this.db) throw new Error('Database not initialized');
+            if (!this.db) throw new Error('Database not initialized');
 
-        console.time('sqlite-insert-operations');
-        const insertStart = performance.now();
-
-        // Insert metadata
-        this.db.run(
-            `INSERT INTO image_metadata (id, prompt, status, aspectRatio, width, height, createdAt, error, converseParams)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                image.id,
-                image.prompt,
-                image.status,
-                image.aspectRatio,
-                image.width,
-                image.height,
-                image.createdAt.getTime(),
-                image.error || null,
-                image.converseParams ? JSON.stringify(image.converseParams) : null,
-            ]
-        );
-
-        // Insert image data if URL is provided
-        if (image.url) {
+            // Insert metadata only - binary data is handled by BinaryStorageService
             this.db.run(
-                `INSERT INTO image_data (id, url) VALUES (?, ?)`,
-                [image.id, image.url]
+                `INSERT INTO image_metadata (id, prompt, status, aspectRatio, width, height, createdAt, error, converseParams, hasBinaryData, binaryDataSize)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    image.id,
+                    image.prompt,
+                    image.status,
+                    image.aspectRatio,
+                    image.width,
+                    image.height,
+                    image.createdAt.getTime(),
+                    image.error || null,
+                    image.converseParams ? JSON.stringify(image.converseParams) : null,
+                    image.url ? 1 : 0, // hasBinaryData (convert boolean to number)
+                    image.url ? image.url.length : 0, // binaryDataSize (approximate)
+                ]
             );
-        }
 
-        const insertEnd = performance.now();
-        console.timeEnd('sqlite-insert-operations');
-        console.log('🗄️ [H1-TEST] SQLite insert operations took:', (insertEnd - insertStart).toFixed(2), 'ms');
+            // Use debounced save instead of immediate save
+            // This prevents blocking the UI thread with database exports
+            this.debouncedSaveToIndexedDB();
 
-        // 🚀 PERFORMANCE FIX: Use debounced save instead of immediate save
-        // This prevents blocking the UI thread with massive database exports
-        const saveStart = performance.now();
-        console.log('💾 [PERFORMANCE-FIX] Using debounced save to prevent UI blocking');
-        this.debouncedSaveToIndexedDB();
-
-        const saveEnd = performance.now();
-        console.log('💾 [PERFORMANCE-FIX] Debounced save scheduled in:', (saveEnd - saveStart).toFixed(2), 'ms');
-
-        const totalSqliteTime = saveEnd - sqliteAddImageStart;
-        console.log('🗄️ [H1-TEST] Total SQLiteService.addImage time:', totalSqliteTime.toFixed(2), 'ms');
-
-        // Log database size for correlation analysis
-        if (this.db) {
-            const dbSize = this.db.export().length;
-            console.log('📊 [H1-TEST] Current database size:', (dbSize / 1024 / 1024).toFixed(2), 'MB');
+            timer.success();
+        } catch (error) {
+            timer.error(error instanceof Error ? error : new Error(String(error)));
+            throw error;
         }
     }
 
@@ -322,13 +280,13 @@ class SQLiteService {
         this.saveTimeout = setTimeout(async () => {
             if (!this.pendingSave) {
                 this.pendingSave = true;
+                const timer = storageLogger.startOperation('debouncedSave', 'sqlite');
                 try {
-                    console.log('💾 [DEBOUNCED] Performing batched IndexedDB save');
-                    console.time('debounced-indexeddb-save');
                     await this.saveToIndexedDB();
-                    console.timeEnd('debounced-indexeddb-save');
+                    timer.success();
                 } catch (error) {
-                    console.error('💾 [DEBOUNCED] Failed to save to IndexedDB:', error);
+                    timer.error(error instanceof Error ? error : new Error(String(error)));
+                    // Silently handle save errors
                 } finally {
                     this.pendingSave = false;
                 }
@@ -337,82 +295,77 @@ class SQLiteService {
     }
 
     /**
-     * Update an existing image (metadata and/or data)
+     * Update image metadata only (binary data handled separately by BinaryStorageService)
      */
     async updateImage(id: string, updates: Partial<GeneratedImage>): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
-        // Update metadata if any metadata fields are provided
-        const metadataFields = ['prompt', 'status', 'aspectRatio', 'width', 'height', 'error', 'converseParams'];
-        const metadataUpdates = Object.keys(updates).filter(key => metadataFields.includes(key));
+        // Update metadata fields only
+        const setClauses: string[] = [];
+        const values: any[] = [];
 
-        if (metadataUpdates.length > 0) {
-            const setClauses: string[] = [];
-            const values: any[] = [];
+        if (updates.prompt !== undefined) {
+            setClauses.push('prompt = ?');
+            values.push(updates.prompt);
+        }
+        if (updates.status !== undefined) {
+            setClauses.push('status = ?');
+            values.push(updates.status);
+        }
+        if (updates.aspectRatio !== undefined) {
+            setClauses.push('aspectRatio = ?');
+            values.push(updates.aspectRatio);
+        }
+        if (updates.width !== undefined) {
+            setClauses.push('width = ?');
+            values.push(updates.width);
+        }
+        if (updates.height !== undefined) {
+            setClauses.push('height = ?');
+            values.push(updates.height);
+        }
+        if (updates.error !== undefined) {
+            setClauses.push('error = ?');
+            values.push(updates.error);
+        }
+        if (updates.converseParams !== undefined) {
+            setClauses.push('converseParams = ?');
+            values.push(updates.converseParams ? JSON.stringify(updates.converseParams) : null);
+        }
+        if (updates.hasBinaryData !== undefined) {
+            setClauses.push('hasBinaryData = ?');
+            values.push(updates.hasBinaryData ? 1 : 0); // Convert boolean to number
+        }
+        if (updates.binaryDataSize !== undefined) {
+            setClauses.push('binaryDataSize = ?');
+            values.push(updates.binaryDataSize);
+        }
 
-            if (updates.prompt !== undefined) {
-                setClauses.push('prompt = ?');
-                values.push(updates.prompt);
-            }
-            if (updates.status !== undefined) {
-                setClauses.push('status = ?');
-                values.push(updates.status);
-            }
-            if (updates.aspectRatio !== undefined) {
-                setClauses.push('aspectRatio = ?');
-                values.push(updates.aspectRatio);
-            }
-            if (updates.width !== undefined) {
-                setClauses.push('width = ?');
-                values.push(updates.width);
-            }
-            if (updates.height !== undefined) {
-                setClauses.push('height = ?');
-                values.push(updates.height);
-            }
-            if (updates.error !== undefined) {
-                setClauses.push('error = ?');
-                values.push(updates.error);
-            }
-            if (updates.converseParams !== undefined) {
-                setClauses.push('converseParams = ?');
-                values.push(updates.converseParams ? JSON.stringify(updates.converseParams) : null);
-            }
-
+        if (setClauses.length > 0) {
             values.push(id);
-
             this.db.run(
                 `UPDATE image_metadata SET ${setClauses.join(', ')} WHERE id = ?`,
                 values
             );
         }
 
-        // Update image data if URL is provided
-        if (updates.url !== undefined) {
-            this.db.run(
-                `INSERT OR REPLACE INTO image_data (id, url) VALUES (?, ?)`,
-                [id, updates.url]
-            );
-        }
-
         this.debouncedSaveToIndexedDB();
     }
 
     /**
-     * Delete an image (both metadata and data)
+     * Delete image metadata only (binary data handled separately by BinaryStorageService)
      */
     async deleteImage(id: string): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
         this.db.run('DELETE FROM image_metadata WHERE id = ?', [id]);
-        this.db.run('DELETE FROM image_data WHERE id = ?', [id]);
         this.debouncedSaveToIndexedDB();
     }
 
     /**
-     * Delete multiple images by their IDs
+     * Delete multiple images by their IDs (metadata only)
      */
     async deleteImages(ids: string[]): Promise<void> {
         await this.init();
@@ -422,12 +375,11 @@ class SQLiteService {
 
         const placeholders = ids.map(() => '?').join(',');
         this.db.run(`DELETE FROM image_metadata WHERE id IN (${placeholders})`, ids);
-        this.db.run(`DELETE FROM image_data WHERE id IN (${placeholders})`, ids);
         await this.saveToIndexedDB();
     }
 
     /**
-     * Delete images by status
+     * Delete images by status (metadata only)
      */
     async deleteImagesByStatus(statuses: string[]): Promise<number> {
         await this.init();
@@ -442,7 +394,6 @@ class SQLiteService {
 
         // Then delete them
         this.db.run(`DELETE FROM image_metadata WHERE status IN (${placeholders})`, statuses);
-        this.db.run(`DELETE FROM image_data WHERE id IN (SELECT id FROM image_metadata WHERE status IN (${placeholders}))`, statuses);
 
         await this.saveToIndexedDB();
 
@@ -453,37 +404,50 @@ class SQLiteService {
      * Get all image metadata (without image data for performance)
      */
     async getAllImageMetadata(): Promise<ImageMetadata[]> {
-        await this.init();
-        if (!this.db) throw new Error('Database not initialized');
+        const timer = storageLogger.startOperation('getAllImageMetadata', 'sqlite');
 
-        const result = this.db.exec('SELECT * FROM image_metadata ORDER BY createdAt DESC');
+        try {
+            await this.init();
+            if (!this.db) throw new Error('Database not initialized');
 
-        if (result.length === 0) return [];
+            const result = this.db.exec('SELECT * FROM image_metadata ORDER BY createdAt DESC');
 
-        const images: ImageMetadata[] = [];
-        const columns = result[0].columns;
-        const values = result[0].values;
+            if (result.length === 0) {
+                timer.success(0);
+                return [];
+            }
 
-        for (const row of values) {
-            const image: Record<string, any> = {};
-            columns.forEach((col: string, idx: number) => {
-                image[col] = row[idx];
-            });
+            const images: ImageMetadata[] = [];
+            const columns = result[0].columns;
+            const values = result[0].values;
 
-            images.push({
-                id: image.id,
-                prompt: image.prompt,
-                status: image.status,
-                aspectRatio: image.aspectRatio,
-                width: image.width,
-                height: image.height,
-                createdAt: new Date(image.createdAt),
-                error: image.error || undefined,
-                converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
-            });
+            for (const row of values) {
+                const image: Record<string, any> = {};
+                columns.forEach((col: string, idx: number) => {
+                    image[col] = row[idx];
+                });
+
+                images.push({
+                    id: image.id,
+                    prompt: image.prompt,
+                    status: image.status,
+                    aspectRatio: image.aspectRatio,
+                    width: image.width,
+                    height: image.height,
+                    createdAt: new Date(image.createdAt),
+                    error: image.error || undefined,
+                    converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+                    hasBinaryData: Boolean(image.hasBinaryData),
+                    binaryDataSize: image.binaryDataSize || 0,
+                });
+            }
+
+            timer.success(undefined, { recordCount: images.length });
+            return images;
+        } catch (error) {
+            timer.error(error instanceof Error ? error : new Error(String(error)));
+            throw error;
         }
-
-        return images;
     }
 
     /**
@@ -520,6 +484,8 @@ class SQLiteService {
                 createdAt: new Date(image.createdAt),
                 error: image.error || undefined,
                 converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+                hasBinaryData: Boolean(image.hasBinaryData),
+                binaryDataSize: image.binaryDataSize || 0,
             });
         }
 
@@ -551,15 +517,13 @@ class SQLiteService {
 
         if (incompleteResult.length > 0 && incompleteResult[0].values.length > 0) {
             const incompleteIds = incompleteResult[0].values.map(row => row[0] as string);
-            console.log('🧹 Found', incompleteIds.length, 'incomplete images, deleting them...');
 
             const placeholders = incompleteIds.map(() => '?').join(',');
             this.db.run(`DELETE FROM image_metadata WHERE id IN (${placeholders})`, incompleteIds);
-            this.db.run(`DELETE FROM image_data WHERE id IN (${placeholders})`, incompleteIds);
 
             // Save changes asynchronously to avoid blocking
-            this.saveToIndexedDB().catch(error => {
-                console.error('Failed to save after cleanup:', error);
+            this.saveToIndexedDB().catch(() => {
+                // Silently handle save errors
             });
         }
 
@@ -591,6 +555,8 @@ class SQLiteService {
                 createdAt: new Date(image.createdAt),
                 error: image.error || undefined,
                 converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+                hasBinaryData: Boolean(image.hasBinaryData),
+                binaryDataSize: image.binaryDataSize || 0,
             });
         }
 
@@ -598,39 +564,13 @@ class SQLiteService {
     }
 
     /**
-     * Get image data by ID (loaded on demand)
-     */
-    async getImageData(id: string): Promise<ImageData | null> {
-        await this.init();
-        if (!this.db) throw new Error('Database not initialized');
-
-        const result = this.db.exec('SELECT * FROM image_data WHERE id = ?', [id]);
-
-        if (result.length === 0 || result[0].values.length === 0) return null;
-
-        const row = result[0].values[0];
-        return {
-            id: row[0] as string,
-            url: row[1] as string,
-        };
-    }
-
-    /**
-     * Get complete image (metadata + data) - for backward compatibility
+     * Get complete image (metadata only) - binary data handled separately by BinaryStorageService
+     * This method is for backward compatibility but should be avoided for performance
      */
     async getAllImages(): Promise<GeneratedImage[]> {
         const metadata = await this.getAllImageMetadata();
-        const images: GeneratedImage[] = [];
-
-        for (const meta of metadata) {
-            const imageData = await this.getImageData(meta.id);
-            images.push({
-                ...meta,
-                url: imageData?.url,
-            });
-        }
-
-        return images;
+        // Note: url field will be undefined - binary data should be loaded separately via BinaryStorageService
+        return metadata.map(meta => ({ ...meta, url: undefined }));
     }
 
     /**
@@ -682,27 +622,25 @@ class SQLiteService {
     }
 
     /**
-     * Clear all data
+     * Clear all data (metadata only)
      */
     async clearAll(): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
         this.db.run('DELETE FROM image_metadata');
-        this.db.run('DELETE FROM image_data');
         this.db.run('DELETE FROM settings');
         await this.saveToIndexedDB();
     }
 
     /**
-     * Delete all images but preserve settings
+     * Delete all images but preserve settings (metadata only)
      */
     async deleteAllImages(): Promise<void> {
         await this.init();
         if (!this.db) throw new Error('Database not initialized');
 
         this.db.run('DELETE FROM image_metadata');
-        this.db.run('DELETE FROM image_data');
         await this.saveToIndexedDB();
     }
 

@@ -54,7 +54,6 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
                 hex: rgbToHex(r, g, b)
             };
         } catch (error) {
-            console.error('Error getting pixel data:', error);
             return null;
         }
     }, [rgbToHex]);
@@ -71,7 +70,6 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
             if (!ctx) {
-                console.error('Could not get canvas context');
                 return false;
             }
 
@@ -140,7 +138,6 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
             return true;
 
         } catch (error) {
-            console.error('Canvas creation failed:', error);
             return false;
         }
     }, []);
@@ -261,7 +258,7 @@ export function ColorPicker({ className = '' }: ColorPickerProps) {
                                     await navigator.clipboard.writeText(selectedColor.hex);
                                     // Could add a toast notification here if desired
                                 } catch (error) {
-                                    console.error('Failed to copy color to clipboard:', error);
+                                    // Silently handle copy errors
                                 }
                             }}
                             className="text-xs text-blue-600 hover:text-blue-800 ml-1 cursor-pointer"

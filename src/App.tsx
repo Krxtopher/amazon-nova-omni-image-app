@@ -61,13 +61,7 @@ function AppContent() {
 
   // Initialize the store
   useEffect(() => {
-    console.log('🏪 Store initialization starting at:', new Date().toISOString());
-    const storeInitStartTime = performance.now();
-
-    initialize().then(() => {
-      const storeInitEndTime = performance.now();
-      console.log('🏪 Store initialization promise resolved in', (storeInitEndTime - storeInitStartTime).toFixed(2), 'ms');
-    });
+    initialize();
   }, [initialize]);
 
   /**
@@ -144,7 +138,6 @@ function AppContent() {
 
   // Show loading state while initializing
   if (isLoading) {
-    console.log('⏳ App is in loading state at:', new Date().toISOString());
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -219,9 +212,6 @@ function App() {
   const bedrockService = createBedrockService();
 
   useEffect(() => {
-    // Debug: Mark App component mount
-    const appMountTime = performance.now();
-    console.log('📱 App component mounted at:', new Date().toISOString(), 'Performance timestamp:', appMountTime.toFixed(2));
     // Initialize application
   }, []);
 

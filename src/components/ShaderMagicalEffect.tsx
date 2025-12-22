@@ -30,7 +30,6 @@ export function ShaderMagicalEffect({
 
         const gl = canvas.getContext('webgl') as WebGLRenderingContext | null;
         if (!gl) {
-            console.warn('WebGL not supported, falling back to CSS effect');
             return;
         }
 
@@ -147,7 +146,6 @@ export function ShaderMagicalEffect({
             gl.compileShader(shader);
 
             if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error('Shader compile error:', gl.getShaderInfoLog(shader));
                 gl.deleteShader(shader);
                 return null;
             }
@@ -169,7 +167,6 @@ export function ShaderMagicalEffect({
         gl.linkProgram(program);
 
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error('Program link error:', gl.getProgramInfoLog(program));
             return;
         }
 

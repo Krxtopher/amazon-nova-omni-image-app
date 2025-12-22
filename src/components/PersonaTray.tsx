@@ -63,7 +63,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             const personas = await personaService.getCustomPersonas();
             setCustomPersonas(personas);
         } catch (error) {
-            console.error('Failed to load custom personas:', error);
+            // Silently handle load errors
         }
     };
 
@@ -105,7 +105,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             // Reload the list
             await loadCustomPersonas();
         } catch (error) {
-            console.error('Failed to delete persona:', error);
+            // Silently handle delete errors
         }
     };
 
@@ -168,7 +168,6 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             setIsCreating(false);
             setEditingPersona(null);
         } catch (error) {
-            console.error('Failed to save persona:', error);
             // Could show a toast error here
         } finally {
             setIsSaving(false);
@@ -203,7 +202,6 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             setName(generatedName);
             setSelectedIcon(generatedIcon);
         } catch (error) {
-            console.error('Failed to generate persona name and icon:', error);
             setErrors({
                 ...errors,
                 name: 'Failed to generate name and icon. Please try again or enter them manually.'

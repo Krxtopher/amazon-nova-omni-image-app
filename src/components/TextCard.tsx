@@ -35,7 +35,7 @@ export function TextCard({
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (error) {
-            console.error('Failed to copy text:', error);
+            // Silently handle copy errors
         }
     };
 

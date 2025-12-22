@@ -348,7 +348,6 @@ export class BedrockImageService {
 
             return textContent.text.trim();
         } catch (error) {
-            console.error('Persona name generation failed:', error);
             throw new Error('Failed to generate persona name. Please try again.');
         }
     }
@@ -442,7 +441,6 @@ export class BedrockImageService {
 
             return iconName;
         } catch (error) {
-            console.error('Persona icon generation failed:', error);
             throw new Error('Failed to generate persona icon. Please try again.');
         }
     }
@@ -474,7 +472,6 @@ export class BedrockImageService {
                 // Handle custom persona by ID
                 const customSystemPrompt = await personaService.getSystemPrompt(enhancementType);
                 if (!customSystemPrompt) {
-                    console.warn(`Custom persona ${enhancementType} not found, using original prompt`);
                     return originalPrompt;
                 }
                 systemPrompt = customSystemPrompt;
@@ -516,7 +513,6 @@ export class BedrockImageService {
 
             return textContent.text.trim();
         } catch (error) {
-            console.error('Prompt enhancement failed:', error);
             // Fall back to original prompt if enhancement fails
             return originalPrompt;
         }

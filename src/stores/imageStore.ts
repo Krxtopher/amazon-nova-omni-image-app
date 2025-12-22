@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { GeneratedImage, GeneratedText, GalleryItem } from '../types';
 import { sqliteService } from '../services/sqliteService';
+import { binaryStorageService } from '../services/BinaryStorageService';
+import { storageLogger } from '../utils/StorageLogger';
 
 /**
  * Gallery store state interface
@@ -15,8 +17,9 @@ interface ImageStoreState {
     hasMoreImages: boolean;
     isLoadingMore: boolean;
     totalImageCount: number;
-    // Cache for loaded image URLs
+    // Cache for loaded image URLs with access tracking
     imageDataCache: Map<string, string>;
+    cacheAccessTimes: Map<string, number>; // Track last access time for LRU eviction
 }
 
 /**
@@ -32,6 +35,7 @@ interface ImageStoreActions {
     loadImages: () => Promise<void>;
     loadMoreImages: () => Promise<void>; // Progressive loading
     loadImageData: (id: string) => Promise<string | null>; // Load image URL on demand
+    clearImageDataCache: () => void; // Clear cache for memory management
     getAllItems: () => GalleryItem[];
     getItemsPaginated: (offset: number, limit: number) => Promise<GalleryItem[]>;
     getTotalItemCount: () => number;
@@ -59,6 +63,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
     isLoadingMore: false,
     totalImageCount: 0,
     imageDataCache: new Map(),
+    cacheAccessTimes: new Map(),
 
     // Actions
 
@@ -66,6 +71,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Initialize the store by loading data from SQLite
      */
     initialize: async () => {
+        const timer = storageLogger.startOperation('initialize', 'sqlite');
+
         try {
             set({ isLoading: true });
 
@@ -92,8 +99,14 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 hasMoreImages: imageMetadata.length < totalCount,
                 isLoading: false
             });
+
+            timer.success(undefined, {
+                imageCount: imageMetadata.length,
+                textItemCount: textItems.length,
+                totalCount
+            });
         } catch (error) {
-            console.error('Failed to initialize store:', error);
+            timer.error(error instanceof Error ? error : new Error(String(error)));
             set({ isLoading: false });
         }
     },
@@ -111,7 +124,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 hasMoreImages: false // All loaded
             });
         } catch (error) {
-            console.error('Failed to load images:', error);
+            // Silently handle load errors
         }
     },
 
@@ -147,87 +160,154 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 });
             }
         } catch (error) {
-            console.error('Failed to load more images:', error);
             set({ isLoadingMore: false });
         }
     },
 
     /**
-     * Load image data on demand (with caching)
+     * Load image data on demand from IndexedDB (with caching)
+     * Requirements: 4.2 - On-demand binary loading
      */
     loadImageData: async (id: string): Promise<string | null> => {
+        const timer = storageLogger.startOperation('loadImageData', 'indexeddb', { imageId: id });
         const state = useImageStore.getState();
 
         // Check cache first
         if (state.imageDataCache.has(id)) {
-            return state.imageDataCache.get(id)!;
+            const cachedData = state.imageDataCache.get(id)!;
+
+            // Update access time for LRU tracking
+            set((state) => ({
+                cacheAccessTimes: new Map(state.cacheAccessTimes).set(id, Date.now())
+            }));
+
+            timer.success(cachedData.length, { cacheHit: true });
+            return cachedData;
         }
 
         try {
-            const imageData = await sqliteService.getImageData(id);
+            // Load binary data from IndexedDB (not SQLite)
+            const imageData = await binaryStorageService.getImageData(id);
+
             if (imageData) {
-                // Cache the loaded URL
+                // Manage cache size before adding new entry
+                const MAX_CACHE_SIZE = 50; // Limit cache to 50 images
+                if (state.imageDataCache.size >= MAX_CACHE_SIZE) {
+                    // Remove least recently used item
+                    const oldestEntry = Array.from(state.cacheAccessTimes.entries())
+                        .sort(([, a], [, b]) => a - b)[0];
+
+                    if (oldestEntry) {
+                        const [oldestId] = oldestEntry;
+
+                        set((state) => {
+                            const newCache = new Map(state.imageDataCache);
+                            const newAccessTimes = new Map(state.cacheAccessTimes);
+                            newCache.delete(oldestId);
+                            newAccessTimes.delete(oldestId);
+                            return {
+                                imageDataCache: newCache,
+                                cacheAccessTimes: newAccessTimes
+                            };
+                        });
+                    }
+                }
+
+                // Cache the loaded URL with access time
                 set((state) => ({
-                    imageDataCache: new Map(state.imageDataCache).set(id, imageData.url)
+                    imageDataCache: new Map(state.imageDataCache).set(id, imageData),
+                    cacheAccessTimes: new Map(state.cacheAccessTimes).set(id, Date.now())
                 }));
-                return imageData.url;
+
+                timer.success(imageData.length, {
+                    cacheHit: false,
+                    cacheSize: state.imageDataCache.size + 1
+                });
+                return imageData;
+            } else {
+                timer.success(0, { found: false });
+                return null;
             }
-            return null;
         } catch (error) {
-            console.error('Failed to load image data:', error);
+            timer.error(error instanceof Error ? error : new Error(String(error)));
             return null;
         }
+    },
+
+    /**
+     * Clear image data cache for memory management
+     */
+    clearImageDataCache: () => {
+        console.debug('[ImageStore] Clearing image data cache');
+        set({
+            imageDataCache: new Map(),
+            cacheAccessTimes: new Map()
+        });
     },
 
     /**
      * Add a new image to the gallery
      * New images are added at the beginning of the array (newest first)
      * UI update is immediate, database persistence happens asynchronously
-     * Requirements: 2.1, 3.3
+     * Coordinates storage between SQLite (metadata) and IndexedDB (binary data)
+     * Requirements: 2.1, 3.3, 1.1, 1.2, 5.2
      */
     addImage: async (image: GeneratedImage) => {
-        // 🕐 HYPOTHESIS 1 TEST: Comprehensive timing for addImage
-        const addImageStartTime = performance.now();
-        console.log('🏪 [H1-TEST] addImage called at:', new Date().toISOString(), 'for image:', image.id);
-        console.time('addImage-total');
-        console.time('store-state-update');
+        const timer = storageLogger.startOperation('addImage', 'sqlite', { imageId: image.id });
 
-        // Update UI immediately for responsive feel
+        // Update UI immediately for responsive feel (Requirements: 1.1 - 50ms UI update)
         set((state) => {
-            const storeStateUpdateTime = performance.now();
-            console.log('📊 [H1-TEST] Store state update starting, time since addImage call:', (storeStateUpdateTime - addImageStartTime).toFixed(2), 'ms');
-
             const newState = {
                 images: [image, ...state.images],
                 totalImageCount: state.totalImageCount + 1,
             };
 
-            const storeStateUpdateEndTime = performance.now();
-            console.timeEnd('store-state-update');
-            console.log('✅ [H1-TEST] Store state updated in:', (storeStateUpdateEndTime - storeStateUpdateTime).toFixed(2), 'ms');
-
             return newState;
         });
 
-        // 🕐 HYPOTHESIS 1 TEST: Time the SQLite persistence separately
-        console.time('sqlite-persist');
-        const sqliteStartTime = performance.now();
-        console.log('💾 [H1-TEST] Starting SQLite persistence at:', (sqliteStartTime - addImageStartTime).toFixed(2), 'ms after addImage call');
+        // Coordinate storage between SQLite (metadata) and IndexedDB (binary data)
+        // Requirements: 5.2 - Route operations to appropriate storage mechanisms
+        try {
+            // Split the image data for coordinated storage
+            const { url, ...metadata } = image;
 
-        // Persist to database asynchronously (don't block UI)
-        sqliteService.addImage(image).then(() => {
-            const sqliteEndTime = performance.now();
-            console.timeEnd('sqlite-persist');
-            console.timeEnd('addImage-total');
-            console.log('💾 [H1-TEST] SQLite persistence completed in:', (sqliteEndTime - sqliteStartTime).toFixed(2), 'ms');
-            console.log('🏁 [H1-TEST] Total addImage time:', (sqliteEndTime - addImageStartTime).toFixed(2), 'ms');
-        }).catch((error) => {
-            const sqliteErrorTime = performance.now();
-            console.timeEnd('sqlite-persist');
-            console.timeEnd('addImage-total');
-            console.error('💾 [H1-TEST] SQLite persistence failed after:', (sqliteErrorTime - sqliteStartTime).toFixed(2), 'ms', error);
-            console.error('Failed to persist image to database:', error);
-        });
+            // Store metadata in SQLite (without binary data)
+            await sqliteService.addImage({
+                ...metadata,
+                url: undefined, // No binary data in SQLite
+                hasBinaryData: Boolean(url),
+                binaryDataSize: url ? url.length : 0
+            });
+
+            // Store binary data in IndexedDB if present
+            if (url) {
+                await binaryStorageService.storeImageDataWithQuotaManagement(image.id, url);
+            }
+
+            timer.success(url?.length, { hasBinaryData: Boolean(url) });
+        } catch (error) {
+            timer.error(error instanceof Error ? error : new Error(String(error)));
+
+            // Rollback: Remove from UI state if persistence failed
+            // Requirements: 5.2 - Atomic operations with rollback on partial failures
+            set((state) => ({
+                images: state.images.filter(img => img.id !== image.id),
+                totalImageCount: Math.max(0, state.totalImageCount - 1),
+            }));
+
+            // Attempt cleanup of any partially stored data
+            try {
+                await Promise.allSettled([
+                    sqliteService.deleteImage(image.id),
+                    binaryStorageService.deleteImageData(image.id)
+                ]);
+            } catch (cleanupError) {
+                // Silently handle cleanup errors
+            }
+
+            // Re-throw error for caller to handle
+            throw new Error(`Failed to store image data: ${error instanceof Error ? error.message : String(error)}`);
+        }
     },
 
     /**
@@ -246,7 +326,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const currentState = useImageStore.getState();
             localStorage.setItem('textItems', JSON.stringify(currentState.textItems));
         } catch (error) {
-            console.error('Failed to persist text item to localStorage:', error);
             // In a production app, you might want to show a toast notification
             // or implement retry logic here
         }
@@ -256,7 +335,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Update an existing image by ID
      * Used to update status, URL, or error information
      * UI update is immediate, database persistence happens asynchronously
-     * Requirements: 1.4, 1.5
+     * Coordinates updates between SQLite (metadata) and IndexedDB (binary data)
+     * Requirements: 1.4, 1.5, 4.4, 5.2, 5.3
      */
     updateImage: async (id: string, updates: Partial<GeneratedImage>) => {
         // Update UI immediately for responsive feel
@@ -266,39 +346,87 @@ export const useImageStore = create<ImageStore>()((set) => ({
             ),
         }));
 
-        // Persist to database asynchronously (don't block UI)
-        sqliteService.updateImage(id, updates).catch((error) => {
-            console.error('Failed to persist image update to database:', error);
-            // In a production app, you might want to show a toast notification
-            // or implement retry logic here
-        });
+        // Coordinate updates between SQLite (metadata) and IndexedDB (binary data)
+        // Requirements: 5.2 - Route operations to appropriate storage mechanisms
+        try {
+            const { url, ...metadataUpdates } = updates;
+
+            // Update metadata in SQLite (without binary data)
+            const sqliteUpdates: any = { ...metadataUpdates };
+
+            // Add binary data tracking fields if URL is being updated
+            if ('url' in updates) {
+                sqliteUpdates.hasBinaryData = Boolean(url);
+                sqliteUpdates.binaryDataSize = url ? url.length : 0;
+            }
+
+            // Only call SQLite if there are updates to make
+            if (Object.keys(sqliteUpdates).length > 0) {
+                await sqliteService.updateImage(id, sqliteUpdates);
+            }
+
+            // Update binary data in IndexedDB if URL is being updated
+            if ('url' in updates) {
+                if (url) {
+                    // Store new binary data
+                    await binaryStorageService.storeImageDataWithQuotaManagement(id, url);
+                } else {
+                    // Remove binary data if URL is being set to null/undefined
+                    await binaryStorageService.deleteImageData(id);
+                }
+            }
+
+        } catch (error) {
+            // Requirements: 5.3 - Error handling for partial operation failures
+            // Note: We don't rollback UI changes for updates as they might be partially valid
+            // Instead, we log the error and let the user retry if needed
+            throw new Error(`Failed to update image data: ${error instanceof Error ? error.message : String(error)}`);
+        }
     },
 
     /**
      * Delete an image from the gallery by ID
      * UI update is immediate, database persistence happens asynchronously
-     * Requirements: 4.2
+     * Coordinates cleanup between SQLite (metadata) and IndexedDB (binary data)
+     * Requirements: 4.2, 4.4, 5.2, 5.3
      */
     deleteImage: async (id: string) => {
         // Update UI immediately for responsive feel
         set((state) => {
             const newCache = new Map(state.imageDataCache);
+            const newAccessTimes = new Map(state.cacheAccessTimes);
             newCache.delete(id); // Remove from cache
+            newAccessTimes.delete(id); // Remove from access times
             const filteredImages = state.images.filter((img) => img.id !== id);
             const wasDeleted = filteredImages.length < state.images.length;
             return {
                 images: filteredImages,
                 imageDataCache: newCache,
+                cacheAccessTimes: newAccessTimes,
                 totalImageCount: wasDeleted ? state.totalImageCount - 1 : state.totalImageCount,
             };
         });
 
-        // Persist to database asynchronously (don't block UI)
-        sqliteService.deleteImage(id).catch((error) => {
-            console.error('Failed to persist image deletion to database:', error);
-            // In a production app, you might want to show a toast notification
-            // or implement retry logic here
-        });
+        // Coordinate cleanup between SQLite (metadata) and IndexedDB (binary data)
+        // Requirements: 4.4, 5.2 - Ensure cleanup of both storage mechanisms for deletions
+        try {
+            await Promise.allSettled([
+                sqliteService.deleteImage(id),
+                binaryStorageService.deleteImageData(id)
+            ]);
+        } catch (error) {
+            // Requirements: 5.3 - Error handling for partial operation failures
+            // For deletions, we don't rollback UI changes since the user intended to delete
+            // But we should attempt cleanup of any remaining data
+            try {
+                await Promise.allSettled([
+                    sqliteService.deleteImage(id),
+                    binaryStorageService.deleteImageData(id)
+                ]);
+            } catch (retryError) {
+                // Silently handle retry errors
+            }
+        }
     },
 
     /**
@@ -316,7 +444,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const currentState = useImageStore.getState();
             localStorage.setItem('textItems', JSON.stringify(currentState.textItems));
         } catch (error) {
-            console.error('Failed to persist text item deletion to localStorage:', error);
             // In a production app, you might want to show a toast notification
             // or implement retry logic here
         }

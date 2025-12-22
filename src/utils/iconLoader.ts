@@ -22,7 +22,6 @@ export function loadIcon(iconName: string): LucideIcon {
     }
 
     // Fallback to Edit icon if the requested icon is not found
-    console.warn(`Icon "${iconName}" not found in Lucide React, using fallback icon`);
     return LucideIcons.Edit;
 }
 

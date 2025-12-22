@@ -150,12 +150,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
      * Requirements: 1.1, 1.3, 1.4, 1.5
      */
     const handleSubmit = async () => {
-        // 🕐 HYPOTHESIS 1 TEST: Track complete submission flow timing
-        const submitStartTime = performance.now();
-        console.log('🚀 [H1-TEST] handleSubmit called at:', new Date().toISOString());
-        console.time('handleSubmit-total');
-        console.time('pre-placeholder-setup');
-
         // Collapse the textarea when submitting via button click
         setTextareaExpanded(false);
         if (textareaRef.current?.collapseTextarea) {
@@ -198,21 +192,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             createdAt: new Date(),
         };
 
-        const placeholderSetupTime = performance.now();
-        console.timeEnd('pre-placeholder-setup');
-        console.log('🎯 [H1-TEST] Placeholder setup completed in:', (placeholderSetupTime - submitStartTime).toFixed(2), 'ms');
-
-        // 🕐 HYPOTHESIS 1 TEST: Time the critical addImage call
-        console.time('addImage-call');
-        console.log('🎯 [H1-TEST] About to call addImage - this should make placeholder appear immediately');
-
         // Add placeholder to gallery immediately
         addImage(placeholderImage);
-
-        const addImageCallTime = performance.now();
-        console.timeEnd('addImage-call');
-        console.log('🎯 [H1-TEST] addImage call completed in:', (addImageCallTime - placeholderSetupTime).toFixed(2), 'ms');
-        console.log('🎯 [H1-TEST] PLACEHOLDER SHOULD BE VISIBLE NOW - Total time from submit to placeholder:', (addImageCallTime - submitStartTime).toFixed(2), 'ms');
 
         // Track active request
         setActiveRequests(prev => prev + 1);
@@ -232,7 +213,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         // Update the placeholder with the enhanced prompt so it's displayed immediately
                         updateImage(placeholderId, { prompt: enhancedPrompt });
                     } catch (error) {
-                        console.warn('Persona enhancement failed, using original prompt:', error);
                         enhancedPrompt = prompt;
                     }
                 }
@@ -315,7 +295,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     error: errorMessage,
                 });
 
-                console.error('Content generation error:', error);
             } finally {
                 // Decrement active requests
                 setActiveRequests(prev => prev - 1);

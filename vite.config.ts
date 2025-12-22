@@ -15,5 +15,13 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: true,
+    server: {
+      deps: {
+        inline: ['sql.js']
+      }
+    }
   },
+  define: {
+    'process.env.SQL_WASM_PATH': JSON.stringify('/sql-wasm.wasm')
+  }
 })
