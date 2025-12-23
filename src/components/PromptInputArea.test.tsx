@@ -182,9 +182,10 @@ describe('PromptInputArea - Submit Handler', () => {
         await waitFor(() => {
             expect(mockBedrockService.generateContent).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    prompt: 'A beautiful sunset (aspect ratio 1:1)',
+                    prompt: 'A beautiful sunset(1:1)',
                     aspectRatio: '1:1',
                     editSource: undefined,
+                    promptEnhancement: 'off',
                 })
             );
         });
@@ -404,6 +405,101 @@ describe('PromptInputArea - Submit Handler', () => {
                     converseParams: {},
                 })
             );
+        });
+    });
+
+    it('should close drawers when submitting via button click', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        // Enter a prompt
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        await user.type(textarea, 'A beautiful sunset');
+
+        // Open aspect ratio drawer by clicking the aspect ratio selector
+        const aspectRatioButton = screen.getByLabelText(/current aspect ratio/i);
+        await user.click(aspectRatioButton);
+
+        // Verify drawer is expanded (aspect ratio options should be visible)
+        expect(screen.getByText('Any')).toBeInTheDocument();
+
+        // Submit the form
+        const submitButton = screen.getByLabelText(/generate image/i);
+        await user.click(submitButton);
+
+        // Verify drawer is closed (aspect ratio options should not be visible)
+        await waitFor(() => {
+            expect(screen.queryByText('Any')).not.toBeInTheDocument();
+        });
+    });
+
+    it('should close drawers when clicking on other parts of the input bar', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        // Enter a prompt
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        await user.type(textarea, 'A beautiful sunset');
+
+        // Open aspect ratio drawer by clicking the aspect ratio selector
+        const aspectRatioButton = screen.getByLabelText(/current aspect ratio/i);
+        await user.click(aspectRatioButton);
+
+        // Verify drawer is expanded (aspect ratio options should be visible)
+        expect(screen.getByText('Any')).toBeInTheDocument();
+
+        // Click on the textarea (which is part of the input bar but not the tray)
+        await user.click(textarea);
+
+        // Verify drawer is closed (aspect ratio options should not be visible)
+        await waitFor(() => {
+            expect(screen.queryByText('Any')).not.toBeInTheDocument();
+        });
+    });
+
+    it('should close drawers when submitting via Enter key', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <PromptInputArea
+                bedrockService={mockBedrockService}
+                onError={mockOnError}
+                onSuccess={mockOnSuccess}
+            />
+        );
+
+        // Enter a prompt
+        const textarea = screen.getByLabelText(/image generation prompt/i);
+        await user.type(textarea, 'A beautiful sunset');
+
+        // Open aspect ratio drawer by clicking the aspect ratio selector
+        const aspectRatioButton = screen.getByLabelText(/current aspect ratio/i);
+        await user.click(aspectRatioButton);
+
+        // Verify drawer is expanded (aspect ratio options should be visible)
+        expect(screen.getByText('Any')).toBeInTheDocument();
+
+        // Focus back on textarea and submit via Enter
+        await user.click(textarea);
+        await user.keyboard('{Enter}');
+
+        // Verify drawer is closed (aspect ratio options should not be visible)
+        await waitFor(() => {
+            expect(screen.queryByText('Any')).not.toBeInTheDocument();
         });
     });
 });

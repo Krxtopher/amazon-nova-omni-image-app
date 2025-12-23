@@ -112,10 +112,45 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     // Handle clicking outside to close expanded trays and collapse textarea
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (inputBarRef.current && !inputBarRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+
+            // If clicking completely outside the input bar, close everything
+            if (inputBarRef.current && !inputBarRef.current.contains(target)) {
                 setAspectRatioExpanded(false);
                 setPromptEnhancementExpanded(false);
                 setTextareaExpanded(false);
+                return;
+            }
+
+            // If clicking inside the input bar, check if we should close specific drawers
+            if (inputBarRef.current && inputBarRef.current.contains(target)) {
+                // Check if click is within the aspect ratio tray content
+                const aspectRatioTray = inputBarRef.current.querySelector('[data-aspect-ratio-tray]');
+                const isClickInAspectRatioTray = aspectRatioTray && aspectRatioTray.contains(target);
+
+                // Check if click is within the persona tray content  
+                const personaTray = inputBarRef.current.querySelector('[data-persona-tray]');
+                const isClickInPersonaTray = personaTray && personaTray.contains(target);
+
+                // Check if click is on the selector buttons themselves (should not close)
+                const aspectRatioSelector = (target as Element).closest('[aria-label*="Current aspect ratio"]');
+                const personaSelector = (target as Element).closest('[aria-label*="Current persona"]');
+
+                // Close aspect ratio drawer if clicking elsewhere in input bar (but not on its selector or tray)
+                if (aspectRatioExpanded && !isClickInAspectRatioTray && !aspectRatioSelector) {
+                    setAspectRatioExpanded(false);
+                }
+
+                // Close persona drawer if clicking elsewhere in input bar (but not on its selector or tray)
+                if (promptEnhancementExpanded && !isClickInPersonaTray && !personaSelector) {
+                    setPromptEnhancementExpanded(false);
+                }
+
+                // Close textarea expansion when clicking elsewhere in input bar (but not on textarea itself)
+                const isClickOnTextarea = (target as Element).closest('textarea') || (target as Element).tagName === 'TEXTAREA';
+                if (textareaExpanded && !isClickOnTextarea) {
+                    setTextareaExpanded(false);
+                }
             }
         };
 
@@ -150,6 +185,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
      * Requirements: 1.1, 1.3, 1.4, 1.5
      */
     const handleSubmit = async () => {
+        // Close all drawers when submitting a new image generation request
+        setAspectRatioExpanded(false);
+        setPromptEnhancementExpanded(false);
+
         // Collapse the textarea when submitting via button click
         setTextareaExpanded(false);
         if (textareaRef.current?.collapseTextarea) {
@@ -311,6 +350,11 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+
+            // Close all drawers when submitting via Enter key
+            setAspectRatioExpanded(false);
+            setPromptEnhancementExpanded(false);
+
             handleSubmit();
             // Collapse the textarea after submission
             setTextareaExpanded(false);
@@ -633,7 +677,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 {/* Expanded aspect ratio tray - integrated within the input bar */}
                 {aspectRatioExpanded && (
-                    <div className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
+                    <div data-aspect-ratio-tray className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
                         <div className="flex flex-wrap items-center justify-center gap-2 py-2">
                             {ASPECT_RATIOS.map((ratio) => (
                                 <button
