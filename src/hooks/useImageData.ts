@@ -29,11 +29,8 @@ export function useImageData(imageId: string | null) {
             return;
         }
 
-        // Prevent duplicate loads for the same imageId
-        if (hasLoadedRef.current) {
-            console.log(`🔄 [HOOK] useImageData skipping duplicate load for ${imageId}`);
-            return;
-        }
+        // Reset the loaded flag when imageId changes
+        hasLoadedRef.current = false;
 
         console.log(`🎣 [HOOK] useImageData triggered for ${imageId}`);
         const hookStartTime = performance.now();

@@ -75,10 +75,14 @@ export function Lightbox() {
         }
     };
 
-    // Reset and trigger fade-in when image changes
+    // Reset fade-in state when imageId changes (navigation)
+    useEffect(() => {
+        setShouldFadeIn(false);
+    }, [imageId]);
+
+    // Trigger fade-in when image loads
     useEffect(() => {
         if (displayUrl && !isLoadingImage) {
-            setShouldFadeIn(false);
             // Longer delay to ensure the opacity-0 class is applied first and visible
             const timer = setTimeout(() => setShouldFadeIn(true), 200);
             return () => clearTimeout(timer);
@@ -169,6 +173,7 @@ export function Lightbox() {
             {/* Blurred background image */}
             <div className="absolute inset-0">
                 <img
+                    key={`bg-${imageId}`} // Force re-render when imageId changes
                     src={displayUrl}
                     alt={image.prompt}
                     className="absolute inset-0 w-full h-full object-cover"
@@ -229,6 +234,7 @@ export function Lightbox() {
                     <div className="w-full h-full flex items-center justify-center">
                         {displayUrl && !isLoadingImage ? (
                             <img
+                                key={imageId} // Force re-render when imageId changes
                                 src={displayUrl}
                                 alt={image.prompt}
                                 className={`max-w-full max-h-full object-contain transition-all duration-1000 ease-out ${shouldFadeIn ? 'opacity-100' : 'opacity-0'}`}
@@ -254,71 +260,69 @@ export function Lightbox() {
                 </div>
 
                 {/* Details sidebar */}
-                <div className="w-full sm:w-80 min-w-60 bg-white text-gray-900 p-4 pt-4 sm:pt-10 flex flex-col gap-4 overflow-auto">
-                    {/* Creation date */}
-                    <p className="text-gray-600 text-sm italic font-light">
-                        {new Date(image.createdAt).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        })}
-                    </p>
+                <div className="w-full sm:w-80 min-w-60 bg-background text-foreground flex flex-col overflow-hidden">
+                    {/* Top spacing area (to account for close button) */}
+                    <div className="h-4 sm:h-10 shrink-0"></div>
 
-                    {/* Prompt section */}
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-semibold">Prompt:</h3>
-                        <p className="text-sm leading-relaxed">
-                            {image.prompt}
+                    {/* Scrollable content area */}
+                    <div className="flex-1 overflow-y-auto px-4 pb-4">
+                        {/* Creation date */}
+                        <p className="text-muted-foreground text-sm italic font-light mb-4">
+                            {new Date(image.createdAt).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
                         </p>
-                    </div>
 
-                    {/* Attribute badges */}
-                    <div className="flex flex-row sm:flex-col flex-wrap gap-2 my-6 flex-1">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
-                            <span className="text-gray-500">aspect ratio</span>
-                            <span className="font-medium">{image.aspectRatio}</span>
+                        {/* Prompt section */}
+                        <div className="space-y-2 mb-6">
+                            <h3 className="text-sm font-semibold text-foreground">Prompt:</h3>
+                            <p className="text-sm leading-relaxed text-foreground">
+                                {image.prompt}
+                            </p>
                         </div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
-                            <span className="text-gray-500">size</span>
-                            <span className="font-medium">{image.width} × {image.height}</span>
-                        </div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
-                            <span className="text-gray-500">status</span>
-                            <span className="font-medium capitalize">{image.status}</span>
-                        </div>
-                        {image.converseParams && (
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
-                                <span className="text-gray-500">model</span>
-                                <span className="font-medium text-xs">{image.converseParams.modelId}</span>
+
+                        {/* Attribute badges */}
+                        <div className="flex flex-row sm:flex-col flex-wrap gap-2">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-muted rounded-full text-xs">
+                                <span className="text-muted-foreground">aspect ratio</span>
+                                <span className="font-medium text-foreground">{image.aspectRatio}</span>
                             </div>
-                        )}
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-muted rounded-full text-xs">
+                                <span className="text-muted-foreground">size</span>
+                                <span className="font-medium text-foreground">{image.width} × {image.height}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex justify-center gap-1">
-                        <Button
-                            onClick={handleDownload}
-                            variant="default"
-                            size="sm"
-                            className="bg-gray-800 text-white hover:bg-gray-700"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                        </Button>
-                        <Button
-                            onClick={handleCopyPrompt}
-                            variant="default"
-                            size="sm"
-                            className="bg-gray-800 text-white hover:bg-gray-700"
-                            aria-label="Copy prompt"
-                        >
-                            {isCopied ? (
-                                <Check className="h-4 w-4 text-green-400" />
-                            ) : (
-                                <Copy className="h-4 w-4" />
-                            )}
-                        </Button>
+                    {/* Fixed action buttons at bottom */}
+                    <div className="shrink-0 p-4 pt-2 border-t border-border">
+                        <div className="flex justify-center gap-1">
+                            <Button
+                                onClick={handleDownload}
+                                variant="default"
+                                size="sm"
+                                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                            </Button>
+                            <Button
+                                onClick={handleCopyPrompt}
+                                variant="default"
+                                size="sm"
+                                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                aria-label="Copy prompt"
+                            >
+                                {isCopied ? (
+                                    <Check className="h-4 w-4 text-green-400" />
+                                ) : (
+                                    <Copy className="h-4 w-4" />
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
