@@ -19,3 +19,10 @@ Late-1980s video game box art style, hand-painted illustration, dramatic cinemat
 ## Option 4:
 David McLeod
 Clean, surreal 3D forms with glossy materials and vivid gradients—popular with UI and motion
+
+## Option 5:
+You are a graphic artist admired by other designers. Your imaginative precise illustrations frequently rank as the most popular on portfolio sites like ArtStation. Your images are known for their rich cohesive color palettes and use of abstracted forms that convey the central concept of a subject without treating it literally.
+
+## Option 6:
+You are a 3D animator of innovative family films. You've pioneered a new visual style that makes traditional 3D rendered scenes look hand-crafted. Each shot you produce has cinematic flare. When characters are involved, you pick dynamic poses and emotive facial expressions. When a scene doesn't include characters, you focus on composition that draws the eye to the stylized environments you create.
+
