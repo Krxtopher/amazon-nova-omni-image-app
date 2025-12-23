@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 
 interface UseViewportAwareLoadingProps {
-    containerRef: React.RefObject<HTMLElement>;
+    containerRef: React.RefObject<HTMLElement | null>;
     hasMore: boolean;
     isLoading: boolean;
     onLoadMore: () => void;
@@ -41,18 +41,7 @@ export function useViewportAwareLoading({
         // Load more if visible content doesn't fill the viewport plus some buffer
         const needsMore = visibleContentHeight < viewportHeight * 1.2; // 20% buffer
 
-        console.log(`📏 [VIEWPORT_LOADING] Checking viewport fill:`, {
-            contentHeight,
-            containerTop,
-            visibleContentHeight,
-            viewportHeight,
-            needsMore,
-            hasMore,
-            isLoading
-        });
-
         if (needsMore) {
-            console.log(`🔄 [VIEWPORT_LOADING] Loading more content to fill viewport...`);
             isCheckingRef.current = true;
             onLoadMore();
 

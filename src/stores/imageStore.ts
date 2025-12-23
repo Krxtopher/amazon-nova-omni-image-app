@@ -70,73 +70,43 @@ export const useImageStore = create<ImageStore>()((set) => ({
      */
     initialize: async () => {
         const overallTimer = storageLogger.startOperation('initialize', 'sqlite');
-        console.log('🚀 [STARTUP] Starting app initialization...');
         const startTime = performance.now();
 
         try {
             set({ isLoading: true });
 
             // Step 1: Initialize SQLite database
-            console.log('📊 [STARTUP] Initializing SQLite database...');
             const sqliteInitTimer = storageLogger.startOperation('sqliteInit', 'sqlite');
-            const sqliteInitStart = performance.now();
-
             await sqliteService.init();
-
-            const sqliteInitDuration = performance.now() - sqliteInitStart;
-            console.log(`✅ [STARTUP] SQLite initialized in ${sqliteInitDuration.toFixed(0)}ms`);
-            sqliteInitTimer.success(undefined, { duration: sqliteInitDuration });
+            sqliteInitTimer.success();
 
             // Step 2: Get total count for pagination
-            console.log('🔢 [STARTUP] Getting total image count...');
             const countTimer = storageLogger.startOperation('getTotalCount', 'sqlite');
-            const countStart = performance.now();
-
             const totalCount = await sqliteService.getCompleteImageMetadataCount();
-
-            const countDuration = performance.now() - countStart;
-            console.log(`✅ [STARTUP] Found ${totalCount} total images in ${countDuration.toFixed(0)}ms`);
-            countTimer.success(undefined, { totalCount, duration: countDuration });
+            countTimer.success(undefined, { totalCount });
 
             // Step 3: Load initial batch of image metadata
-            console.log('📋 [STARTUP] Loading initial image metadata batch...');
             const metadataTimer = storageLogger.startOperation('loadInitialMetadata', 'sqlite');
-            const metadataStart = performance.now();
             const initialBatchSize = 6; // Reduced from 20 to prevent cascade loading
 
             const imageMetadata = await sqliteService.getCompleteImageMetadataPaginated(0, initialBatchSize);
 
-            const metadataDuration = performance.now() - metadataStart;
-            console.log(`✅ [STARTUP] Loaded ${imageMetadata.length} image metadata records in ${metadataDuration.toFixed(0)}ms`);
             metadataTimer.success(undefined, {
                 recordCount: imageMetadata.length,
-                batchSize: initialBatchSize,
-                duration: metadataDuration
+                batchSize: initialBatchSize
             });
 
             // Step 4: Load text items from localStorage
-            console.log('📝 [STARTUP] Loading text items from localStorage...');
             const textItemsTimer = storageLogger.startOperation('loadTextItems', 'localStorage');
-            const textItemsStart = performance.now();
-
             const textItemsJson = localStorage.getItem('textItems');
             const textItems: GeneratedText[] = textItemsJson ?
                 JSON.parse(textItemsJson).map((item: any) => ({
                     ...item,
                     createdAt: new Date(item.createdAt)
                 })) : [];
-
-            const textItemsDuration = performance.now() - textItemsStart;
-            console.log(`✅ [STARTUP] Loaded ${textItems.length} text items in ${textItemsDuration.toFixed(0)}ms`);
-            textItemsTimer.success(textItemsJson?.length, {
-                textItemCount: textItems.length,
-                duration: textItemsDuration
-            });
+            textItemsTimer.success(textItemsJson?.length, { textItemCount: textItems.length });
 
             // Step 5: Update store state
-            console.log('🔄 [STARTUP] Updating store state...');
-            const stateUpdateStart = performance.now();
-
             const loadedCount = imageMetadata.length;
             const hasMore = imageMetadata.length < totalCount;
 
@@ -149,29 +119,14 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 isLoading: false
             });
 
-            const stateUpdateDuration = performance.now() - stateUpdateStart;
-            console.log(`✅ [STARTUP] Store state updated in ${stateUpdateDuration.toFixed(0)}ms`);
-
             const totalDuration = performance.now() - startTime;
-            console.log(`🎉 [STARTUP] App initialization completed in ${totalDuration.toFixed(0)}ms`);
-            console.log(`📊 [STARTUP] Breakdown: SQLite(${sqliteInitDuration.toFixed(0)}ms) + Count(${countDuration.toFixed(0)}ms) + Metadata(${metadataDuration.toFixed(0)}ms) + TextItems(${textItemsDuration.toFixed(0)}ms) + StateUpdate(${stateUpdateDuration.toFixed(0)}ms)`);
-
             overallTimer.success(undefined, {
                 imageCount: imageMetadata.length,
                 textItemCount: textItems.length,
                 totalCount,
-                totalDuration,
-                breakdown: {
-                    sqliteInit: sqliteInitDuration,
-                    count: countDuration,
-                    metadata: metadataDuration,
-                    textItems: textItemsDuration,
-                    stateUpdate: stateUpdateDuration
-                }
+                totalDuration
             });
         } catch (error) {
-            const totalDuration = performance.now() - startTime;
-            console.error(`❌ [STARTUP] App initialization failed after ${totalDuration.toFixed(0)}ms:`, error);
             overallTimer.error(error instanceof Error ? error : new Error(String(error)));
             set({ isLoading: false });
         }
@@ -205,7 +160,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
             return;
         }
 
-        console.log('📄 [PAGINATION] Loading more images...');
         const overallTimer = storageLogger.startOperation('loadMoreImages', 'sqlite');
         const startTime = performance.now();
 
@@ -215,13 +169,9 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const currentOffset = state.images.length;
             const batchSize = 10; // Standard batch size
 
-            console.log(`📄 [PAGINATION] Requesting ${batchSize} images starting from offset ${currentOffset} (${state.loadedImageCount} loaded)`);
             const queryStart = performance.now();
-
             const moreImageMetadata = await sqliteService.getCompleteImageMetadataPaginated(currentOffset, batchSize);
-
             const queryDuration = performance.now() - queryStart;
-            console.log(`✅ [PAGINATION] Retrieved ${moreImageMetadata.length} image metadata records in ${queryDuration.toFixed(0)}ms`);
 
             if (moreImageMetadata.length > 0) {
                 const stateUpdateStart = performance.now();
@@ -242,10 +192,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 const totalDuration = performance.now() - startTime;
                 const newState = useImageStore.getState();
 
-                console.log(`✅ [PAGINATION] Added ${moreImageMetadata.length} images to store in ${stateUpdateDuration.toFixed(0)}ms`);
-                console.log(`🔢 [DEBUG] Now loaded ${newState.loadedImageCount} images`);
-                console.log(`🎉 [PAGINATION] Load more completed in ${totalDuration.toFixed(0)}ms (Query: ${queryDuration.toFixed(0)}ms + StateUpdate: ${stateUpdateDuration.toFixed(0)}ms)`);
-
                 overallTimer.success(undefined, {
                     loadedCount: moreImageMetadata.length,
                     newTotal: newState.loadedImageCount,
@@ -256,8 +202,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 });
             } else {
                 const totalDuration = performance.now() - startTime;
-                console.log(`ℹ️ [PAGINATION] No more images available (${totalDuration.toFixed(0)}ms)`);
-
                 set({
                     hasMoreImages: false,
                     isLoadingMore: false
@@ -270,8 +214,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 });
             }
         } catch (error) {
-            const totalDuration = performance.now() - startTime;
-            console.error(`❌ [PAGINATION] Load more failed after ${totalDuration.toFixed(0)}ms:`, error);
             overallTimer.error(error instanceof Error ? error : new Error(String(error)));
             set({ isLoadingMore: false });
         }
@@ -282,28 +224,24 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Requirements: 4.2 - On-demand binary loading
      */
     loadImageData: async (id: string): Promise<string | null> => {
-        console.log(`🖼️ [IMAGE_LOAD] Loading image data for ${id}...`);
+        // Loading image data
         const overallTimer = storageLogger.startOperation('loadImageData', 'indexeddb', { imageId: id });
         const startTime = performance.now();
 
         try {
-            console.log(`🔄 [IMAGE_LOAD] About to call binaryStorageService.getImageData for ${id}`);
-            // Load binary data from IndexedDB
             const imageData = await binaryStorageService.getImageData(id);
             const totalDuration = performance.now() - startTime;
 
             if (imageData) {
-                console.log(`✅ [IMAGE_LOAD] Retrieved ${Math.round(imageData.length / 1024)}KB for ${id} in ${totalDuration.toFixed(0)}ms`);
+                // Image data retrieved successfully
                 overallTimer.success(imageData.length, { totalDuration });
                 return imageData;
             } else {
-                console.log(`⚠️ [IMAGE_LOAD] No data found for ${id} in ${totalDuration.toFixed(0)}ms`);
+                // No image data found
                 overallTimer.success(0, { found: false, totalDuration });
                 return null;
             }
         } catch (error) {
-            const totalDuration = performance.now() - startTime;
-            console.error(`❌ [IMAGE_LOAD] Failed to load ${id} after ${totalDuration.toFixed(0)}ms:`, error);
             overallTimer.error(error instanceof Error ? error : new Error(String(error)));
             return null;
         }

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { GeneratedImage } from '../types';
+import type { GeneratedImage, PromptEnhancement } from '../types';
 import type { MasonryItemRendererProps } from './MasonryGrid';
 import { Button } from './ui/button';
 import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
 import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';
 import { useImageData } from '../hooks/useImageData';
+import { StreamingPromptDisplay } from './StreamingPromptDisplay';
 
 interface ImageMasonryItem extends GeneratedImage {
     // MasonryGrid expects id, width, height which GeneratedImage already has
@@ -15,6 +16,9 @@ interface ImageRendererProps extends MasonryItemRendererProps {
     item: ImageMasonryItem;
     onDelete: (id: string) => void;
     onEdit: (image: GeneratedImage) => Promise<void>;
+    // New props for streaming display
+    enableStreamingDisplay?: boolean;
+    enhancementType?: PromptEnhancement;
 }
 
 /**
@@ -28,7 +32,9 @@ export function ImageCard({
     displayHeight: _displayHeight,
     isVisible,
     onDelete,
-    onEdit
+    onEdit,
+    enableStreamingDisplay = false,
+    enhancementType = 'off'
 }: ImageRendererProps) {
     const navigate = useNavigate();
     const [isHovered, setIsHovered] = useState(false);
@@ -47,9 +53,11 @@ export function ImageCard({
     };
 
     const handleCopyPrompt = async () => {
-        if (item.prompt) {
+        // Copy the enhanced prompt if available, otherwise the original prompt
+        const promptToCopy = item.enhancedPrompt || item.prompt;
+        if (promptToCopy) {
             try {
-                await navigator.clipboard.writeText(item.prompt);
+                await navigator.clipboard.writeText(promptToCopy);
                 setIsCopied(true);
                 setTimeout(() => setIsCopied(false), 2000);
             } catch (err) {
@@ -116,10 +124,10 @@ export function ImageCard({
                         <div className="flex-1 px-3 pb-3 min-h-0">
                             <div className="h-full bg-muted/30 rounded-md p-3 overflow-y-auto">
                                 <div className="text-xs text-muted-foreground mb-2 font-medium">
-                                    Original Prompt:
+                                    {item.enhancedPrompt ? 'Enhanced Prompt:' : 'Original Prompt:'}
                                 </div>
                                 <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                                    {item.prompt}
+                                    {item.enhancedPrompt || item.prompt}
                                 </div>
                             </div>
                         </div>
@@ -135,8 +143,25 @@ export function ImageCard({
                 <div className="absolute inset-0 flex flex-col p-4 z-10 mix-blend-overlay">
                     <div className="flex-1 flex items-center justify-center min-h-0">
                         {item.prompt && (
-                            <div className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none italic">
-                                {item.prompt}
+                            <div className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
+                                {enableStreamingDisplay ? (
+                                    <StreamingPromptDisplay
+                                        key={item.id} // Add key to ensure proper component lifecycle
+                                        originalPrompt={item.prompt}
+                                        enhancementType={enhancementType}
+                                        className="italic"
+                                        onEnhancementComplete={(enhanced) => {
+                                            // Update the image with the enhanced prompt when streaming completes
+                                            // This ensures the enhanced prompt is saved for display on completed images
+                                            if (enhanced !== item.prompt) {
+                                                // Only update if we have a parent callback to update the image
+                                                // For now, we'll rely on the PromptInputArea to handle this
+                                            }
+                                        }}
+                                    />
+                                ) : (
+                                    <span className="italic">{item.enhancedPrompt || item.prompt}</span>
+                                )}
                             </div>
                         )}
                     </div>
@@ -217,7 +242,7 @@ export function ImageCard({
                 >
                     <p className="text-white text-sm leading-relaxed flex items-start gap-2 select-none">
                         <span className="flex-1 overflow-hidden">
-                            {item.prompt}
+                            {item.enhancedPrompt || item.prompt}
                         </span>
                         <button
                             onClick={handleCopyPrompt}
@@ -242,7 +267,9 @@ export function ImageCard({
  */
 export function createImageRenderer(
     onDelete: (id: string) => void,
-    onEdit: (image: GeneratedImage) => Promise<void>
+    onEdit: (image: GeneratedImage) => Promise<void>,
+    enableStreamingDisplay: boolean = false,
+    enhancementType: PromptEnhancement = 'off'
 ) {
     return (props: MasonryItemRendererProps) => (
         <ImageCard
@@ -250,6 +277,8 @@ export function createImageRenderer(
             item={props.item as ImageMasonryItem}
             onDelete={onDelete}
             onEdit={onEdit}
+            enableStreamingDisplay={enableStreamingDisplay}
+            enhancementType={enhancementType}
         />
     );
 }

@@ -9,11 +9,14 @@ import { DebugCounter } from '@/components/DebugCounter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
+import { StreamingDisplayConfigProvider } from '@/contexts/StreamingDisplayConfigContext';
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
 import { useEditSourceStore } from '@/stores/uiStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
+import { featureRolloutManager, isStreamingEnhancementEnabled } from '@/config/featureRollout';
+import { featureAdoptionMonitoring } from '@/services/FeatureAdoptionMonitoringService';
 
 import './App.css';
 
@@ -60,34 +63,21 @@ function AppContent() {
 
   const [activeRequests, setActiveRequests] = useState(0);
 
-  // Initialize the store
+  // Initialize the store and feature monitoring
   useEffect(() => {
-    console.log('🚀 [APP] Starting app initialization from App component...');
-    const appStartTime = performance.now();
-
     initialize().then(() => {
-      const appInitDuration = performance.now() - appStartTime;
-      console.log(`🎉 [APP] Complete app initialization finished in ${appInitDuration.toFixed(0)}ms`);
+      // Initialization complete
+      // Track feature enablement for monitoring
+      const userId = 'anonymous'; // In a real app, this would be the actual user ID
 
-      // Log performance summary
-      if (window.storageLogger) {
-        const stats = window.storageLogger.getPerformanceStats();
-        console.log('📊 [APP] Storage Performance Summary:', {
-          totalOperations: stats.totalOperations,
-          successfulOperations: stats.successfulOperations,
-          failedOperations: stats.failedOperations,
-          averageDuration: `${stats.averageDuration.toFixed(0)}ms`,
-          operationsByStorage: stats.operationsByStorage,
-          slowestOperation: stats.slowestOperation ? {
-            operation: stats.slowestOperation.operation,
-            storageType: stats.slowestOperation.storageType,
-            duration: `${stats.slowestOperation.duration.toFixed(0)}ms`
-          } : null
-        });
+      if (isStreamingEnhancementEnabled(userId)) {
+        featureAdoptionMonitoring.trackFeatureEnabled('streaming-enhancement', userId);
       }
+
+      featureAdoptionMonitoring.trackFeatureEnabled('word-by-word-display', userId);
+      featureAdoptionMonitoring.trackFeatureEnabled('fade-in-animations', userId);
     }).catch((error) => {
-      const appInitDuration = performance.now() - appStartTime;
-      console.error(`❌ [APP] App initialization failed after ${appInitDuration.toFixed(0)}ms:`, error);
+      console.error('App initialization failed:', error);
     });
   }, [initialize]);
 
@@ -211,6 +201,7 @@ function AppContent() {
                     onImageDelete={handleImageDelete}
                     onTextDelete={() => { }} // No-op since we no longer use text items
                     onImageEdit={handleImageEdit}
+                    enableStreamingDisplay={true}
                   />
                 </section>
               </main>
@@ -242,16 +233,21 @@ function App() {
   const bedrockService = createBedrockService();
 
   useEffect(() => {
-    // Initialize application
+    // Initialize application and feature rollout system
+    console.log('Streaming Prompt Enhancement System initialized');
+    console.log('Current migration phase:', featureRolloutManager.getCurrentPhase());
+    console.log('Streaming enhancement enabled (rollout):', isStreamingEnhancementEnabled());
   }, []);
 
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <BedrockServiceProvider service={bedrockService}>
-          <AppContent />
-          <Toaster />
-        </BedrockServiceProvider>
+        <StreamingDisplayConfigProvider>
+          <BedrockServiceProvider service={bedrockService}>
+            <AppContent />
+            <Toaster />
+          </BedrockServiceProvider>
+        </StreamingDisplayConfigProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

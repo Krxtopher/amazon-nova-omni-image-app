@@ -48,6 +48,7 @@ export interface ConverseRequestParams {
 export interface ImageMetadata {
     id: string;
     prompt: string;
+    enhancedPrompt?: string; // Enhanced prompt from persona/streaming enhancement
     status: ImageStatus;
     aspectRatio: AspectRatio;
     width: number;

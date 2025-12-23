@@ -1,0 +1,471 @@
+import { BedrockRuntimeClient, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
+import type { AwsCredentialIdentity } from '@aws-sdk/types';
+import type { PromptEnhancement, StreamingPromptEnhancer, StreamingToken } from '../types';
+import { personaService } from './personaService';
+import { TokenAccumulator } from '../utils/TokenAccumulator';
+import { StreamingErrorHandler, type StreamingError } from '../utils/StreamingErrorHandler';
+import { PerformanceMonitoringService } from './PerformanceMonitoringService';
+
+/**
+ * Configuration for StreamingPromptEnhancementService
+ */
+export interface StreamingServiceConfig {
+    region: string;
+    credentials: AwsCredentialIdentity;
+}
+
+/**
+ * Error handling configuration for streaming enhancement
+ */
+interface StreamingErrorConfig {
+    maxRetries: number;
+    timeoutMs: number;
+    fallbackToOriginal: boolean;
+}
+
+/**
+ * Default error handling configuration
+ */
+const DEFAULT_ERROR_CONFIG: StreamingErrorConfig = {
+    maxRetries: 2,
+    timeoutMs: 30000, // 30 seconds
+    fallbackToOriginal: true
+};
+
+/**
+ * System prompts for different built-in persona modes (streaming version)
+ */
+const STREAMING_PROMPT_ENHANCEMENT_SYSTEM_PROMPTS: Record<Exclude<import('../types/persona').BuiltInPersona, 'off'>, string> = {
+    standard: `You are a professional photographer persona. Your task is to take a user's image generation prompt and enhance it with technical expertise while preserving the user's original intent.
+
+Guidelines for enhancement:
+- Keep the core subject and concept intact
+- Add relevant artistic and technical details
+- Include appropriate style descriptors
+- Enhance lighting, composition, and quality terms
+- Add professional photography or art terminology when appropriate
+- Maintain the original tone and mood
+- Don't change the fundamental meaning or subject
+
+Return only the enhanced prompt, nothing else.`,
+
+    creative: `You are an artistic persona with a unique creative style. Your task is to take a user's image generation prompt and enhance it with artistic flair and creative details while preserving the original concept.
+
+Guidelines for creative enhancement:
+- Keep the original subject and intent
+- Add imaginative and artistic elements
+- Include creative lighting, atmosphere, and mood descriptors
+- Enhance with artistic styles, techniques, and mediums
+- Add cinematic or dramatic elements when appropriate
+- Include color palettes and artistic composition terms
+- Make it more visually striking and creative
+- Don't fundamentally alter the core concept
+
+Return only the enhanced prompt, nothing else.`
+};
+
+/**
+ * Service class for streaming prompt enhancement using Amazon Bedrock's Nova 2 Omni model
+ * via the ConverseStream API for real-time token streaming.
+ */
+export class StreamingPromptEnhancementService implements StreamingPromptEnhancer {
+    private client: BedrockRuntimeClient;
+    private readonly modelId = 'us.amazon.nova-2-omni-v1:0';
+    private activeStream: AbortController | null = null;
+    private tokenAccumulator: TokenAccumulator = new TokenAccumulator();
+    private errorConfig: StreamingErrorConfig;
+    private streamTimeout: NodeJS.Timeout | null = null;
+    private errorHandler: StreamingErrorHandler;
+    private performanceMonitoring: PerformanceMonitoringService;
+    private enhancementStartTime: number = 0;
+
+    /**
+     * Creates a new StreamingPromptEnhancementService instance
+     * @param config - Configuration object containing AWS region and credentials
+     * @param errorConfig - Optional error handling configuration
+     */
+    constructor(config: StreamingServiceConfig, errorConfig?: Partial<StreamingErrorConfig>) {
+        this.client = new BedrockRuntimeClient({
+            region: config.region,
+            credentials: config.credentials,
+        });
+        this.errorConfig = { ...DEFAULT_ERROR_CONFIG, ...errorConfig };
+        this.errorHandler = new StreamingErrorHandler(errorConfig);
+        this.performanceMonitoring = PerformanceMonitoringService.getInstance();
+    }
+
+    /**
+     * Enhances a user prompt using streaming API with real-time token processing
+     * Includes comprehensive error handling, timeout detection, and fallback mechanisms
+     * 
+     * @param originalPrompt - The original user prompt to enhance
+     * @param enhancementType - The type of enhancement to apply
+     * @param onToken - Callback for each streaming token received
+     * @param onComplete - Callback when enhancement is complete
+     * @param onError - Callback for error handling
+     */
+    async enhancePromptStreaming(
+        originalPrompt: string,
+        enhancementType: PromptEnhancement,
+        onToken: (token: StreamingToken) => void,
+        onComplete: (finalText: string) => void,
+        onError: (error: string) => void
+    ): Promise<void> {
+        // Record enhancement start time for performance monitoring
+        this.enhancementStartTime = performance.now();
+
+        // Wrap onComplete to record performance metrics
+        const wrappedOnComplete = (finalText: string) => {
+            // Record enhancement completion time
+            if (this.enhancementStartTime > 0) {
+                this.performanceMonitoring.recordEnhancementTime(this.enhancementStartTime, performance.now());
+            }
+
+            // Call original completion callback
+            onComplete(finalText);
+        };
+
+        // Return original prompt if enhancement is off
+        if (enhancementType === 'off') {
+            // Simulate streaming for consistency by revealing original prompt word by word
+            this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, wrappedOnComplete);
+            return;
+        }
+
+        // Check circuit breaker before attempting request
+        if (!this.errorHandler.canMakeRequest()) {
+            const circuitError = this.errorHandler.handleStreamingError(
+                new Error('Circuit breaker open'),
+                originalPrompt
+            );
+            this.handleFallback(circuitError, originalPrompt, onToken, wrappedOnComplete, onError);
+            return;
+        }
+
+        let retryCount = 0;
+        let lastError: unknown = null;
+        let partialData = '';
+
+        // Retry loop for handling transient errors
+        while (retryCount <= this.errorConfig.maxRetries) {
+            try {
+                await this.attemptStreamingEnhancement(
+                    originalPrompt,
+                    enhancementType,
+                    onToken,
+                    wrappedOnComplete,
+                    onError,
+                    (data) => { partialData = data; } // Track partial data
+                );
+
+                // Success - record it and exit
+                this.errorHandler.recordSuccess();
+                return;
+            } catch (error) {
+                lastError = error;
+                retryCount++;
+
+                // Use error handler to determine if we should retry
+                const streamingError = this.errorHandler.handleStreamingError(
+                    error,
+                    originalPrompt,
+                    partialData
+                );
+
+                if (!streamingError.shouldRetry || retryCount > this.errorConfig.maxRetries) {
+                    this.handleFallback(streamingError, originalPrompt, onToken, wrappedOnComplete, onError);
+                    return;
+                }
+
+                // Wait before retry if specified
+                if (streamingError.retryAfterMs) {
+                    await this.sleep(streamingError.retryAfterMs);
+                }
+            }
+        }
+
+        // All retries failed, handle final fallback
+        const finalError = this.errorHandler.handleStreamingError(lastError, originalPrompt, partialData);
+        this.handleFallback(finalError, originalPrompt, onToken, wrappedOnComplete, onError);
+    }
+
+    /**
+     * Attempts streaming enhancement with timeout and interruption handling
+     */
+    private async attemptStreamingEnhancement(
+        originalPrompt: string,
+        enhancementType: PromptEnhancement,
+        onToken: (token: StreamingToken) => void,
+        onComplete: (finalText: string) => void,
+        _onError: (error: string) => void, // Handled at higher level in enhancePromptStreaming
+        onPartialData?: (data: string) => void // Track partial data for fallback
+    ): Promise<void> {
+        // Reset token accumulator for new stream
+        this.tokenAccumulator.reset();
+
+        // Create abort controller for cancellation
+        this.activeStream = new AbortController();
+        console.log('Created new AbortController for streaming');
+
+        // Set up timeout
+        this.streamTimeout = setTimeout(() => {
+            console.log('Stream timeout triggered');
+            if (this.activeStream) {
+                this.activeStream.abort();
+            }
+        }, this.errorConfig.timeoutMs);
+
+        try {
+            // Get system prompt based on enhancement type
+            const systemPrompt = await this.getSystemPromptForEnhancement(enhancementType);
+            if (!systemPrompt) {
+                throw new Error('Unable to get system prompt for enhancement type');
+            }
+
+            // Build the streaming command
+            const commandParams: any = {
+                modelId: this.modelId,
+                messages: [
+                    {
+                        role: 'user',
+                        content: [{ text: originalPrompt }],
+                    },
+                ],
+                system: [
+                    {
+                        text: systemPrompt
+                    }
+                ],
+                inferenceConfig: {
+                    temperature: 1.0
+                }
+            };
+
+            const command = new ConverseStreamCommand(commandParams);
+
+            console.log('Sending streaming request to Bedrock API');
+            // Send the streaming request
+            const response = await this.client.send(command, {
+                abortSignal: this.activeStream?.signal
+            });
+
+            console.log('Received response from Bedrock API, starting to process stream');
+
+            if (!response.stream) {
+                throw new Error('No stream received from Bedrock API');
+            }
+
+            let hasReceivedTokens = false;
+            let partialText = '';
+
+            // Process the streaming response
+            console.log('Starting to process streaming chunks');
+            for await (const chunk of response.stream) {
+                console.log('Received chunk:', Object.keys(chunk));
+
+                // Check if stream was cancelled
+                if (this.activeStream?.signal?.aborted) {
+                    console.log('Stream was cancelled, handling partial results');
+                    // Handle partial results if we received some tokens
+                    if (hasReceivedTokens && partialText.trim()) {
+                        if (onPartialData) {
+                            onPartialData(partialText.trim());
+                        }
+                        onComplete(partialText.trim());
+                        return;
+                    }
+                    throw new Error('Stream was cancelled');
+                }
+
+                // Process content block delta (text tokens)
+                if (chunk.contentBlockDelta?.delta?.text) {
+                    const tokenText = chunk.contentBlockDelta.delta.text;
+                    console.log('Received token:', tokenText);
+                    hasReceivedTokens = true;
+                    partialText += tokenText;
+
+                    // Update partial data callback
+                    if (onPartialData) {
+                        onPartialData(partialText);
+                    }
+
+                    // Add token to accumulator and get completed words
+                    const result = this.tokenAccumulator.addTokenSync(tokenText);
+
+                    // Send new completed words as tokens
+                    result.newWords.forEach(word => {
+                        onToken({
+                            text: word,
+                            isComplete: true
+                        });
+                    });
+
+                    // Check if stream is complete
+                    if (result.isComplete) {
+                        break;
+                    }
+                }
+
+                // Handle stream completion
+                if (chunk.messageStop) {
+                    break;
+                }
+            }
+
+            // Get final accumulated text
+            const finalText = this.tokenAccumulator.getAccumulatedText().trim();
+
+            // Validate we received meaningful content
+            if (!finalText || finalText.length < 3) {
+                throw new Error('Received empty or insufficient enhancement content');
+            }
+
+            // Call completion callback
+            onComplete(finalText);
+
+        } finally {
+            // Clean up resources
+            this.cleanup();
+        }
+    }
+
+    /**
+     * Handles fallback scenarios when streaming enhancement fails
+     */
+    private handleFallback(
+        streamingError: StreamingError,
+        originalPrompt: string,
+        onToken: (token: StreamingToken) => void,
+        onComplete: (finalText: string) => void,
+        onError: (error: string) => void
+    ): void {
+        switch (streamingError.fallbackMode) {
+            case 'partial_enhancement':
+                if (streamingError.partialData && streamingError.partialData.trim()) {
+                    this.simulateStreamingForOriginalPrompt(streamingError.partialData, onToken, onComplete);
+                } else {
+                    // No partial data available, fall back to original
+                    this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, onComplete);
+                }
+                break;
+
+            case 'original_prompt':
+                this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, onComplete);
+                break;
+
+            case 'instant_display':
+                // For instant display, we still use the original prompt but could signal to skip animations
+                this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, onComplete);
+                break;
+
+            case 'circuit_breaker':
+                this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, onComplete);
+                break;
+
+            case 'retry_with_backoff':
+                // This should be handled at a higher level, but fallback to original as safety
+                this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, onComplete);
+                break;
+
+            default:
+                // Unknown fallback mode, report error
+                onError(streamingError.message);
+                break;
+        }
+    }
+
+    /**
+     * Sleep utility for retry delays
+     */
+    private sleep(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Clean up active resources and prevent memory leaks
+     * Called automatically after streaming completion or cancellation
+     */
+    private cleanup(): void {
+        if (this.streamTimeout) {
+            clearTimeout(this.streamTimeout);
+            this.streamTimeout = null;
+        }
+
+        if (this.activeStream) {
+            this.activeStream = null;
+        }
+    }
+
+    /**
+     * Cancels the active streaming request and cleans up all resources
+     * Handles cancellation during various streaming states safely
+     */
+    cancelStreaming(): void {
+        // Abort the active stream if it exists
+        if (this.activeStream) {
+            try {
+                this.activeStream.abort();
+            } catch (error) {
+                console.warn('Error aborting stream:', error);
+            }
+            this.activeStream = null;
+        }
+
+        // Clean up timeout and other resources
+        this.cleanup();
+
+        // Reset token accumulator to prevent stale data
+        this.tokenAccumulator.reset();
+    }
+
+    /**
+     * Gets the appropriate system prompt for the enhancement type
+     * @param enhancementType - The enhancement type
+     * @returns Promise resolving to system prompt or null if not available
+     */
+    private async getSystemPromptForEnhancement(enhancementType: PromptEnhancement): Promise<string | null> {
+        try {
+            // Check if it's a built-in persona
+            if (personaService.isBuiltInPersona(enhancementType)) {
+                if (enhancementType === 'off') {
+                    return null;
+                }
+                return STREAMING_PROMPT_ENHANCEMENT_SYSTEM_PROMPTS[enhancementType];
+            } else {
+                // Handle custom persona by ID
+                return await personaService.getSystemPrompt(enhancementType);
+            }
+        } catch (error) {
+            // Return null if we can't get system prompt
+            return null;
+        }
+    }
+
+    /**
+     * Simulates streaming for original prompt by breaking it into words
+     * This provides consistent behavior when no enhancement is needed
+     * @param originalPrompt - The original prompt to simulate streaming for
+     * @param onToken - Token callback
+     * @param onComplete - Completion callback
+     */
+    private simulateStreamingForOriginalPrompt(
+        originalPrompt: string,
+        onToken: (token: StreamingToken) => void,
+        onComplete: (finalText: string) => void
+    ): void {
+        // Split prompt into words
+        const words = originalPrompt.trim().split(/\s+/).filter(word => word.length > 0);
+
+        // Send each word as a completed token
+        words.forEach(word => {
+            onToken({
+                text: word,
+                isComplete: true
+            });
+        });
+
+        // Complete immediately
+        onComplete(originalPrompt);
+    }
+
+}

@@ -258,13 +258,9 @@ export class StorageDebugger {
         console.group('Storage Diagnostics');
 
         try {
-            const healthReport = await this.generateHealthReport();
+            await this.generateHealthReport();
 
-            console.log('Performance:', healthReport.performance);
-            console.log('SQLite:', healthReport.sqlite);
-            console.log('IndexedDB:', healthReport.indexeddb);
-            console.log('LocalStorage:', healthReport.localStorage);
-            console.log('Recommendations:', healthReport.recommendations);
+            // Health report generated - check return value for details
 
             // Test basic operations
             await this.testBasicOperations();
@@ -285,15 +281,15 @@ export class StorageDebugger {
         // Test SQLite
         try {
             await sqliteService.init();
-            console.log('SQLite: OK');
+            // SQLite: OK
         } catch (error) {
             console.error('SQLite failed:', error);
         }
 
         // Test IndexedDB
         try {
-            const usage = await binaryStorageService.getStorageUsage();
-            console.log('IndexedDB: OK', usage);
+            await binaryStorageService.getStorageUsage();
+            // IndexedDB: OK
         } catch (error) {
             console.error('IndexedDB failed:', error);
         }
@@ -306,7 +302,7 @@ export class StorageDebugger {
             localStorage.removeItem(testKey);
 
             if (value === 'test') {
-                console.log('LocalStorage: OK');
+                // LocalStorage: OK
             } else {
                 console.error('LocalStorage: read/write mismatch');
             }
@@ -326,7 +322,7 @@ export class StorageDebugger {
         try {
             // Clear SQLite
             await sqliteService.clearAll();
-            console.log('SQLite cleared');
+            // SQLite cleared
 
             // Clear IndexedDB (by deleting databases)
             const databases = await indexedDB.databases();
@@ -335,15 +331,15 @@ export class StorageDebugger {
                     indexedDB.deleteDatabase(db.name);
                 }
             }
-            console.log('IndexedDB cleared');
+            // IndexedDB cleared
 
             // Clear LocalStorage
             localStorage.clear();
-            console.log('LocalStorage cleared');
+            // LocalStorage cleared
 
             // Clear logger history
             storageLogger.clearHistory();
-            console.log('Logger history cleared');
+            // Logger history cleared
 
         } catch (error) {
             console.error('Failed to clear storage:', error);

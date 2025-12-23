@@ -11,6 +11,7 @@ interface VirtualizedGalleryProps {
     onImageDelete: (id: string) => void;
     onTextDelete: (id: string) => void;
     onImageEdit: (image: GeneratedImage) => Promise<void>;
+    enableStreamingDisplay?: boolean;
 }
 
 /**
@@ -31,10 +32,11 @@ function isGeneratedText(item: GalleryItem): item is GeneratedText {
 export const VirtualizedGallery = React.memo(function VirtualizedGallery({
     onImageDelete,
     onTextDelete,
-    onImageEdit
+    onImageEdit,
+    enableStreamingDisplay = false
 }: VirtualizedGalleryProps) {
     const { images, textItems } = useImageStore();
-    const { layoutMode } = useUIStore();
+    const { layoutMode, selectedPromptEnhancement } = useUIStore();
     const [visibleItems, setVisibleItems] = useState<GalleryItem[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -124,7 +126,12 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
 
     // Memoized renderer
     const renderer = useMemo(() => {
-        const imageRenderer = createImageRenderer(onImageDelete, onImageEdit);
+        const imageRenderer = createImageRenderer(
+            onImageDelete,
+            onImageEdit,
+            enableStreamingDisplay,
+            selectedPromptEnhancement
+        );
 
         return (props: MasonryItemRendererProps) => {
             const item = props.item as GalleryItem;
@@ -153,7 +160,7 @@ export const VirtualizedGallery = React.memo(function VirtualizedGallery({
 
             return <div />;
         };
-    }, [onImageDelete, onImageEdit, onTextDelete]);
+    }, [onImageDelete, onImageEdit, onTextDelete, enableStreamingDisplay, selectedPromptEnhancement]);
 
     // Transform text items for masonry grid - use all sorted items, not just visible ones
     const masonryItems = useMemo(() => {

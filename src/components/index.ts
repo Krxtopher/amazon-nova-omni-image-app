@@ -20,3 +20,5 @@ export { PersonaTray } from './PersonaTray';
 export { Sidebar } from './Sidebar';
 export { SettingsModal } from './SettingsModal';
 export { DebugCounter } from './DebugCounter';
+export { WordRevealContainer } from './WordRevealContainer';
+export { StreamingPromptDisplay } from './StreamingPromptDisplay';

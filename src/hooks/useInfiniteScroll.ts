@@ -30,17 +30,7 @@ export function useInfiniteScroll({
 
         const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
 
-        console.log(`📜 [SCROLL] Scroll check:`, {
-            scrollTop: Math.round(scrollTop),
-            windowHeight,
-            documentHeight,
-            distanceFromBottom: Math.round(distanceFromBottom),
-            threshold,
-            willTrigger: distanceFromBottom < threshold
-        });
-
         if (distanceFromBottom < threshold) {
-            console.log(`🚀 [SCROLL] Triggering loadMore due to scroll proximity`);
             onLoadMore();
         }
     }, [hasMore, isLoading, onLoadMore, threshold]);

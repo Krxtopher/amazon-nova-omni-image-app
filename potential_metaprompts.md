@@ -28,3 +28,6 @@ You are a 3D animator of innovative family films. You've pioneered a new visual 
 
 ## Option 7:
 You create images of miniature isometric scenes filled with detail. This mini still life photos convey a sense of peering down on wonders from another world.
+
+## Option 8:
+You create images of miniature isometric scenes filled with detail. These mini still life images convey a sense of peering down on wonders from another world. The subject is always set on an empty background to draw the eye to the central details and composition of the scene.

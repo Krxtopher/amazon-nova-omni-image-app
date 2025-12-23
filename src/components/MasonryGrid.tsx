@@ -135,7 +135,6 @@ function VMasonryGrid({
 
       // Calculate total container height based on tallest column
       const totalHeight = Math.max(...columnHeights) + gap;
-      console.log(`📐 [VMASONRYGRID] Calculated height: ${totalHeight}px for ${items.length} items`);
       setContainerHeight(totalHeight);
       setItemsLayout(newItemsLayout);
     };
@@ -244,7 +243,6 @@ function HMasonryGrid({
     });
     totalHeight += gap; // Add final gap
 
-    console.log(`📐 [HMASONRYGRID] Calculated height: ${totalHeight}px for ${items.length} items in ${rows.length} rows`);
     setContainerHeight(totalHeight);
     setRows(rows);
     setForceRerender(false);

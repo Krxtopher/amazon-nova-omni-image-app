@@ -32,11 +32,6 @@ export function useImageData(imageId: string | null) {
         // Reset the loaded flag when imageId changes
         hasLoadedRef.current = false;
 
-        console.log(`🎣 [HOOK] useImageData triggered for ${imageId}`);
-        const hookStartTime = performance.now();
-
-        console.log(`🔄 [HOOK] useImageData initiating load for ${imageId}...`);
-
         // Load image data
         let isCancelled = false;
 
@@ -51,10 +46,6 @@ export function useImageData(imageId: string | null) {
 
                 if (isCancelled) return;
 
-                console.log(`🔄 [HOOK] About to call loadImageDataRef.current for ${imageId}`);
-                console.log(`🚨 [DEBUG] NEW CODE IS RUNNING - TIMESTAMP: ${Date.now()} - VERSION: 2.0`);
-                const loadStart = performance.now();
-
                 // Add timeout to prevent hanging - MUCH shorter timeout for debugging
                 const timeoutPromise = new Promise<never>((_, reject) => {
                     setTimeout(() => reject(new Error('Image loading timeout after 3 seconds - likely IndexedDB issue')), 3000);
@@ -65,26 +56,14 @@ export function useImageData(imageId: string | null) {
                     timeoutPromise
                 ]);
 
-                const loadDuration = performance.now() - loadStart;
-
                 if (!isCancelled) {
-                    const hookDuration = performance.now() - hookStartTime;
-
-                    if (url) {
-                        console.log(`✅ [HOOK] useImageData loaded ${imageId} (${url.length} bytes) in ${hookDuration.toFixed(0)}ms (Load: ${loadDuration.toFixed(0)}ms)`);
-                    } else {
-                        console.log(`⚠️ [HOOK] useImageData found no data for ${imageId} in ${hookDuration.toFixed(0)}ms`);
-                    }
-
                     setImageUrl(url);
                     setIsLoading(false);
                     hasLoadedRef.current = true; // Only mark as loaded after successful completion
                 }
             } catch (err) {
                 if (!isCancelled) {
-                    const hookDuration = performance.now() - hookStartTime;
                     const errorMessage = err instanceof Error ? err.message : 'Failed to load image';
-                    console.error(`❌ [HOOK] useImageData failed for ${imageId} after ${hookDuration.toFixed(0)}ms:`, errorMessage);
 
                     // For debugging: Set a placeholder error message
                     setError(errorMessage);
@@ -95,7 +74,6 @@ export function useImageData(imageId: string | null) {
             }
         };
 
-        console.log(`🚀 [HOOK] About to call loadData() for ${imageId}`);
         loadData();
 
         return () => {

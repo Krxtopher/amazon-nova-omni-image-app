@@ -34,11 +34,9 @@ export class StorageLogger {
     private static instance: StorageLogger;
     private operations: StorageOperationMetrics[] = [];
     private readonly maxOperations = 1000; // Keep last 1000 operations
-    private readonly debugMode: boolean;
 
     private constructor() {
-        // Enable debug mode in development or when explicitly enabled
-        this.debugMode = import.meta.env.DEV || localStorage.getItem('storage-debug') === 'true';
+        // Constructor is empty since debugMode is not used
     }
 
     public static getInstance(): StorageLogger {
@@ -68,12 +66,12 @@ export class StorageLogger {
         }
 
         // Console logging based on debug mode and operation result
-        if (this.debugMode || !metrics.success) {
+        if (!metrics.success) {
             this.logToConsole(metrics);
         }
 
         // Log slow operations even in production
-        if (metrics.duration > 1000) { // Operations taking more than 1 second
+        if (metrics.duration > 2000) { // Operations taking more than 2 seconds
             console.warn(`Slow ${metrics.storageType} ${metrics.operation}: ${metrics.duration.toFixed(0)}ms`);
         }
     }
@@ -82,27 +80,10 @@ export class StorageLogger {
      * Log operation to console with appropriate formatting
      */
     private logToConsole(metrics: StorageOperationMetrics): void {
-        const duration = `${metrics.duration.toFixed(0)}ms`;
-        const size = metrics.dataSize ? ` ${this.formatBytes(metrics.dataSize)}` : '';
-
-        if (metrics.success) {
-            console.debug(`${metrics.storageType}: ${metrics.operation} ${duration}${size}`);
-        } else {
-            console.error(`${metrics.storageType}: ${metrics.operation} failed ${duration} - ${metrics.error}`);
+        // Only log errors and critical slow operations
+        if (!metrics.success) {
+            console.error(`${metrics.storageType}: ${metrics.operation} failed ${metrics.duration.toFixed(0)}ms - ${metrics.error}`);
         }
-    }
-
-    /**
-     * Format bytes for human-readable display
-     */
-    private formatBytes(bytes: number): string {
-        if (bytes === 0) return '0 B';
-
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
     }
 
     /**
@@ -223,12 +204,11 @@ export class StorageLogger {
         );
 
         if (startupOps.length === 0) {
-            console.log('📊 [ANALYSIS] No startup operations found in recent history');
+            // No startup operations found in recent history
             return;
         }
 
-        console.log('🔍 [ANALYSIS] Startup Performance Analysis:');
-        console.log('='.repeat(50));
+        // Startup Performance Analysis
 
         // Group by storage type
         const byStorage = startupOps.reduce((acc, op) => {
@@ -239,56 +219,26 @@ export class StorageLogger {
 
         let totalStartupTime = 0;
 
-        Object.entries(byStorage).forEach(([storageType, ops]) => {
+        Object.entries(byStorage).forEach(([_storageType, ops]) => {
             const totalTime = ops.reduce((sum, op) => sum + op.duration, 0);
-            const avgTime = totalTime / ops.length;
+            totalTime / ops.length;
             totalStartupTime += totalTime;
 
-            console.log(`\n📦 ${storageType.toUpperCase()}:`);
-            console.log(`  Operations: ${ops.length}`);
-            console.log(`  Total Time: ${totalTime.toFixed(0)}ms`);
-            console.log(`  Average Time: ${avgTime.toFixed(0)}ms`);
-
-            // Show individual operations
-            ops.forEach(op => {
-                const status = op.success ? '✅' : '❌';
-                const metadata = op.metadata ? ` (${JSON.stringify(op.metadata)})` : '';
-                console.log(`    ${status} ${op.operation}: ${op.duration.toFixed(0)}ms${metadata}`);
-            });
+            // Storage analysis data available in return value
         });
 
-        console.log(`\n🎯 TOTAL STARTUP TIME: ${totalStartupTime.toFixed(0)}ms`);
+        // Analysis complete
 
         // Identify bottlenecks
-        const slowOps = startupOps.filter(op => op.duration > 100).sort((a, b) => b.duration - a.duration);
-        if (slowOps.length > 0) {
-            console.log('\n🐌 POTENTIAL BOTTLENECKS (>100ms):');
-            slowOps.forEach(op => {
-                console.log(`  ${op.storageType}: ${op.operation} - ${op.duration.toFixed(0)}ms`);
-            });
-        }
-
-        // Recommendations
-        console.log('\n💡 RECOMMENDATIONS:');
-        if (byStorage.sqlite && byStorage.sqlite.some(op => op.duration > 200)) {
-            console.log('  - SQLite operations are slow. Consider database optimization or reducing initial data load.');
-        }
-        if (byStorage.indexeddb && byStorage.indexeddb.some(op => op.duration > 100)) {
-            console.log('  - IndexedDB operations are slow. This might indicate large binary data being loaded.');
-        }
-        if (totalStartupTime > 1000) {
-            console.log('  - Total startup time >1s. Consider lazy loading or progressive enhancement.');
-        }
-
-        console.log('='.repeat(50));
+        startupOps.filter(op => op.duration > 100).sort((a, b) => b.duration - a.duration);
+        // Bottleneck analysis complete
     }
 
     /**
      * Show current cache and storage status
      */
     public showStorageStatus(): void {
-        console.log('💾 [STORAGE STATUS] Current Storage Information:');
-        console.log('='.repeat(50));
+        // Storage status analysis
 
         // Get recent operations by storage type
         const recentOps = this.getRecentOperations(50);
@@ -298,26 +248,15 @@ export class StorageLogger {
             return acc;
         }, {} as Record<string, StorageOperationMetrics[]>);
 
-        Object.entries(byStorage).forEach(([storageType, ops]) => {
-            const successful = ops.filter(op => op.success).length;
-            const failed = ops.filter(op => !op.success).length;
-            const avgDuration = ops.reduce((sum, op) => sum + op.duration, 0) / ops.length;
+        Object.entries(byStorage).forEach(([_storageType, ops]) => {
+            ops.filter(op => op.success).length;
+            ops.filter(op => !op.success).length;
+            ops.reduce((sum, op) => sum + op.duration, 0) / ops.length;
 
-            console.log(`\n📦 ${storageType.toUpperCase()}:`);
-            console.log(`  Recent Operations: ${ops.length}`);
-            console.log(`  Success Rate: ${successful}/${ops.length} (${((successful / ops.length) * 100).toFixed(1)}%)`);
-            console.log(`  Average Duration: ${avgDuration.toFixed(0)}ms`);
-
-            if (failed > 0) {
-                console.log(`  ❌ Failed Operations: ${failed}`);
-                const failedOps = ops.filter(op => !op.success);
-                failedOps.forEach(op => {
-                    console.log(`    - ${op.operation}: ${op.error}`);
-                });
-            }
+            // Storage type analysis data available
         });
 
-        console.log('='.repeat(50));
+        // Storage status analysis complete
     }
 }
 

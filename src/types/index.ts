@@ -43,3 +43,25 @@ export type {
 export type {
     ErrorCategory,
 } from './error';
+
+// Streaming prompt enhancement types
+export type {
+    WordDisplayStatus,
+    DisplayWord,
+    WordDisplayConfig,
+    StreamingEnhancementState,
+    StreamingToken,
+    StreamingPromptEnhancer,
+    WordByWordDisplay,
+} from './streaming';
+
+// Configuration types
+export type {
+    StreamingDisplayFeatureFlags,
+    StreamingDisplayAccessibilitySettings,
+    StreamingDisplayPerformanceSettings,
+    StreamingPromptDisplayConfig,
+    StreamingDisplayUserPreferences,
+    StreamingDisplayPreset,
+    ConfigValidationResult,
+} from './config';

@@ -48,35 +48,19 @@ export class IndexedDBBinaryStorageService implements BinaryStorageService {
         if (this.db) return;
         if (this.initPromise) return this.initPromise;
 
-        console.log('🗃️ [INDEXEDDB] Starting IndexedDB initialization...');
-        const startTime = performance.now();
-
         this.initPromise = new Promise((resolve, reject) => {
-            console.log('🔌 [INDEXEDDB] Opening IndexedDB connection...');
-            const connectionStart = performance.now();
-
             const request = indexedDB.open(this.dbName, this.dbVersion);
 
             request.onerror = () => {
-                const duration = performance.now() - startTime;
-                console.error(`❌ [INDEXEDDB] Failed to open IndexedDB after ${duration.toFixed(0)}ms:`, request.error?.message);
                 reject(new Error(`Failed to open IndexedDB: ${request.error?.message}`));
             };
 
             request.onsuccess = () => {
-                const connectionDuration = performance.now() - connectionStart;
-                console.log(`✅ [INDEXEDDB] IndexedDB connection established in ${connectionDuration.toFixed(0)}ms`);
-
                 this.db = request.result;
-                const totalDuration = performance.now() - startTime;
-                console.log(`🎉 [INDEXEDDB] IndexedDB initialization completed in ${totalDuration.toFixed(0)}ms`);
                 resolve();
             };
 
             request.onupgradeneeded = (event) => {
-                console.log('🔧 [INDEXEDDB] Database upgrade needed, creating object stores...');
-                const upgradeStart = performance.now();
-
                 const db = (event.target as IDBOpenDBRequest).result;
 
                 // Create object store for binary data
@@ -87,9 +71,6 @@ export class IndexedDBBinaryStorageService implements BinaryStorageService {
                     store.createIndex('createdAt', 'createdAt', { unique: false });
                     store.createIndex('lastAccessed', 'lastAccessed', { unique: false });
                     store.createIndex('size', 'size', { unique: false });
-
-                    const upgradeDuration = performance.now() - upgradeStart;
-                    console.log(`✅ [INDEXEDDB] Object stores and indexes created in ${upgradeDuration.toFixed(0)}ms`);
                 }
             };
         });
@@ -144,23 +125,14 @@ export class IndexedDBBinaryStorageService implements BinaryStorageService {
      */
     async getImageData(id: string): Promise<string | null> {
         const timer = storageLogger.startOperation('getImageData', 'indexeddb', { imageId: id });
-        console.log(`🔍 [INDEXEDDB] Retrieving image data for ${id}...`);
         const startTime = performance.now();
 
         try {
             // Step 1: Ensure IndexedDB is initialized
-            console.log(`🔌 [INDEXEDDB] Ensuring IndexedDB connection for ${id}...`);
-            const initStart = performance.now();
-
             await this.init();
             if (!this.db) throw new Error('Database not initialized');
 
-            const initDuration = performance.now() - initStart;
-            console.log(`✅ [INDEXEDDB] IndexedDB ready for ${id} in ${initDuration.toFixed(0)}ms`);
-
             // Step 2: Execute the retrieval with retry logic
-            console.log(`📦 [INDEXEDDB] Executing retrieval query for ${id}...`);
-            const queryStart = performance.now();
 
             const result = await this.executeWithRetry(async () => {
                 const transaction = this.db!.transaction([this.storeName], 'readwrite');
@@ -177,24 +149,15 @@ export class IndexedDBBinaryStorageService implements BinaryStorageService {
                             return;
                         }
 
-                        console.log(`📊 [INDEXEDDB] Found record for ${id}: ${Math.round(record.size / 1024)}KB, created ${new Date(record.createdAt).toISOString().split('T')[0]}`);
-
                         // Update last accessed time for cleanup strategies
-                        const accessUpdateStart = performance.now();
                         record.lastAccessed = Date.now();
                         const updateRequest = store.put(record);
 
                         updateRequest.onsuccess = () => {
-                            const accessUpdateDuration = performance.now() - accessUpdateStart;
-                            // Only log slow access updates
-                            if (accessUpdateDuration > 10) {
-                                console.log(`✅ [INDEXEDDB] Access time updated for ${id} in ${accessUpdateDuration.toFixed(0)}ms`);
-                            }
                             resolve(record.dataUrl);
                         };
                         updateRequest.onerror = () => {
                             // Still return the data even if access tracking fails
-                            console.warn(`⚠️ [INDEXEDDB] Failed to update access time for ${id}, but returning data anyway`);
                             resolve(record.dataUrl);
                         };
                     };
@@ -204,33 +167,19 @@ export class IndexedDBBinaryStorageService implements BinaryStorageService {
                 });
             });
 
-            const queryDuration = performance.now() - queryStart;
             const totalDuration = performance.now() - startTime;
 
             if (result) {
-                console.log(`✅ [INDEXEDDB] Successfully retrieved ${Math.round(result.length / 1024)}KB for ${id} in ${totalDuration.toFixed(0)}ms`);
-                // Only show breakdown for slow operations
-                if (totalDuration > 100) {
-                    console.log(`📊 [INDEXEDDB] Breakdown: Init(${initDuration.toFixed(0)}ms) + Query(${queryDuration.toFixed(0)}ms)`);
-                }
-
                 timer.success(result?.length, {
                     found: result !== null,
-                    totalDuration,
-                    breakdown: {
-                        init: initDuration,
-                        query: queryDuration
-                    }
+                    totalDuration
                 });
             } else {
-                console.log(`⚠️ [INDEXEDDB] No data found for ${id} in ${totalDuration.toFixed(0)}ms`);
                 timer.success(0, { found: false, totalDuration });
             }
 
             return result;
         } catch (error) {
-            const totalDuration = performance.now() - startTime;
-            console.error(`❌ [INDEXEDDB] Failed to retrieve ${id} after ${totalDuration.toFixed(0)}ms:`, error);
             timer.error(error instanceof Error ? error : new Error(String(error)));
             throw error;
         }

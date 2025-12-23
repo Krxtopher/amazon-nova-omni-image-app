@@ -22,15 +22,11 @@ class SQLiteService {
         if (this.initPromise) return this.initPromise;
 
         const overallTimer = storageLogger.startOperation('init', 'sqlite');
-        console.log('🗄️ [SQLITE] Starting SQLite initialization...');
         const startTime = performance.now();
 
         this.initPromise = (async () => {
             try {
                 // Step 1: Initialize SQL.js
-                console.log('📚 [SQLITE] Loading SQL.js library...');
-                const sqlJsLoadStart = performance.now();
-
                 const SQL = await initSqlJs({
                     locateFile: (file: string) => {
                         // Use local wasm file from public directory
@@ -38,79 +34,33 @@ class SQLiteService {
                     },
                 });
 
-                const sqlJsLoadDuration = performance.now() - sqlJsLoadStart;
-                console.log(`✅ [SQLITE] SQL.js loaded in ${sqlJsLoadDuration.toFixed(0)}ms`);
-
                 // Step 2: Try to load existing database from IndexedDB
-                console.log('💾 [SQLITE] Checking for existing database in IndexedDB...');
-                const loadDbStart = performance.now();
-
                 const savedDb = await this.loadFromIndexedDB();
 
-                const loadDbDuration = performance.now() - loadDbStart;
-
                 if (savedDb) {
-                    console.log(`✅ [SQLITE] Found existing database (${savedDb.length} bytes) in ${loadDbDuration.toFixed(0)}ms`);
-
                     // Step 3a: Load existing database
-                    console.log('🔄 [SQLITE] Loading existing database...');
-                    const dbLoadStart = performance.now();
-
                     this.db = new SQL.Database(savedDb);
 
-                    const dbLoadDuration = performance.now() - dbLoadStart;
-                    console.log(`✅ [SQLITE] Database loaded in ${dbLoadDuration.toFixed(0)}ms`);
-
                     // Ensure new tables exist first
-                    console.log('🔧 [SQLITE] Creating/updating tables...');
-                    const tablesStart = performance.now();
-
                     this.createTables();
-
-                    const tablesDuration = performance.now() - tablesStart;
-                    console.log(`✅ [SQLITE] Tables updated in ${tablesDuration.toFixed(0)}ms`);
 
                     // Save the database back to IndexedDB
-                    console.log('💾 [SQLITE] Saving updated database to IndexedDB...');
-                    const saveStart = performance.now();
-
                     await this.saveToIndexedDB();
-
-                    const saveDuration = performance.now() - saveStart;
-                    console.log(`✅ [SQLITE] Database saved in ${saveDuration.toFixed(0)}ms`);
                 } else {
-                    console.log(`ℹ️ [SQLITE] No existing database found in ${loadDbDuration.toFixed(0)}ms, creating new one`);
-
                     // Step 3b: Create new database
-                    console.log('🆕 [SQLITE] Creating new database...');
-                    const newDbStart = performance.now();
-
                     this.db = new SQL.Database();
                     this.createTables();
-
-                    const newDbDuration = performance.now() - newDbStart;
-                    console.log(`✅ [SQLITE] New database created in ${newDbDuration.toFixed(0)}ms`);
                 }
 
                 this.initialized = true;
                 const totalDuration = performance.now() - startTime;
 
-                console.log(`🎉 [SQLITE] SQLite initialization completed in ${totalDuration.toFixed(0)}ms`);
-                console.log(`📊 [SQLITE] Breakdown: SQL.js(${sqlJsLoadDuration.toFixed(0)}ms) + LoadCheck(${loadDbDuration.toFixed(0)}ms) + Setup(${(totalDuration - sqlJsLoadDuration - loadDbDuration).toFixed(0)}ms)`);
-
                 overallTimer.success(savedDb?.length, {
                     hadExistingDb: Boolean(savedDb),
                     dbSize: savedDb?.length || 0,
-                    totalDuration,
-                    breakdown: {
-                        sqlJsLoad: sqlJsLoadDuration,
-                        loadCheck: loadDbDuration,
-                        setup: totalDuration - sqlJsLoadDuration - loadDbDuration
-                    }
+                    totalDuration
                 });
             } catch (error) {
-                const totalDuration = performance.now() - startTime;
-                console.error(`❌ [SQLITE] SQLite initialization failed after ${totalDuration.toFixed(0)}ms:`, error);
                 overallTimer.error(error instanceof Error ? error : new Error(String(error)));
                 throw error;
             }
@@ -130,6 +80,7 @@ class SQLiteService {
             CREATE TABLE IF NOT EXISTS image_metadata (
                 id TEXT PRIMARY KEY,
                 prompt TEXT NOT NULL,
+                enhancedPrompt TEXT,
                 status TEXT NOT NULL,
                 aspectRatio TEXT NOT NULL,
                 width INTEGER NOT NULL,
@@ -178,6 +129,10 @@ class SQLiteService {
 
             if (!columns.includes('binaryDataSize')) {
                 this.db.run('ALTER TABLE image_metadata ADD COLUMN binaryDataSize INTEGER DEFAULT 0');
+            }
+
+            if (!columns.includes('enhancedPrompt')) {
+                this.db.run('ALTER TABLE image_metadata ADD COLUMN enhancedPrompt TEXT');
             }
 
             // If image_data table exists, migrate data and drop it
@@ -300,11 +255,12 @@ class SQLiteService {
 
             // Insert metadata only - binary data is handled by BinaryStorageService
             this.db.run(
-                `INSERT INTO image_metadata (id, prompt, status, aspectRatio, width, height, createdAt, error, converseParams, hasBinaryData, binaryDataSize)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO image_metadata (id, prompt, enhancedPrompt, status, aspectRatio, width, height, createdAt, error, converseParams, hasBinaryData, binaryDataSize)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     image.id,
                     image.prompt,
+                    image.enhancedPrompt || null,
                     image.status,
                     image.aspectRatio,
                     image.width,
@@ -369,6 +325,10 @@ class SQLiteService {
         if (updates.prompt !== undefined) {
             setClauses.push('prompt = ?');
             values.push(updates.prompt);
+        }
+        if (updates.enhancedPrompt !== undefined) {
+            setClauses.push('enhancedPrompt = ?');
+            values.push(updates.enhancedPrompt);
         }
         if (updates.status !== undefined) {
             setClauses.push('status = ?');
@@ -491,6 +451,7 @@ class SQLiteService {
                 images.push({
                     id: image.id,
                     prompt: image.prompt,
+                    enhancedPrompt: image.enhancedPrompt || undefined,
                     status: image.status,
                     aspectRatio: image.aspectRatio,
                     width: image.width,
@@ -538,6 +499,7 @@ class SQLiteService {
             images.push({
                 id: image.id,
                 prompt: image.prompt,
+                enhancedPrompt: image.enhancedPrompt || undefined,
                 status: image.status,
                 aspectRatio: image.aspectRatio,
                 width: image.width,
@@ -609,6 +571,7 @@ class SQLiteService {
             images.push({
                 id: image.id,
                 prompt: image.prompt,
+                enhancedPrompt: image.enhancedPrompt || undefined,
                 status: image.status,
                 aspectRatio: image.aspectRatio,
                 width: image.width,

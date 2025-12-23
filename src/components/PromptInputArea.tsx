@@ -6,7 +6,8 @@ import { useImageStore } from '@/stores/imageStore';
 import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
 
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
-import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
+import { StreamingPromptEnhancementService } from '@/services/StreamingPromptEnhancementService';
+import type { AspectRatio, EditSource, GeneratedImage, StreamingToken } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
 import { PersonaSelector } from './PersonaSelector';
@@ -84,6 +85,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputBarRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<any>(null);
+    const streamingServiceRef = useRef<StreamingPromptEnhancementService | null>(null);
 
 
 
@@ -101,6 +103,39 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     } = useUIStore();
 
     const { editSource, setEditSource, clearEditSource } = useEditSourceStore();
+
+    // Initialize streaming service
+    useEffect(() => {
+        const initializeStreamingService = async () => {
+            try {
+                // Get AWS credentials from environment
+                const region = import.meta.env.VITE_AWS_REGION || 'us-east-1';
+                const accessKeyId = import.meta.env.VITE_AWS_ACCESS_KEY_ID || '';
+                const secretAccessKey = import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '';
+
+                if (accessKeyId && secretAccessKey) {
+                    streamingServiceRef.current = new StreamingPromptEnhancementService({
+                        region,
+                        credentials: {
+                            accessKeyId,
+                            secretAccessKey
+                        }
+                    });
+                }
+            } catch (error) {
+                console.warn('Failed to initialize streaming service:', error);
+            }
+        };
+
+        initializeStreamingService();
+
+        return () => {
+            // Cleanup streaming service on unmount
+            if (streamingServiceRef.current) {
+                streamingServiceRef.current.cancelStreaming();
+            }
+        };
+    }, []);
 
 
 
@@ -223,7 +258,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         const placeholderImage: GeneratedImage = {
             id: placeholderId,
             url: '', // Empty URL for placeholder
-            prompt: prompt, // Start with original prompt, will be updated with enhanced prompt if enhancement is used
+            prompt: prompt, // Original prompt
+            enhancedPrompt: undefined, // Will be set if enhancement is used
             status: initialStatus,
             aspectRatio: aspectRatioToUse,
             width: dimensions.width,
@@ -247,10 +283,37 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 let enhancedPrompt = prompt;
                 if (selectedPromptEnhancement !== 'off') {
                     try {
-                        enhancedPrompt = await bedrockService.enhancePrompt(prompt, selectedPromptEnhancement);
+                        // Use streaming enhancement if available, fallback to regular enhancement
+                        if (streamingServiceRef.current) {
+                            // Use streaming enhancement with promise-based wrapper
+                            enhancedPrompt = await new Promise<string>((resolve) => {
+                                let accumulatedText = '';
 
-                        // Update the placeholder with the enhanced prompt so it's displayed immediately
-                        updateImage(placeholderId, { prompt: enhancedPrompt });
+                                streamingServiceRef.current!.enhancePromptStreaming(
+                                    prompt,
+                                    selectedPromptEnhancement,
+                                    (token: StreamingToken) => {
+                                        // Accumulate tokens but don't update UI here since we're in generation flow
+                                        if (token.isComplete) {
+                                            accumulatedText += (accumulatedText ? ' ' : '') + token.text;
+                                        }
+                                    },
+                                    (finalText: string) => {
+                                        resolve(finalText);
+                                    },
+                                    (error: string) => {
+                                        console.warn('Streaming enhancement failed, using original prompt:', error);
+                                        resolve(prompt); // Fallback to original prompt
+                                    }
+                                );
+                            });
+                        } else {
+                            // Fallback to regular enhancement
+                            enhancedPrompt = await bedrockService.enhancePrompt(prompt, selectedPromptEnhancement);
+                        }
+
+                        // Store the enhanced prompt separately so we can display both original and enhanced
+                        updateImage(placeholderId, { enhancedPrompt: enhancedPrompt });
                     } catch (error) {
                         enhancedPrompt = prompt;
                     }

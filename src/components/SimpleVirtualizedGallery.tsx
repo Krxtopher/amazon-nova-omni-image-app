@@ -11,6 +11,7 @@ interface SimpleVirtualizedGalleryProps {
     onImageDelete: (id: string) => void;
     onTextDelete: (id: string) => void; // Kept for compatibility but not used
     onImageEdit: (image: GeneratedImage) => Promise<void>;
+    enableStreamingDisplay?: boolean;
 }
 
 
@@ -21,7 +22,8 @@ interface SimpleVirtualizedGalleryProps {
 export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGallery({
     onImageDelete,
     onTextDelete: _onTextDelete, // Kept for compatibility but not used
-    onImageEdit
+    onImageEdit,
+    enableStreamingDisplay = false
 }: SimpleVirtualizedGalleryProps) {
     // 🚀 PERFORMANCE FIX: Use selective subscriptions to prevent unnecessary re-renders
     // Only subscribe to the data this component actually needs
@@ -31,16 +33,12 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
     const loadMoreImages = useImageStore(state => state.loadMoreImages);
     const loadedImageCount = useImageStore(state => state.loadedImageCount);
     const layoutMode = useUIStore(state => state.layoutMode);
+    const selectedPromptEnhancement = useUIStore(state => state.selectedPromptEnhancement);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Debug logging for infinite scroll behavior
     React.useEffect(() => {
-        console.log(`🖼️ [GALLERY] Gallery state updated:`, {
-            imagesLength: images.length,
-            loadedImageCount,
-            hasMoreImages,
-            isLoadingMore
-        });
+        // Removed verbose logging
     }, [images.length, loadedImageCount, hasMoreImages, isLoadingMore]);
 
     // Set up infinite scroll
@@ -68,8 +66,13 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
 
     // Memoized renderer
     const renderer = useMemo(() => {
-        return createImageRenderer(onImageDelete, onImageEdit);
-    }, [onImageDelete, onImageEdit]);
+        return createImageRenderer(
+            onImageDelete,
+            onImageEdit,
+            enableStreamingDisplay,
+            selectedPromptEnhancement
+        );
+    }, [onImageDelete, onImageEdit, enableStreamingDisplay, selectedPromptEnhancement]);
 
     // Handle empty state
     if (sortedImages.length === 0) {
