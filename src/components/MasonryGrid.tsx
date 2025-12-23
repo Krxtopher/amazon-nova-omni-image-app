@@ -66,6 +66,7 @@ function VMasonryGrid({
   const containerRef = useRef<HTMLDivElement>(null);
   const [itemsLayout, setItemsLayout] = useState<ItemBounds[]>([]);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   // Memoize breakpoints and columns to prevent infinite loops
   const stableBreakpoints = useMemo(() =>
@@ -132,6 +133,10 @@ function VMasonryGrid({
         columnHeights[columnIndex] = itemInfo.top + itemInfo.displayHeight;
       });
 
+      // Calculate total container height based on tallest column
+      const totalHeight = Math.max(...columnHeights) + gap;
+      console.log(`📐 [VMASONRYGRID] Calculated height: ${totalHeight}px for ${items.length} items`);
+      setContainerHeight(totalHeight);
       setItemsLayout(newItemsLayout);
     };
 
@@ -153,7 +158,11 @@ function VMasonryGrid({
     <div
       {...props}
       className={"masonry-grid " + (props.className || "")}
-      style={{ position: "relative", ...props.style }}
+      style={{
+        position: "relative",
+        height: containerHeight > 0 ? `${containerHeight}px` : 'auto',
+        ...props.style
+      }}
       ref={containerRef}
     >
       {itemsLayout.map((itemLayout) => (
@@ -182,6 +191,7 @@ function HMasonryGrid({
   const containerRef = useRef<HTMLDivElement>(null);
   const [rows, setRows] = useState<MasonryItemRendererProps[][]>([]);
   const [forceRerender, setForceRerender] = useState(false);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -225,6 +235,17 @@ function HMasonryGrid({
       }
     });
 
+    // Calculate total container height
+    let totalHeight = 0;
+    rows.forEach((row) => {
+      if (row.length > 0) {
+        totalHeight += row[0].displayHeight + gap;
+      }
+    });
+    totalHeight += gap; // Add final gap
+
+    console.log(`📐 [HMASONRYGRID] Calculated height: ${totalHeight}px for ${items.length} items in ${rows.length} rows`);
+    setContainerHeight(totalHeight);
     setRows(rows);
     setForceRerender(false);
   }, [containerRef, gap, items, forceRerender, maxItemSize, setRows]);
@@ -261,7 +282,11 @@ function HMasonryGrid({
     <div
       {...props}
       className={"masonry-grid " + (props.className || "")}
-      style={{ position: "relative", ...props.style }}
+      style={{
+        position: "relative",
+        height: containerHeight > 0 ? `${containerHeight}px` : 'auto',
+        ...props.style
+      }}
       ref={containerRef}
     >
       {renderGridItems()}
@@ -289,9 +314,13 @@ function MasonryItemContainer({
   gap,
   ...props
 }: MasonryItemContainerProps) {
-  const { elementRef, isVisible } = useViewportVisibility<HTMLDivElement>({
+  const { elementRef, isVisible: _isVisible } = useViewportVisibility<HTMLDivElement>({
     threshold: 0,
   });
+
+  // TEMPORARY: Disable viewport optimization for debugging
+  // Always render images to ensure page has enough height for scroll testing
+  const isVisible = true;
 
   const rendererProps = {
     item,

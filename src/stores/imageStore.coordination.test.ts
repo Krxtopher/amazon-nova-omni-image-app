@@ -42,7 +42,6 @@ describe('ImageStore Coordination Tests', () => {
             hasMoreImages: true,
             isLoadingMore: false,
             totalImageCount: 0,
-            imageDataCache: new Map(),
         });
     });
 
@@ -126,13 +125,8 @@ describe('ImageStore Coordination Tests', () => {
                         dataUrl: fc.string({ minLength: 10, maxLength: 100 }).map(s => `data:image/png;base64,${btoa(s)}`),
                     }), { minLength: 1, maxLength: 3 }),
                     async (imageDataRecords) => {
-                        // Clear previous mock calls and cache
+                        // Clear previous mock calls
                         vi.clearAllMocks();
-
-                        // Clear the image data cache to ensure fresh calls
-                        useImageStore.setState({
-                            imageDataCache: new Map(),
-                        });
 
                         // Mock IndexedDB responses for this test run
                         const mockResponses = new Map(imageDataRecords.map(record => [record.id, record.dataUrl]));

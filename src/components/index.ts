@@ -19,3 +19,4 @@ export { PersonaSelector } from './PersonaSelector';
 export { PersonaTray } from './PersonaTray';
 export { Sidebar } from './Sidebar';
 export { SettingsModal } from './SettingsModal';
+export { DebugCounter } from './DebugCounter';

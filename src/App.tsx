@@ -4,6 +4,7 @@ import { PromptInputArea, GeneratingStatus, Sidebar } from '@/components';
 import { SimpleVirtualizedGallery } from '@/components/SimpleVirtualizedGallery';
 import { Lightbox } from '@/components/Lightbox';
 import { MagicalEffectsDemo } from '@/components/MagicalEffectsDemo';
+import { DebugCounter } from '@/components/DebugCounter';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -217,6 +218,9 @@ function AppContent() {
               {/* Generating Status - Fixed at bottom */}
               <GeneratingStatus activeRequests={activeRequests} />
             </div>
+
+            {/* Debug Counter - Fixed at top right */}
+            <DebugCounter />
 
             {/* Nested routes for lightbox */}
             <Routes>

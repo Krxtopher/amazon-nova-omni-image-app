@@ -31,36 +31,17 @@ export function useImageData(imageId: string | null) {
 
         // Prevent duplicate loads for the same imageId
         if (hasLoadedRef.current) {
+            console.log(`🔄 [HOOK] useImageData skipping duplicate load for ${imageId}`);
             return;
         }
 
         console.log(`🎣 [HOOK] useImageData triggered for ${imageId}`);
         const hookStartTime = performance.now();
 
-        // Check cache directly from store state (one-time check)
-        const currentState = useImageStore.getState();
-        const cache = currentState.imageDataCache instanceof Map ? currentState.imageDataCache : new Map();
-
-        // Check if already in cache
-        if (cache.has && cache.has(imageId)) {
-            const cachedUrl = cache.get(imageId)!;
-            const hookDuration = performance.now() - hookStartTime;
-            // Reduce logging verbosity for cache hits
-            if (hookDuration > 5) { // Only log if it takes more than 5ms
-                console.log(`✅ [HOOK] useImageData cache hit for ${imageId} (${Math.round(cachedUrl.length / 1024)}KB) in ${hookDuration.toFixed(0)}ms`);
-            }
-
-            setImageUrl(cachedUrl);
-            setIsLoading(false);
-            hasLoadedRef.current = true;
-            return;
-        }
-
-        console.log(`🔄 [HOOK] useImageData cache miss for ${imageId}, initiating load...`);
+        console.log(`🔄 [HOOK] useImageData initiating load for ${imageId}...`);
 
         // Load image data
         let isCancelled = false;
-        hasLoadedRef.current = true;
 
         const loadData = async () => {
             try {
@@ -73,8 +54,20 @@ export function useImageData(imageId: string | null) {
 
                 if (isCancelled) return;
 
+                console.log(`🔄 [HOOK] About to call loadImageDataRef.current for ${imageId}`);
+                console.log(`🚨 [DEBUG] NEW CODE IS RUNNING - TIMESTAMP: ${Date.now()} - VERSION: 2.0`);
                 const loadStart = performance.now();
-                const url = await loadImageDataRef.current(imageId);
+
+                // Add timeout to prevent hanging - MUCH shorter timeout for debugging
+                const timeoutPromise = new Promise<never>((_, reject) => {
+                    setTimeout(() => reject(new Error('Image loading timeout after 3 seconds - likely IndexedDB issue')), 3000);
+                });
+
+                const url = await Promise.race([
+                    loadImageDataRef.current(imageId),
+                    timeoutPromise
+                ]);
+
                 const loadDuration = performance.now() - loadStart;
 
                 if (!isCancelled) {
@@ -88,6 +81,7 @@ export function useImageData(imageId: string | null) {
 
                     setImageUrl(url);
                     setIsLoading(false);
+                    hasLoadedRef.current = true; // Only mark as loaded after successful completion
                 }
             } catch (err) {
                 if (!isCancelled) {
@@ -95,12 +89,16 @@ export function useImageData(imageId: string | null) {
                     const errorMessage = err instanceof Error ? err.message : 'Failed to load image';
                     console.error(`❌ [HOOK] useImageData failed for ${imageId} after ${hookDuration.toFixed(0)}ms:`, errorMessage);
 
+                    // For debugging: Set a placeholder error message
                     setError(errorMessage);
+                    setImageUrl(null);
                     setIsLoading(false);
+                    hasLoadedRef.current = true; // Mark as loaded even on error to prevent retries
                 }
             }
         };
 
+        console.log(`🚀 [HOOK] About to call loadData() for ${imageId}`);
         loadData();
 
         return () => {

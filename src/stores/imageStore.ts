@@ -17,9 +17,8 @@ interface ImageStoreState {
     hasMoreImages: boolean;
     isLoadingMore: boolean;
     totalImageCount: number;
-    // Cache for loaded image URLs with access tracking
-    imageDataCache: Map<string, string>;
-    cacheAccessTimes: Map<string, number>; // Track last access time for LRU eviction
+    // Debug state
+    loadedImageCount: number; // Counter for debugging
 }
 
 /**
@@ -35,7 +34,6 @@ interface ImageStoreActions {
     loadImages: () => Promise<void>;
     loadMoreImages: () => Promise<void>; // Progressive loading
     loadImageData: (id: string) => Promise<string | null>; // Load image URL on demand
-    clearImageDataCache: () => void; // Clear cache for memory management
     getAllItems: () => GalleryItem[];
     getItemsPaginated: (offset: number, limit: number) => Promise<GalleryItem[]>;
     getTotalItemCount: () => number;
@@ -62,8 +60,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
     hasMoreImages: true,
     isLoadingMore: false,
     totalImageCount: 0,
-    imageDataCache: new Map(),
-    cacheAccessTimes: new Map(),
+    // Debug state
+    loadedImageCount: 0, // Counter for debugging
 
     // Actions
 
@@ -139,11 +137,15 @@ export const useImageStore = create<ImageStore>()((set) => ({
             console.log('🔄 [STARTUP] Updating store state...');
             const stateUpdateStart = performance.now();
 
+            const loadedCount = imageMetadata.length;
+            const hasMore = imageMetadata.length < totalCount;
+
             set({
                 images: imageMetadata,
                 textItems,
                 totalImageCount: totalCount,
-                hasMoreImages: imageMetadata.length < totalCount,
+                hasMoreImages: hasMore,
+                loadedImageCount: loadedCount,
                 isLoading: false
             });
 
@@ -211,9 +213,9 @@ export const useImageStore = create<ImageStore>()((set) => ({
             set({ isLoadingMore: true });
 
             const currentOffset = state.images.length;
-            const batchSize = 10;
+            const batchSize = 10; // Standard batch size
 
-            console.log(`📄 [PAGINATION] Requesting ${batchSize} images starting from offset ${currentOffset}`);
+            console.log(`📄 [PAGINATION] Requesting ${batchSize} images starting from offset ${currentOffset} (${state.loadedImageCount} loaded)`);
             const queryStart = performance.now();
 
             const moreImageMetadata = await sqliteService.getCompleteImageMetadataPaginated(currentOffset, batchSize);
@@ -224,22 +226,30 @@ export const useImageStore = create<ImageStore>()((set) => ({
             if (moreImageMetadata.length > 0) {
                 const stateUpdateStart = performance.now();
 
-                set((state) => ({
-                    images: [...state.images, ...moreImageMetadata],
-                    hasMoreImages: moreImageMetadata.length === batchSize,
-                    isLoadingMore: false
-                }));
+                set((state) => {
+                    const newLoadedCount = state.loadedImageCount + moreImageMetadata.length;
+                    const hasMore = moreImageMetadata.length === batchSize;
+
+                    return {
+                        images: [...state.images, ...moreImageMetadata],
+                        hasMoreImages: hasMore,
+                        loadedImageCount: newLoadedCount,
+                        isLoadingMore: false
+                    };
+                });
 
                 const stateUpdateDuration = performance.now() - stateUpdateStart;
                 const totalDuration = performance.now() - startTime;
+                const newState = useImageStore.getState();
 
                 console.log(`✅ [PAGINATION] Added ${moreImageMetadata.length} images to store in ${stateUpdateDuration.toFixed(0)}ms`);
+                console.log(`🔢 [DEBUG] Now loaded ${newState.loadedImageCount} images`);
                 console.log(`🎉 [PAGINATION] Load more completed in ${totalDuration.toFixed(0)}ms (Query: ${queryDuration.toFixed(0)}ms + StateUpdate: ${stateUpdateDuration.toFixed(0)}ms)`);
 
                 overallTimer.success(undefined, {
                     loadedCount: moreImageMetadata.length,
-                    newTotal: state.images.length + moreImageMetadata.length,
-                    hasMore: moreImageMetadata.length === batchSize,
+                    newTotal: newState.loadedImageCount,
+                    hasMore: newState.hasMoreImages,
                     totalDuration,
                     queryDuration,
                     stateUpdateDuration
@@ -268,108 +278,25 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Load image data on demand from IndexedDB (with caching)
+     * Load image data on demand from IndexedDB
      * Requirements: 4.2 - On-demand binary loading
      */
     loadImageData: async (id: string): Promise<string | null> => {
         console.log(`🖼️ [IMAGE_LOAD] Loading image data for ${id}...`);
         const overallTimer = storageLogger.startOperation('loadImageData', 'indexeddb', { imageId: id });
         const startTime = performance.now();
-        const state = useImageStore.getState();
-
-        // Check cache first
-        const cacheCheckStart = performance.now();
-        if (state.imageDataCache.has(id)) {
-            const cachedData = state.imageDataCache.get(id)!;
-            const cacheCheckDuration = performance.now() - cacheCheckStart;
-
-            // Update access time for LRU tracking
-            const accessUpdateStart = performance.now();
-            set((state) => ({
-                cacheAccessTimes: new Map(state.cacheAccessTimes).set(id, Date.now())
-            }));
-            const accessUpdateDuration = performance.now() - accessUpdateStart;
-
-            const totalDuration = performance.now() - startTime;
-            console.log(`✅ [IMAGE_LOAD] Cache hit for ${id} (${cachedData.length} bytes) in ${totalDuration.toFixed(0)}ms (CacheCheck: ${cacheCheckDuration.toFixed(0)}ms + AccessUpdate: ${accessUpdateDuration.toFixed(0)}ms)`);
-
-            overallTimer.success(cachedData.length, {
-                cacheHit: true,
-                totalDuration,
-                cacheCheckDuration,
-                accessUpdateDuration
-            });
-            return cachedData;
-        }
-
-        const cacheCheckDuration = performance.now() - cacheCheckStart;
-        console.log(`🔍 [IMAGE_LOAD] Cache miss for ${id} (${cacheCheckDuration.toFixed(0)}ms), loading from IndexedDB...`);
 
         try {
-            // Load binary data from IndexedDB (not SQLite)
-            const indexedDBStart = performance.now();
+            console.log(`🔄 [IMAGE_LOAD] About to call binaryStorageService.getImageData for ${id}`);
+            // Load binary data from IndexedDB
             const imageData = await binaryStorageService.getImageData(id);
-            const indexedDBDuration = performance.now() - indexedDBStart;
+            const totalDuration = performance.now() - startTime;
 
             if (imageData) {
-                console.log(`📦 [IMAGE_LOAD] Retrieved ${imageData.length} bytes from IndexedDB in ${indexedDBDuration.toFixed(0)}ms`);
-
-                // Manage cache size before adding new entry
-                const cacheManagementStart = performance.now();
-                const MAX_CACHE_SIZE = 50; // Limit cache to 50 images
-                let evictedId: string | null = null;
-
-                if (state.imageDataCache.size >= MAX_CACHE_SIZE) {
-                    // Remove least recently used item
-                    const oldestEntry = Array.from(state.cacheAccessTimes.entries())
-                        .sort(([, a], [, b]) => a - b)[0];
-
-                    if (oldestEntry) {
-                        evictedId = oldestEntry[0];
-                        console.log(`🗑️ [IMAGE_LOAD] Evicting ${evictedId} from cache (LRU)`);
-
-                        set((state) => {
-                            const newCache = new Map(state.imageDataCache);
-                            const newAccessTimes = new Map(state.cacheAccessTimes);
-                            newCache.delete(evictedId!);
-                            newAccessTimes.delete(evictedId!);
-                            return {
-                                imageDataCache: newCache,
-                                cacheAccessTimes: newAccessTimes
-                            };
-                        });
-                    }
-                }
-
-                // Cache the loaded URL with access time
-                set((state) => ({
-                    imageDataCache: new Map(state.imageDataCache).set(id, imageData),
-                    cacheAccessTimes: new Map(state.cacheAccessTimes).set(id, Date.now())
-                }));
-
-                const cacheManagementDuration = performance.now() - cacheManagementStart;
-                const totalDuration = performance.now() - startTime;
-
-                console.log(`✅ [IMAGE_LOAD] Cached image ${id} (${Math.round(imageData.length / 1024)}KB) in ${totalDuration.toFixed(0)}ms`);
-                // Only show breakdown for slow operations
-                if (totalDuration > 50) {
-                    console.log(`📊 [IMAGE_LOAD] Breakdown: CacheCheck(${cacheCheckDuration.toFixed(0)}ms) + IndexedDB(${indexedDBDuration.toFixed(0)}ms) + CacheManagement(${cacheManagementDuration.toFixed(0)}ms)`);
-                }
-
-                overallTimer.success(imageData.length, {
-                    cacheHit: false,
-                    cacheSize: state.imageDataCache.size + 1,
-                    evictedId,
-                    totalDuration,
-                    breakdown: {
-                        cacheCheck: cacheCheckDuration,
-                        indexedDB: indexedDBDuration,
-                        cacheManagement: cacheManagementDuration
-                    }
-                });
+                console.log(`✅ [IMAGE_LOAD] Retrieved ${Math.round(imageData.length / 1024)}KB for ${id} in ${totalDuration.toFixed(0)}ms`);
+                overallTimer.success(imageData.length, { totalDuration });
                 return imageData;
             } else {
-                const totalDuration = performance.now() - startTime;
                 console.log(`⚠️ [IMAGE_LOAD] No data found for ${id} in ${totalDuration.toFixed(0)}ms`);
                 overallTimer.success(0, { found: false, totalDuration });
                 return null;
@@ -380,16 +307,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
             overallTimer.error(error instanceof Error ? error : new Error(String(error)));
             return null;
         }
-    },
-
-    /**
-     * Clear image data cache for memory management
-     */
-    clearImageDataCache: () => {
-        set({
-            imageDataCache: new Map(),
-            cacheAccessTimes: new Map()
-        });
     },
 
     /**
@@ -404,9 +321,11 @@ export const useImageStore = create<ImageStore>()((set) => ({
 
         // Update UI immediately for responsive feel (Requirements: 1.1 - 50ms UI update)
         set((state) => {
+            const newLoadedCount = state.loadedImageCount + 1;
             const newState = {
                 images: [image, ...state.images],
                 totalImageCount: state.totalImageCount + 1,
+                loadedImageCount: newLoadedCount,
             };
 
             return newState;
@@ -440,6 +359,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
             set((state) => ({
                 images: state.images.filter(img => img.id !== image.id),
                 totalImageCount: Math.max(0, state.totalImageCount - 1),
+                loadedImageCount: Math.max(0, state.loadedImageCount - 1),
             }));
 
             // Attempt cleanup of any partially stored data
@@ -540,17 +460,12 @@ export const useImageStore = create<ImageStore>()((set) => ({
     deleteImage: async (id: string) => {
         // Update UI immediately for responsive feel
         set((state) => {
-            const newCache = new Map(state.imageDataCache);
-            const newAccessTimes = new Map(state.cacheAccessTimes);
-            newCache.delete(id); // Remove from cache
-            newAccessTimes.delete(id); // Remove from access times
             const filteredImages = state.images.filter((img) => img.id !== id);
             const wasDeleted = filteredImages.length < state.images.length;
             return {
                 images: filteredImages,
-                imageDataCache: newCache,
-                cacheAccessTimes: newAccessTimes,
                 totalImageCount: wasDeleted ? state.totalImageCount - 1 : state.totalImageCount,
+                loadedImageCount: wasDeleted ? Math.max(0, state.loadedImageCount - 1) : state.loadedImageCount,
             };
         });
 

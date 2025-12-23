@@ -42,8 +42,6 @@ describe('ImageStore Coordinated Operations', () => {
             hasMoreImages: true,
             isLoadingMore: false,
             totalImageCount: 0,
-            imageDataCache: new Map(),
-            cacheAccessTimes: new Map(),
         });
     });
 
@@ -250,8 +248,6 @@ describe('ImageStore Coordinated Operations', () => {
                     url: 'data:image/png;base64,test',
                 }],
                 totalImageCount: 1,
-                imageDataCache: new Map([['test-delete', 'data:image/png;base64,test']]),
-                cacheAccessTimes: new Map([['test-delete', Date.now()]]),
             }));
         });
 
@@ -266,10 +262,6 @@ describe('ImageStore Coordinated Operations', () => {
             const state = useImageStore.getState();
             expect(state.images).toHaveLength(0);
             expect(state.totalImageCount).toBe(0);
-
-            // Verify cache was cleared
-            expect(state.imageDataCache.has('test-delete')).toBe(false);
-            expect(state.cacheAccessTimes.has('test-delete')).toBe(false);
         });
 
         it('should handle storage failures gracefully without rolling back UI changes', async () => {
@@ -290,101 +282,15 @@ describe('ImageStore Coordinated Operations', () => {
         });
     });
 
-    describe('cache management', () => {
-        it('should implement LRU cache eviction when cache size limit is reached', async () => {
-            const state = useImageStore.getState();
-
-            // Fill cache to near capacity (MAX_CACHE_SIZE = 50)
-            const cacheEntries = new Map<string, string>();
-            const accessTimes = new Map<string, number>();
-
-            for (let i = 0; i < 50; i++) {
-                const id = `image-${i}`;
-                const data = `data:image/png;base64,test${i}`;
-                cacheEntries.set(id, data);
-                accessTimes.set(id, Date.now() - (50 - i)); // Older entries have earlier timestamps
-            }
-
-            useImageStore.setState({
-                imageDataCache: cacheEntries,
-                cacheAccessTimes: accessTimes,
-            });
-
-            // Mock IndexedDB response for new image
-            vi.mocked(binaryStorageService.getImageData).mockResolvedValue('data:image/png;base64,new');
-
-            // Load a new image (should trigger LRU eviction)
-            await state.loadImageData('new-image');
-
-            // Verify the oldest entry was evicted
-            const newState = useImageStore.getState();
-            expect(newState.imageDataCache.has('image-0')).toBe(false); // Oldest should be evicted
-            expect(newState.imageDataCache.has('new-image')).toBe(true); // New should be added
-            expect(newState.imageDataCache.size).toBe(50); // Size should remain at limit
-        });
-
-        it('should update access times on cache hits', async () => {
-            const initialTime = Date.now() - 1000;
-            useImageStore.setState({
-                imageDataCache: new Map([['cached-image', 'data:image/png;base64,cached']]),
-                cacheAccessTimes: new Map([['cached-image', initialTime]]),
-            });
-
-            // Load cached image
-            const result = await useImageStore.getState().loadImageData('cached-image');
-
-            // Verify cache hit
-            expect(result).toBe('data:image/png;base64,cached');
-
-            // Verify access time was updated
-            const state = useImageStore.getState();
-            const newAccessTime = state.cacheAccessTimes.get('cached-image');
-            expect(newAccessTime).toBeGreaterThan(initialTime);
-        });
-
-        it('should clear cache when clearImageDataCache is called', () => {
-            useImageStore.setState({
-                imageDataCache: new Map([['test', 'data']]),
-                cacheAccessTimes: new Map([['test', Date.now()]]),
-            });
-
-            useImageStore.getState().clearImageDataCache();
-
-            const state = useImageStore.getState();
-            expect(state.imageDataCache.size).toBe(0);
-            expect(state.cacheAccessTimes.size).toBe(0);
-        });
-    });
-
     describe('performance monitoring', () => {
-        it('should log performance metrics for cache hits', async () => {
-            const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => { });
-
-            useImageStore.setState({
-                imageDataCache: new Map([['cached-image', 'data:image/png;base64,cached']]),
-                cacheAccessTimes: new Map([['cached-image', Date.now()]]),
-            });
-
-            await useImageStore.getState().loadImageData('cached-image');
-
-            expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining('[ImageStore] Cache hit for image cached-image')
-            );
-
-            consoleSpy.mockRestore();
-        });
-
         it('should log performance metrics for IndexedDB loads', async () => {
-            const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => { });
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
             vi.mocked(binaryStorageService.getImageData).mockResolvedValue('data:image/png;base64,loaded');
 
             await useImageStore.getState().loadImageData('new-image');
 
             expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining('[ImageStore] Loading image data for new-image from IndexedDB')
-            );
-            expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining('[ImageStore] Successfully loaded image new-image')
+                expect.stringContaining('[IMAGE_LOAD] Loading image data for new-image')
             );
 
             consoleSpy.mockRestore();
@@ -398,7 +304,7 @@ describe('ImageStore Coordinated Operations', () => {
 
             expect(result).toBeNull();
             expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining('[ImageStore] Failed to load image data for failing-image'),
+                expect.stringContaining('[IMAGE_LOAD] Failed to load failing-image'),
                 expect.any(Error)
             );
 

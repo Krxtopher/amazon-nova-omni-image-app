@@ -28,8 +28,19 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
     const hasMoreImages = useImageStore(state => state.hasMoreImages);
     const isLoadingMore = useImageStore(state => state.isLoadingMore);
     const loadMoreImages = useImageStore(state => state.loadMoreImages);
+    const loadedImageCount = useImageStore(state => state.loadedImageCount);
     const layoutMode = useUIStore(state => state.layoutMode);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Debug logging for infinite scroll behavior
+    React.useEffect(() => {
+        console.log(`🖼️ [GALLERY] Gallery state updated:`, {
+            imagesLength: images.length,
+            loadedImageCount,
+            hasMoreImages,
+            isLoadingMore
+        });
+    }, [images.length, loadedImageCount, hasMoreImages, isLoadingMore]);
 
     // Set up infinite scroll
     useInfiniteScroll({
@@ -109,6 +120,27 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     <span className="ml-3 text-muted-foreground">Loading more images...</span>
+                </div>
+            )}
+
+            {/* Debug: Manual Load More Button */}
+            {hasMoreImages && !isLoadingMore && (
+                <div className="flex items-center justify-center py-8">
+                    <button
+                        onClick={loadMoreImages}
+                        className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                        Load More Images ({loadedImageCount} loaded)
+                    </button>
+                </div>
+            )}
+
+            {/* Debug: Status when no more images */}
+            {!hasMoreImages && !isLoadingMore && sortedImages.length > 0 && (
+                <div className="flex items-center justify-center py-8">
+                    <p className="text-muted-foreground">
+                        No more images to load
+                    </p>
                 </div>
             )}
 

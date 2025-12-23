@@ -30,7 +30,17 @@ export function useInfiniteScroll({
 
         const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
 
+        console.log(`📜 [SCROLL] Scroll check:`, {
+            scrollTop: Math.round(scrollTop),
+            windowHeight,
+            documentHeight,
+            distanceFromBottom: Math.round(distanceFromBottom),
+            threshold,
+            willTrigger: distanceFromBottom < threshold
+        });
+
         if (distanceFromBottom < threshold) {
+            console.log(`🚀 [SCROLL] Triggering loadMore due to scroll proximity`);
             onLoadMore();
         }
     }, [hasMore, isLoading, onLoadMore, threshold]);
@@ -48,32 +58,16 @@ export function useInfiniteScroll({
 
         window.addEventListener('scroll', throttledHandleScroll, { passive: true });
 
-        // Also check immediately in case the page is short and doesn't require scrolling
-        // This handles the case where we have very few images initially
-        const checkInitialLoad = () => {
-            if (hasMore && !isLoading) {
-                const documentHeight = document.documentElement.scrollHeight;
-                const windowHeight = window.innerHeight;
-
-                // If the page is shorter than the viewport, load more content
-                if (documentHeight <= windowHeight + threshold) {
-                    onLoadMore();
-                }
-            }
-        };
-
-        // Check immediately on mount, then again after DOM settles
-        checkInitialLoad();
-        const initialCheckTimeout = setTimeout(checkInitialLoad, 200);
+        // REMOVED: Automatic initial load check that was causing cascade loading
+        // The checkInitialLoad function was automatically triggering loadMore
+        // when the page was shorter than viewport, causing unwanted behavior.
+        // Now infinite scroll only triggers on actual user scroll events.
 
         return () => {
             window.removeEventListener('scroll', throttledHandleScroll);
             if (timeoutId) {
                 clearTimeout(timeoutId);
             }
-            if (initialCheckTimeout) {
-                clearTimeout(initialCheckTimeout);
-            }
         };
-    }, [handleScroll, hasMore, isLoading, onLoadMore, threshold]);
+    }, [handleScroll]);
 }
