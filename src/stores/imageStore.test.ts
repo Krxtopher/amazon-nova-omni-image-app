@@ -150,7 +150,7 @@ describe('ImageStore Coordinated Operations', () => {
     describe('updateImage coordination', () => {
         beforeEach(() => {
             // Add a test image to state for update tests
-            useImageStore.setState(state => ({
+            useImageStore.setState(_state => ({
                 images: [{
                     id: 'test-update',
                     prompt: 'test prompt',
@@ -238,7 +238,7 @@ describe('ImageStore Coordinated Operations', () => {
     describe('deleteImage coordination', () => {
         beforeEach(() => {
             // Add a test image to state for delete tests
-            useImageStore.setState(state => ({
+            useImageStore.setState(_state => ({
                 images: [{
                     id: 'test-delete',
                     prompt: 'test prompt',

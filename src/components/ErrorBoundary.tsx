@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     componentDidCatch(_error: Error, _errorInfo: ErrorInfo): void {
         // Update state with error info
         this.setState({
-            errorInfo,
+            errorInfo: _errorInfo,
         });
 
         // You could also send error to an error reporting service here

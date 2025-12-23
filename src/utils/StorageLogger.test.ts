@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
-import { StorageLogger, storageLogger, type StorageOperationMetrics } from './StorageLogger';
-import { StorageDebugger, storageDebugger } from './StorageDebugger';
+import { storageLogger, type StorageOperationMetrics } from './StorageLogger';
+import { storageDebugger } from './StorageDebugger';
 
 describe('Storage Logging and Observability Tests', () => {
     beforeEach(() => {

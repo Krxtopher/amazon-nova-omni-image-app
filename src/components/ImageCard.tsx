@@ -49,7 +49,7 @@ export function ImageCard({
 
     // Load image data on demand when visible and status is complete
     const shouldLoadImage = isVisible && item.status === 'complete';
-    const { imageUrl, isLoading: isLoadingImage } = useImageData(shouldLoadImage ? item.id : '');
+    const { imageUrl, isLoading: isLoadingImage } = useImageData(shouldLoadImage ? item.id : null);
 
     // Use loaded URL or fallback to item.url for backward compatibility
     const displayUrl = imageUrl || item.url;

@@ -52,7 +52,6 @@ export class StorageDebugger {
      */
     public async generateHealthReport(): Promise<StorageHealthReport> {
         const performanceStats = storageLogger.getPerformanceStats();
-        const failedOperations = storageLogger.getFailedOperations();
 
         // SQLite health check
         const sqliteHealth = await this.checkSQLiteHealth();

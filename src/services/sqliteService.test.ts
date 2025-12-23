@@ -105,7 +105,7 @@ describe('SQLiteService Metadata Query Performance', () => {
                         };
 
                         // Simulate rapid operations that would trigger exports
-                        const promises = operations.map(async (op, index) => {
+                        const promises = operations.map(async (_op, index) => {
                             // Simulate small delay between operations
                             await new Promise(resolve => setTimeout(resolve, index * 10));
 

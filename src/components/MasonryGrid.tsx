@@ -202,7 +202,7 @@ function HMasonryGrid({
     items.forEach((item, index) => {
       const displayHeight = maxItemSize;
       const displayWidth = (item.width / item.height) * displayHeight;
-      const itemInfo = { item, displayWidth, displayHeight, isVisible: false };
+      const itemInfo = { item, displayWidth, displayHeight, isVisible: true }; // Will be determined by MasonryItemContainer
 
       currentRow.push(itemInfo);
       currentRowWidth += displayWidth;

@@ -7,7 +7,7 @@ const createMockIndexedDB = () => {
     const databases = new Map<string, Map<string, any>>();
 
     return {
-        open: vi.fn((name: string, version: number) => {
+        open: vi.fn((name: string, _version: number) => {
             const request = {
                 onsuccess: null as any,
                 onerror: null as any,
@@ -22,7 +22,7 @@ const createMockIndexedDB = () => {
                         const event = {
                             target: {
                                 result: {
-                                    createObjectStore: vi.fn((storeName: string) => ({
+                                    createObjectStore: vi.fn((_storeName: string) => ({
                                         createIndex: vi.fn(),
                                     })),
                                     objectStoreNames: {
@@ -37,8 +37,8 @@ const createMockIndexedDB = () => {
 
                 const store = databases.get(name)!;
                 request.result = {
-                    transaction: vi.fn((storeNames: string[], mode: string) => ({
-                        objectStore: vi.fn((storeName: string) => ({
+                    transaction: vi.fn((_storeNames: string[], _mode: string) => ({
+                        objectStore: vi.fn((_storeName: string) => ({
                             put: vi.fn((record: any) => {
                                 const putRequest = {
                                     onsuccess: null as any,
@@ -91,16 +91,12 @@ const createMockIndexedDB = () => {
 };
 
 describe('IndexedDBBinaryStorageService', () => {
-    let service: IndexedDBBinaryStorageService;
-
     beforeEach(() => {
         // Mock IndexedDB in test environment
         if (typeof indexedDB === 'undefined') {
             // @ts-expect-error Mocking global IndexedDB
             global.indexedDB = createMockIndexedDB();
         }
-
-        service = new IndexedDBBinaryStorageService();
     });
 
     describe('Property-Based Tests', () => {
@@ -185,12 +181,15 @@ describe('IndexedDBBinaryStorageService', () => {
                 quota: 1024 * 1024 * 1024 // 1GB
             });
 
-            // @ts-expect-error Mocking navigator.storage
+            // Mocking navigator.storage
             global.navigator = {
                 storage: {
-                    estimate: mockEstimate
-                }
-            };
+                    estimate: mockEstimate,
+                    getDirectory: vi.fn(),
+                    persist: vi.fn(),
+                    persisted: vi.fn()
+                } as Partial<StorageManager>
+            } as any;
 
             const usage = await testService.getStorageUsage();
 
@@ -208,12 +207,15 @@ describe('IndexedDBBinaryStorageService', () => {
                 quota: 1024 * 1024 * 1024 // 1GB
             });
 
-            // @ts-expect-error Mocking navigator.storage
+            // Mocking navigator.storage
             global.navigator = {
                 storage: {
-                    estimate: mockEstimate
-                }
-            };
+                    estimate: mockEstimate,
+                    getDirectory: vi.fn(),
+                    persist: vi.fn(),
+                    persisted: vi.fn()
+                } as Partial<StorageManager>
+            } as any;
 
             const isNearQuota = await testService.isStorageNearQuota(0.8); // 80% threshold
             expect(isNearQuota).toBe(true);
@@ -231,12 +233,15 @@ describe('IndexedDBBinaryStorageService', () => {
                 quota: 1024 * 1024 * 1024 // 1GB
             });
 
-            // @ts-expect-error Mocking navigator.storage
+            // Mocking navigator.storage
             global.navigator = {
                 storage: {
-                    estimate: mockEstimate
-                }
-            };
+                    estimate: mockEstimate,
+                    getDirectory: vi.fn(),
+                    persist: vi.fn(),
+                    persisted: vi.fn()
+                } as Partial<StorageManager>
+            } as any;
 
             const cleanedIds = await testService.autoCleanupIfNeeded(0.8);
             expect(cleanedIds).toEqual([]);
@@ -251,12 +256,15 @@ describe('IndexedDBBinaryStorageService', () => {
                 quota: 1024 * 1024 * 1024 // 1GB
             });
 
-            // @ts-expect-error Mocking navigator.storage
+            // Mocking navigator.storage
             global.navigator = {
                 storage: {
-                    estimate: mockEstimate
-                }
-            };
+                    estimate: mockEstimate,
+                    getDirectory: vi.fn(),
+                    persist: vi.fn(),
+                    persisted: vi.fn()
+                } as Partial<StorageManager>
+            } as any;
 
             const testId = 'test-quota-managed-image';
             const testDataUrl = 'data:image/png;base64,testdata';

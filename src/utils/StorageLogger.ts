@@ -93,6 +93,19 @@ export class StorageLogger {
     }
 
     /**
+     * Format bytes for human-readable display
+     */
+    private formatBytes(bytes: number): string {
+        if (bytes === 0) return '0 B';
+
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+    }
+
+    /**
      * Get performance statistics for all storage operations
      */
     public getPerformanceStats(): StoragePerformanceStats {
@@ -198,16 +211,113 @@ export class StorageLogger {
     }
 
     /**
-     * Format bytes for human-readable display
+     * Analyze startup performance and provide insights
      */
-    private formatBytes(bytes: number): string {
-        if (bytes === 0) return '0 B';
+    public analyzeStartupPerformance(): void {
+        const operations = this.getRecentOperations(100);
+        const startupOps = operations.filter(op =>
+            op.operation.includes('init') ||
+            op.operation.includes('initialize') ||
+            op.operation.includes('loadInitialMetadata') ||
+            op.operation.includes('getTotalCount')
+        );
 
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        if (startupOps.length === 0) {
+            console.log('📊 [ANALYSIS] No startup operations found in recent history');
+            return;
+        }
 
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+        console.log('🔍 [ANALYSIS] Startup Performance Analysis:');
+        console.log('='.repeat(50));
+
+        // Group by storage type
+        const byStorage = startupOps.reduce((acc, op) => {
+            if (!acc[op.storageType]) acc[op.storageType] = [];
+            acc[op.storageType].push(op);
+            return acc;
+        }, {} as Record<string, StorageOperationMetrics[]>);
+
+        let totalStartupTime = 0;
+
+        Object.entries(byStorage).forEach(([storageType, ops]) => {
+            const totalTime = ops.reduce((sum, op) => sum + op.duration, 0);
+            const avgTime = totalTime / ops.length;
+            totalStartupTime += totalTime;
+
+            console.log(`\n📦 ${storageType.toUpperCase()}:`);
+            console.log(`  Operations: ${ops.length}`);
+            console.log(`  Total Time: ${totalTime.toFixed(0)}ms`);
+            console.log(`  Average Time: ${avgTime.toFixed(0)}ms`);
+
+            // Show individual operations
+            ops.forEach(op => {
+                const status = op.success ? '✅' : '❌';
+                const metadata = op.metadata ? ` (${JSON.stringify(op.metadata)})` : '';
+                console.log(`    ${status} ${op.operation}: ${op.duration.toFixed(0)}ms${metadata}`);
+            });
+        });
+
+        console.log(`\n🎯 TOTAL STARTUP TIME: ${totalStartupTime.toFixed(0)}ms`);
+
+        // Identify bottlenecks
+        const slowOps = startupOps.filter(op => op.duration > 100).sort((a, b) => b.duration - a.duration);
+        if (slowOps.length > 0) {
+            console.log('\n🐌 POTENTIAL BOTTLENECKS (>100ms):');
+            slowOps.forEach(op => {
+                console.log(`  ${op.storageType}: ${op.operation} - ${op.duration.toFixed(0)}ms`);
+            });
+        }
+
+        // Recommendations
+        console.log('\n💡 RECOMMENDATIONS:');
+        if (byStorage.sqlite && byStorage.sqlite.some(op => op.duration > 200)) {
+            console.log('  - SQLite operations are slow. Consider database optimization or reducing initial data load.');
+        }
+        if (byStorage.indexeddb && byStorage.indexeddb.some(op => op.duration > 100)) {
+            console.log('  - IndexedDB operations are slow. This might indicate large binary data being loaded.');
+        }
+        if (totalStartupTime > 1000) {
+            console.log('  - Total startup time >1s. Consider lazy loading or progressive enhancement.');
+        }
+
+        console.log('='.repeat(50));
+    }
+
+    /**
+     * Show current cache and storage status
+     */
+    public showStorageStatus(): void {
+        console.log('💾 [STORAGE STATUS] Current Storage Information:');
+        console.log('='.repeat(50));
+
+        // Get recent operations by storage type
+        const recentOps = this.getRecentOperations(50);
+        const byStorage = recentOps.reduce((acc, op) => {
+            if (!acc[op.storageType]) acc[op.storageType] = [];
+            acc[op.storageType].push(op);
+            return acc;
+        }, {} as Record<string, StorageOperationMetrics[]>);
+
+        Object.entries(byStorage).forEach(([storageType, ops]) => {
+            const successful = ops.filter(op => op.success).length;
+            const failed = ops.filter(op => !op.success).length;
+            const avgDuration = ops.reduce((sum, op) => sum + op.duration, 0) / ops.length;
+
+            console.log(`\n📦 ${storageType.toUpperCase()}:`);
+            console.log(`  Recent Operations: ${ops.length}`);
+            console.log(`  Success Rate: ${successful}/${ops.length} (${((successful / ops.length) * 100).toFixed(1)}%)`);
+            console.log(`  Average Duration: ${avgDuration.toFixed(0)}ms`);
+
+            if (failed > 0) {
+                console.log(`  ❌ Failed Operations: ${failed}`);
+                const failedOps = ops.filter(op => !op.success);
+                failedOps.forEach(op => {
+                    console.log(`    - ${op.operation}: ${op.error}`);
+                });
+            }
+        });
+
+        console.log('='.repeat(50));
     }
 }
 

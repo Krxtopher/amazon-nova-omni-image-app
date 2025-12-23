@@ -21,11 +21,16 @@ class SQLiteService {
         if (this.initialized) return;
         if (this.initPromise) return this.initPromise;
 
-        const timer = storageLogger.startOperation('init', 'sqlite');
+        const overallTimer = storageLogger.startOperation('init', 'sqlite');
+        console.log('🗄️ [SQLITE] Starting SQLite initialization...');
+        const startTime = performance.now();
 
         this.initPromise = (async () => {
             try {
-                // Initialize SQL.js
+                // Step 1: Initialize SQL.js
+                console.log('📚 [SQLITE] Loading SQL.js library...');
+                const sqlJsLoadStart = performance.now();
+
                 const SQL = await initSqlJs({
                     locateFile: (file: string) => {
                         // Use local wasm file from public directory
@@ -33,24 +38,80 @@ class SQLiteService {
                     },
                 });
 
-                // Try to load existing database from IndexedDB
+                const sqlJsLoadDuration = performance.now() - sqlJsLoadStart;
+                console.log(`✅ [SQLITE] SQL.js loaded in ${sqlJsLoadDuration.toFixed(0)}ms`);
+
+                // Step 2: Try to load existing database from IndexedDB
+                console.log('💾 [SQLITE] Checking for existing database in IndexedDB...');
+                const loadDbStart = performance.now();
+
                 const savedDb = await this.loadFromIndexedDB();
 
+                const loadDbDuration = performance.now() - loadDbStart;
+
                 if (savedDb) {
+                    console.log(`✅ [SQLITE] Found existing database (${savedDb.length} bytes) in ${loadDbDuration.toFixed(0)}ms`);
+
+                    // Step 3a: Load existing database
+                    console.log('🔄 [SQLITE] Loading existing database...');
+                    const dbLoadStart = performance.now();
+
                     this.db = new SQL.Database(savedDb);
+
+                    const dbLoadDuration = performance.now() - dbLoadStart;
+                    console.log(`✅ [SQLITE] Database loaded in ${dbLoadDuration.toFixed(0)}ms`);
+
                     // Ensure new tables exist first
+                    console.log('🔧 [SQLITE] Creating/updating tables...');
+                    const tablesStart = performance.now();
+
                     this.createTables();
+
+                    const tablesDuration = performance.now() - tablesStart;
+                    console.log(`✅ [SQLITE] Tables updated in ${tablesDuration.toFixed(0)}ms`);
+
                     // Save the database back to IndexedDB
+                    console.log('💾 [SQLITE] Saving updated database to IndexedDB...');
+                    const saveStart = performance.now();
+
                     await this.saveToIndexedDB();
+
+                    const saveDuration = performance.now() - saveStart;
+                    console.log(`✅ [SQLITE] Database saved in ${saveDuration.toFixed(0)}ms`);
                 } else {
+                    console.log(`ℹ️ [SQLITE] No existing database found in ${loadDbDuration.toFixed(0)}ms, creating new one`);
+
+                    // Step 3b: Create new database
+                    console.log('🆕 [SQLITE] Creating new database...');
+                    const newDbStart = performance.now();
+
                     this.db = new SQL.Database();
                     this.createTables();
+
+                    const newDbDuration = performance.now() - newDbStart;
+                    console.log(`✅ [SQLITE] New database created in ${newDbDuration.toFixed(0)}ms`);
                 }
 
                 this.initialized = true;
-                timer.success(savedDb?.length);
+                const totalDuration = performance.now() - startTime;
+
+                console.log(`🎉 [SQLITE] SQLite initialization completed in ${totalDuration.toFixed(0)}ms`);
+                console.log(`📊 [SQLITE] Breakdown: SQL.js(${sqlJsLoadDuration.toFixed(0)}ms) + LoadCheck(${loadDbDuration.toFixed(0)}ms) + Setup(${(totalDuration - sqlJsLoadDuration - loadDbDuration).toFixed(0)}ms)`);
+
+                overallTimer.success(savedDb?.length, {
+                    hadExistingDb: Boolean(savedDb),
+                    dbSize: savedDb?.length || 0,
+                    totalDuration,
+                    breakdown: {
+                        sqlJsLoad: sqlJsLoadDuration,
+                        loadCheck: loadDbDuration,
+                        setup: totalDuration - sqlJsLoadDuration - loadDbDuration
+                    }
+                });
             } catch (error) {
-                timer.error(error instanceof Error ? error : new Error(String(error)));
+                const totalDuration = performance.now() - startTime;
+                console.error(`❌ [SQLITE] SQLite initialization failed after ${totalDuration.toFixed(0)}ms:`, error);
+                overallTimer.error(error instanceof Error ? error : new Error(String(error)));
                 throw error;
             }
         })();

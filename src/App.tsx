@@ -61,7 +61,33 @@ function AppContent() {
 
   // Initialize the store
   useEffect(() => {
-    initialize();
+    console.log('🚀 [APP] Starting app initialization from App component...');
+    const appStartTime = performance.now();
+
+    initialize().then(() => {
+      const appInitDuration = performance.now() - appStartTime;
+      console.log(`🎉 [APP] Complete app initialization finished in ${appInitDuration.toFixed(0)}ms`);
+
+      // Log performance summary
+      if (window.storageLogger) {
+        const stats = window.storageLogger.getPerformanceStats();
+        console.log('📊 [APP] Storage Performance Summary:', {
+          totalOperations: stats.totalOperations,
+          successfulOperations: stats.successfulOperations,
+          failedOperations: stats.failedOperations,
+          averageDuration: `${stats.averageDuration.toFixed(0)}ms`,
+          operationsByStorage: stats.operationsByStorage,
+          slowestOperation: stats.slowestOperation ? {
+            operation: stats.slowestOperation.operation,
+            storageType: stats.slowestOperation.storageType,
+            duration: `${stats.slowestOperation.duration.toFixed(0)}ms`
+          } : null
+        });
+      }
+    }).catch((error) => {
+      const appInitDuration = performance.now() - appStartTime;
+      console.error(`❌ [APP] App initialization failed after ${appInitDuration.toFixed(0)}ms:`, error);
+    });
   }, [initialize]);
 
   /**

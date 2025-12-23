@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sqliteService } from '../services/sqliteService';
+import { binaryStorageService } from '../services/BinaryStorageService';
 import type { GeneratedImage } from '../types';
 
 describe('Lazy Loading', () => {
@@ -30,15 +31,14 @@ describe('Lazy Loading', () => {
         expect(metadata[0].prompt).toBe('Test image');
         expect('url' in metadata[0]).toBe(false); // URL should not be in metadata
 
-        // Get image data separately
-        const imageData = await sqliteService.getImageData('test-1');
+        // Get image data separately from BinaryStorageService
+        const imageData = await binaryStorageService.getImageData('test-1');
         expect(imageData).toBeTruthy();
-        expect(imageData?.id).toBe('test-1');
-        expect(imageData?.url).toBe(testImage.url);
+        expect(imageData).toBe(testImage.url);
     });
 
     it('should handle missing image data gracefully', async () => {
-        const imageData = await sqliteService.getImageData('non-existent');
+        const imageData = await binaryStorageService.getImageData('non-existent');
         expect(imageData).toBeNull();
     });
 
@@ -56,19 +56,21 @@ describe('Lazy Loading', () => {
 
         // Add image
         await sqliteService.addImage(testImage);
+        await binaryStorageService.storeImageData('test-delete', testImage.url!);
 
         // Verify it exists
         const metadata = await sqliteService.getAllImageMetadata();
-        const imageData = await sqliteService.getImageData('test-delete');
+        const imageData = await binaryStorageService.getImageData('test-delete');
         expect(metadata).toHaveLength(1);
         expect(imageData).toBeTruthy();
 
         // Delete image
         await sqliteService.deleteImage('test-delete');
+        await binaryStorageService.deleteImageData('test-delete');
 
         // Verify both metadata and data are deleted
         const metadataAfter = await sqliteService.getAllImageMetadata();
-        const imageDataAfter = await sqliteService.getImageData('test-delete');
+        const imageDataAfter = await binaryStorageService.getImageData('test-delete');
         expect(metadataAfter).toHaveLength(0);
         expect(imageDataAfter).toBeNull();
     });
