@@ -7,7 +7,7 @@ const iconNames = Object.keys(LucideIcons).filter(key => {
     return value && typeof value === 'object' && value.$$typeof && !key.endsWith('Icon');
 });
 
-console.log(`Found ${iconNames.length} unique icons`);
+console.log(`Found ${iconNames.length} icons`);
 
 // Create a comprehensive list with descriptions for the most relevant icons
 const iconDescriptions = {
@@ -178,8 +178,8 @@ const iconDescriptions = {
 const validIcons = iconNames.filter(name => iconDescriptions[name]);
 const missingIcons = iconNames.filter(name => !iconDescriptions[name]);
 
-console.log(`Described ${validIcons.length} icons out of ${iconNames.length} total`);
-console.log(`Missing descriptions for ${missingIcons.length} icons`);
+console.log(`Described ${validIcons.length}/${iconNames.length} icons`);
+console.log(`Missing ${missingIcons.length} descriptions`);
 
 // Create the output with descriptions
 let output = `# Lucide React Icons for Persona Generation\n\n`;
@@ -191,4 +191,4 @@ validIcons.sort().forEach(iconName => {
 });
 
 writeFileSync('persona-icons-with-descriptions.txt', output);
-console.log('Icon descriptions written to persona-icons-with-descriptions.txt');
+console.log('Written to persona-icons-with-descriptions.txt');

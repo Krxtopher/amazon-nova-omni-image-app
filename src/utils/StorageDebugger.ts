@@ -256,22 +256,22 @@ export class StorageDebugger {
      * Run comprehensive storage diagnostics
      */
     public async runDiagnostics(): Promise<void> {
-        console.group('🔍 Storage Diagnostics');
+        console.group('Storage Diagnostics');
 
         try {
             const healthReport = await this.generateHealthReport();
 
-            console.log('📊 Performance Stats:', healthReport.performance);
-            console.log('🗄️ SQLite Health:', healthReport.sqlite);
-            console.log('💾 IndexedDB Health:', healthReport.indexeddb);
-            console.log('📦 LocalStorage Health:', healthReport.localStorage);
-            console.log('💡 Recommendations:', healthReport.recommendations);
+            console.log('Performance:', healthReport.performance);
+            console.log('SQLite:', healthReport.sqlite);
+            console.log('IndexedDB:', healthReport.indexeddb);
+            console.log('LocalStorage:', healthReport.localStorage);
+            console.log('Recommendations:', healthReport.recommendations);
 
             // Test basic operations
             await this.testBasicOperations();
 
         } catch (error) {
-            console.error('❌ Diagnostics failed:', error);
+            console.error('Diagnostics failed:', error);
         } finally {
             console.groupEnd();
         }
@@ -281,22 +281,22 @@ export class StorageDebugger {
      * Test basic storage operations
      */
     private async testBasicOperations(): Promise<void> {
-        console.group('🧪 Testing Basic Operations');
+        console.group('Testing Operations');
 
         // Test SQLite
         try {
             await sqliteService.init();
-            console.log('✅ SQLite initialization: OK');
+            console.log('SQLite: OK');
         } catch (error) {
-            console.error('❌ SQLite initialization failed:', error);
+            console.error('SQLite failed:', error);
         }
 
         // Test IndexedDB
         try {
             const usage = await binaryStorageService.getStorageUsage();
-            console.log('✅ IndexedDB access: OK', usage);
+            console.log('IndexedDB: OK', usage);
         } catch (error) {
-            console.error('❌ IndexedDB access failed:', error);
+            console.error('IndexedDB failed:', error);
         }
 
         // Test LocalStorage
@@ -307,12 +307,12 @@ export class StorageDebugger {
             localStorage.removeItem(testKey);
 
             if (value === 'test') {
-                console.log('✅ LocalStorage access: OK');
+                console.log('LocalStorage: OK');
             } else {
-                console.error('❌ LocalStorage read/write mismatch');
+                console.error('LocalStorage: read/write mismatch');
             }
         } catch (error) {
-            console.error('❌ LocalStorage access failed:', error);
+            console.error('LocalStorage failed:', error);
         }
 
         console.groupEnd();
@@ -322,12 +322,12 @@ export class StorageDebugger {
      * Clear all storage data (for debugging purposes)
      */
     public async clearAllStorageData(): Promise<void> {
-        console.warn('🗑️ Clearing all storage data...');
+        console.warn('Clearing all storage data...');
 
         try {
             // Clear SQLite
             await sqliteService.clearAll();
-            console.log('✅ SQLite data cleared');
+            console.log('SQLite cleared');
 
             // Clear IndexedDB (by deleting databases)
             const databases = await indexedDB.databases();
@@ -336,18 +336,18 @@ export class StorageDebugger {
                     indexedDB.deleteDatabase(db.name);
                 }
             }
-            console.log('✅ IndexedDB data cleared');
+            console.log('IndexedDB cleared');
 
             // Clear LocalStorage
             localStorage.clear();
-            console.log('✅ LocalStorage data cleared');
+            console.log('LocalStorage cleared');
 
             // Clear logger history
             storageLogger.clearHistory();
-            console.log('✅ Logger history cleared');
+            console.log('Logger history cleared');
 
         } catch (error) {
-            console.error('❌ Failed to clear storage data:', error);
+            console.error('Failed to clear storage:', error);
         }
     }
 

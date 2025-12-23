@@ -74,7 +74,7 @@ export class StorageLogger {
 
         // Log slow operations even in production
         if (metrics.duration > 1000) { // Operations taking more than 1 second
-            console.warn(`[StorageLogger] Slow ${metrics.storageType} operation: ${metrics.operation} took ${metrics.duration.toFixed(2)}ms`);
+            console.warn(`Slow ${metrics.storageType} ${metrics.operation}: ${metrics.duration.toFixed(0)}ms`);
         }
     }
 
@@ -82,14 +82,13 @@ export class StorageLogger {
      * Log operation to console with appropriate formatting
      */
     private logToConsole(metrics: StorageOperationMetrics): void {
-        const prefix = `[StorageLogger:${metrics.storageType.toUpperCase()}]`;
-        const duration = `${metrics.duration.toFixed(2)}ms`;
-        const size = metrics.dataSize ? ` (${this.formatBytes(metrics.dataSize)})` : '';
+        const duration = `${metrics.duration.toFixed(0)}ms`;
+        const size = metrics.dataSize ? ` ${this.formatBytes(metrics.dataSize)}` : '';
 
         if (metrics.success) {
-            console.debug(`${prefix} ✓ ${metrics.operation} completed in ${duration}${size}`, metrics.metadata);
+            console.debug(`${metrics.storageType}: ${metrics.operation} ${duration}${size}`);
         } else {
-            console.error(`${prefix} ✗ ${metrics.operation} failed after ${duration}${size}:`, metrics.error, metrics.metadata);
+            console.error(`${metrics.storageType}: ${metrics.operation} failed ${duration} - ${metrics.error}`);
         }
     }
 
@@ -171,7 +170,6 @@ export class StorageLogger {
      */
     public clearHistory(): void {
         this.operations = [];
-        console.debug('[StorageLogger] Operation history cleared');
     }
 
     /**
@@ -183,7 +181,6 @@ export class StorageLogger {
         } else {
             localStorage.removeItem('storage-debug');
         }
-        console.log(`[StorageLogger] Debug mode ${enabled ? 'enabled' : 'disabled'}`);
     }
 
     /**

@@ -238,7 +238,6 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Clear image data cache for memory management
      */
     clearImageDataCache: () => {
-        console.debug('[ImageStore] Clearing image data cache');
         set({
             imageDataCache: new Map(),
             cacheAccessTimes: new Map()
