@@ -37,7 +37,7 @@ export const DebugCounter = React.memo(function DebugCounter() {
                     </div>
                 )}
                 <div className="text-xs text-gray-500 pt-1 border-t">
-                    Viewport opt: OFF
+                    Viewport loading: ON
                 </div>
             </div>
         </div>

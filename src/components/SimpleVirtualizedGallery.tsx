@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { useImageStore } from '@/stores/imageStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useViewportAwareLoading } from '@/hooks/useViewportAwareLoading';
 import type { GeneratedImage } from '../types';
 import { VMasonryGrid, HMasonryGrid } from './MasonryGrid';
 import { createImageRenderer } from './ImageCard';
@@ -48,6 +49,16 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
         isLoading: isLoadingMore,
         onLoadMore: loadMoreImages,
         threshold: 1000 // Load more when within 1000px of bottom
+    });
+
+    // Set up viewport-aware loading to ensure initial content fills the viewport
+    useViewportAwareLoading({
+        containerRef,
+        hasMore: hasMoreImages,
+        isLoading: isLoadingMore,
+        onLoadMore: loadMoreImages,
+        enabled: true, // Enable viewport-aware loading
+        debounceMs: 300 // Shorter debounce for more responsive loading
     });
 
     // Memoized sorted images (only sort once when data changes)
