@@ -184,56 +184,13 @@ export function Lightbox() {
                 />
             </div>
 
-            {/* Close button */}
-            <div className="absolute top-0 right-0 w-full flex justify-end pointer-events-none z-20">
-                <Button
-                    onClick={handleClose}
-                    variant="ghost"
-                    size="icon"
-                    className="m-4 sm:m-10 text-black bg-white/70 backdrop-blur-sm hover:bg-white/80 pointer-events-auto"
-                    aria-label="Close lightbox"
-                >
-                    <X className="h-6 w-6" />
-                </Button>
-            </div>
-
-            {/* Image counter */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
-                {currentIndex + 1} of {images.length}
-            </div>
-
             {/* Main window area */}
             <div
-                className="absolute inset-2 sm:inset-8 flex flex-col sm:flex-row rounded-lg overflow-hidden sm:overflow-visible"
+                className="absolute inset-2 sm:inset-8 flex flex-col sm:flex-row rounded-lg overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Navigation arrows */}
-                {hasPrevious && (
-                    <Button
-                        onClick={handlePrevious}
-                        variant="secondary"
-                        size="icon"
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 shadow-lg backdrop-blur-sm"
-                        aria-label="Previous image"
-                    >
-                        <ChevronLeft className="h-8 w-8" />
-                    </Button>
-                )}
-
-                {hasNext && (
-                    <Button
-                        onClick={handleNext}
-                        variant="secondary"
-                        size="icon"
-                        className="absolute right-4 sm:right-80 top-1/2 -translate-y-1/2 z-10 h-12 w-12 shadow-lg backdrop-blur-sm"
-                        aria-label="Next image"
-                    >
-                        <ChevronRight className="h-8 w-8" />
-                    </Button>
-                )}
-
                 {/* Image container */}
-                <div className="flex-1 bg-gray-100/60 backdrop-blur-sm p-0 sm:p-3">
+                <div className="relative flex-1 bg-gray-100/60 backdrop-blur-sm p-0 sm:p-3">
                     <div className="w-full h-full flex items-center justify-center">
                         {displayUrl && !isLoadingImage ? (
                             <img
@@ -264,11 +221,53 @@ export function Lightbox() {
 
                 {/* Details sidebar */}
                 <div className="w-full sm:w-80 min-w-60 bg-neutral-50 backdrop-blur-sm flex flex-col overflow-hidden border-l border-gray-200">
-                    {/* Top spacing area (to account for close button) */}
-                    <div className="h-4 sm:h-10 shrink-0"></div>
+                    {/* Button tray top */}
+                    <div className="flex gap-1 p-1 items-center justify-between text-gray-900 w-full">
+                        {/* Navigation buttons */}
+                        <div className="flex items-center">
+                            <Button
+                                onClick={handlePrevious}
+                                variant="outline"
+                                size="sm"
+                                disabled={!hasPrevious}
+                                className="h-8 w-8 p-0 border-transparent bg-transparent hover:bg-gray-200 disabled:opacity-30"
+                                aria-label="Previous image"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+
+                            {/* Image counter */}
+                            <div className="text-sm text-gray-600 font-medium">
+                                {currentIndex + 1} of {images.length}
+                            </div>
+
+                            <Button
+                                onClick={handleNext}
+                                variant="outline"
+                                size="sm"
+                                disabled={!hasNext}
+                                className="h-8 w-8 p-0 border-transparent bg-transparent hover:bg-gray-200 disabled:opacity-30"
+                                aria-label="Next image"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        {/* Close button */}
+                        <Button
+                            onClick={handleClose}
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-black bg-transparent hover:bg-gray-200 pointer-events-auto"
+                            aria-label="Close lightbox"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+
+                    </div>
 
                     {/* Scrollable content area */}
-                    <div className="flex-1 overflow-y-auto px-4 pb-4">
+                    <div className="flex-1 overflow-y-auto p-4">
                         {/* Creation date */}
                         <p className="text-gray-600 text-sm italic font-light mb-4">
                             {new Date(image.createdAt).toLocaleDateString('en-US', {
@@ -288,13 +287,13 @@ export function Lightbox() {
                         </div>
 
                         {/* Attribute badges */}
-                        <div className="flex flex-row sm:flex-col flex-wrap gap-2">
+                        <div className="flex flex-row sm:flex-col flex-wrap gap-2 items-start">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
-                                <span className="text-gray-600">aspect ratio</span>
+                                <span className="text-gray-600">Aspect Ratio</span>
                                 <span className="font-medium text-gray-900">{image.aspectRatio}</span>
                             </div>
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
-                                <span className="text-gray-600">size</span>
+                                <span className="text-gray-600">Size</span>
                                 <span className="font-medium text-gray-900">{image.width} × {image.height}</span>
                             </div>
                         </div>
