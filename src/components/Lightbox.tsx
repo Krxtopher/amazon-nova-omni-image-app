@@ -211,9 +211,9 @@ export function Lightbox() {
                 {hasPrevious && (
                     <Button
                         onClick={handlePrevious}
-                        variant="ghost"
+                        variant="secondary"
                         size="icon"
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 shadow-lg backdrop-blur-sm"
                         aria-label="Previous image"
                     >
                         <ChevronLeft className="h-8 w-8" />
@@ -223,9 +223,9 @@ export function Lightbox() {
                 {hasNext && (
                     <Button
                         onClick={handleNext}
-                        variant="ghost"
+                        variant="secondary"
                         size="icon"
-                        className="absolute right-4 sm:right-80 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+                        className="absolute right-4 sm:right-80 top-1/2 -translate-y-1/2 z-10 h-12 w-12 shadow-lg backdrop-blur-sm"
                         aria-label="Next image"
                     >
                         <ChevronRight className="h-8 w-8" />
@@ -263,14 +263,14 @@ export function Lightbox() {
                 </div>
 
                 {/* Details sidebar */}
-                <div className="w-full sm:w-80 min-w-60 bg-background text-foreground flex flex-col overflow-hidden">
+                <div className="w-full sm:w-80 min-w-60 bg-neutral-50 backdrop-blur-sm flex flex-col overflow-hidden border-l border-gray-200">
                     {/* Top spacing area (to account for close button) */}
                     <div className="h-4 sm:h-10 shrink-0"></div>
 
                     {/* Scrollable content area */}
                     <div className="flex-1 overflow-y-auto px-4 pb-4">
                         {/* Creation date */}
-                        <p className="text-muted-foreground text-sm italic font-light mb-4">
+                        <p className="text-gray-600 text-sm italic font-light mb-4">
                             {new Date(image.createdAt).toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
@@ -281,33 +281,33 @@ export function Lightbox() {
 
                         {/* Prompt section */}
                         <div className="space-y-2 mb-6">
-                            <h3 className="text-sm font-semibold text-foreground">Prompt:</h3>
-                            <p className="text-sm leading-relaxed text-foreground">
+                            <h3 className="text-sm font-semibold text-gray-900">Prompt:</h3>
+                            <p className="text-sm leading-relaxed text-gray-800">
                                 {image.prompt}
                             </p>
                         </div>
 
                         {/* Attribute badges */}
                         <div className="flex flex-row sm:flex-col flex-wrap gap-2">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-muted rounded-full text-xs">
-                                <span className="text-muted-foreground">aspect ratio</span>
-                                <span className="font-medium text-foreground">{image.aspectRatio}</span>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
+                                <span className="text-gray-600">aspect ratio</span>
+                                <span className="font-medium text-gray-900">{image.aspectRatio}</span>
                             </div>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-muted rounded-full text-xs">
-                                <span className="text-muted-foreground">size</span>
-                                <span className="font-medium text-foreground">{image.width} × {image.height}</span>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
+                                <span className="text-gray-600">size</span>
+                                <span className="font-medium text-gray-900">{image.width} × {image.height}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Fixed action buttons at bottom */}
-                    <div className="shrink-0 p-4 pt-2 border-t border-border">
+                    <div className="shrink-0 p-4 pt-2 border-t border-gray-200">
                         <div className="flex justify-center gap-1">
                             <Button
                                 onClick={handleDownload}
                                 variant="default"
                                 size="sm"
-                                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                className="bg-gray-900 text-white hover:bg-gray-800"
                             >
                                 <Download className="h-4 w-4 mr-2" />
                                 Download
@@ -316,7 +316,7 @@ export function Lightbox() {
                                 onClick={handleCopyPrompt}
                                 variant="default"
                                 size="sm"
-                                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                className="bg-gray-900 text-white hover:bg-gray-800"
                                 aria-label="Copy prompt"
                             >
                                 {isCopied ? (
