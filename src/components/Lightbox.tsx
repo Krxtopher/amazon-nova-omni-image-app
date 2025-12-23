@@ -162,104 +162,155 @@ export function Lightbox() {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/95 z-50 flex">
+        <div
+            className="fixed inset-0 z-50 overflow-y-auto"
+            onClick={handleClose}
+        >
+            {/* Blurred background image */}
+            <div className="absolute inset-0">
+                <img
+                    src={displayUrl}
+                    alt={image.prompt}
+                    className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 backdrop-blur-[100px] brightness-75 bg-black/30" />
+            </div>
+
             {/* Close button */}
-            <Button
-                onClick={handleClose}
-                variant="ghost"
-                size="icon"
-                className="absolute top-4 left-4 z-10 text-white hover:bg-white/20"
-                aria-label="Close lightbox"
-            >
-                <X className="h-6 w-6" />
-            </Button>
+            <div className="absolute top-0 right-0 w-full flex justify-end pointer-events-none z-20">
+                <Button
+                    onClick={handleClose}
+                    variant="ghost"
+                    size="icon"
+                    className="m-4 sm:m-10 text-black bg-white/70 backdrop-blur-sm hover:bg-white/80 pointer-events-auto"
+                    aria-label="Close lightbox"
+                >
+                    <X className="h-6 w-6" />
+                </Button>
+            </div>
 
             {/* Image counter */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
                 {currentIndex + 1} of {images.length}
             </div>
 
-            {/* Navigation arrows */}
-            {hasPrevious && (
-                <Button
-                    onClick={handlePrevious}
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
-                    aria-label="Previous image"
-                >
-                    <ChevronLeft className="h-8 w-8" />
-                </Button>
-            )}
-
-            {hasNext && (
-                <Button
-                    onClick={handleNext}
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-80 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
-                    aria-label="Next image"
-                >
-                    <ChevronRight className="h-8 w-8" />
-                </Button>
-            )}
-
-            {/* Image container */}
+            {/* Main window area */}
             <div
-                className="flex-1 flex items-center justify-center p-4 pr-80"
-                onClick={handleClose}
+                className="absolute inset-2 sm:inset-8 flex flex-col sm:flex-row rounded-lg overflow-hidden sm:overflow-visible"
+                onClick={(e) => e.stopPropagation()}
             >
-                <div className="relative max-w-full max-h-full">
-                    {displayUrl && !isLoadingImage ? (
-                        <img
-                            src={displayUrl}
-                            alt={image.prompt}
-                            className={`max-w-full max-h-full object-contain transition-all duration-1000 ease-out ${shouldFadeIn ? 'opacity-100' : 'opacity-0'}`}
-                            style={{
-                                maxHeight: 'calc(100vh - 2rem)',
-                                maxWidth: 'calc(100vw - 22rem)', // Account for sidebar width
-                            }}
-                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on image
-                            onLoad={() => {
-                                // Ensure fade-in happens when image loads
-                                if (!shouldFadeIn) {
-                                    setTimeout(() => setShouldFadeIn(true), 50);
-                                }
-                            }}
-                        />
-                    ) : (
-                        <div className="flex items-center justify-center bg-black/20 backdrop-blur-sm min-w-96 min-h-96">
-                            <div className="text-white/70 text-sm animate-pulse">Loading image...</div>
-                        </div>
-                    )}
-                    {/* Loading placeholder that shows while fading in */}
-                    {displayUrl && !shouldFadeIn && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-                            <div className="text-white/70 text-sm animate-pulse">Loading image...</div>
-                        </div>
-                    )}
-                </div>
-            </div>
+                {/* Navigation arrows */}
+                {hasPrevious && (
+                    <Button
+                        onClick={handlePrevious}
+                        variant="ghost"
+                        size="icon"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+                        aria-label="Previous image"
+                    >
+                        <ChevronLeft className="h-8 w-8" />
+                    </Button>
+                )}
 
-            {/* Details sidebar */}
-            <div className="w-80 bg-black/50 backdrop-blur-sm border-l border-white/10 p-6 overflow-y-auto">
-                <div className="space-y-6">
+                {hasNext && (
+                    <Button
+                        onClick={handleNext}
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-4 sm:right-80 top-1/2 -translate-y-1/2 z-10 text-white hover:bg-white/20"
+                        aria-label="Next image"
+                    >
+                        <ChevronRight className="h-8 w-8" />
+                    </Button>
+                )}
+
+                {/* Image container */}
+                <div className="flex-1 bg-gray-100/60 backdrop-blur-sm p-0 sm:p-3">
+                    <div className="w-full h-full flex items-center justify-center">
+                        {displayUrl && !isLoadingImage ? (
+                            <img
+                                src={displayUrl}
+                                alt={image.prompt}
+                                className={`max-w-full max-h-full object-contain transition-all duration-1000 ease-out ${shouldFadeIn ? 'opacity-100' : 'opacity-0'}`}
+                                onClick={(e) => e.stopPropagation()}
+                                onLoad={() => {
+                                    if (!shouldFadeIn) {
+                                        setTimeout(() => setShouldFadeIn(true), 50);
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center bg-black/20 backdrop-blur-sm min-w-96 min-h-96">
+                                <div className="text-white/70 text-sm animate-pulse">Loading image...</div>
+                            </div>
+                        )}
+                        {/* Loading placeholder that shows while fading in */}
+                        {displayUrl && !shouldFadeIn && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                                <div className="text-white/70 text-sm animate-pulse">Loading image...</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Details sidebar */}
+                <div className="w-full sm:w-80 min-w-60 bg-white text-gray-900 p-4 pt-4 sm:pt-10 flex flex-col gap-4 overflow-auto">
+                    {/* Creation date */}
+                    <p className="text-gray-600 text-sm italic font-light">
+                        {new Date(image.createdAt).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        })}
+                    </p>
+
+                    {/* Prompt section */}
+                    <div className="space-y-2">
+                        <h3 className="text-sm font-semibold">Prompt:</h3>
+                        <p className="text-sm leading-relaxed">
+                            {image.prompt}
+                        </p>
+                    </div>
+
+                    {/* Attribute badges */}
+                    <div className="flex flex-row sm:flex-col flex-wrap gap-2 my-6 flex-1">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
+                            <span className="text-gray-500">aspect ratio</span>
+                            <span className="font-medium">{image.aspectRatio}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
+                            <span className="text-gray-500">size</span>
+                            <span className="font-medium">{image.width} × {image.height}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
+                            <span className="text-gray-500">status</span>
+                            <span className="font-medium capitalize">{image.status}</span>
+                        </div>
+                        {image.converseParams && (
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
+                                <span className="text-gray-500">model</span>
+                                <span className="font-medium text-xs">{image.converseParams.modelId}</span>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Action buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex justify-center gap-1">
                         <Button
                             onClick={handleDownload}
-                            variant="outline"
+                            variant="default"
                             size="sm"
-                            className="flex-1 text-white border-white/20 hover:bg-white/10"
+                            className="bg-gray-800 text-white hover:bg-gray-700"
                         >
                             <Download className="h-4 w-4 mr-2" />
                             Download
                         </Button>
                         <Button
                             onClick={handleCopyPrompt}
-                            variant="outline"
+                            variant="default"
                             size="sm"
-                            className="text-white border-white/20 hover:bg-white/10"
+                            className="bg-gray-800 text-white hover:bg-gray-700"
                             aria-label="Copy prompt"
                         >
                             {isCopied ? (
@@ -268,55 +319,6 @@ export function Lightbox() {
                                 <Copy className="h-4 w-4" />
                             )}
                         </Button>
-                    </div>
-
-                    {/* Image details */}
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-white font-medium mb-2 special-gothic-label">Prompt</h3>
-                            <p className="text-gray-300 text-sm leading-relaxed">
-                                {image.prompt}
-                            </p>
-                        </div>
-
-                        <div>
-                            <h3 className="text-white font-medium mb-2 special-gothic-label">Details</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Aspect Ratio:</span>
-                                    <span className="text-gray-300">{image.aspectRatio}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Dimensions:</span>
-                                    <span className="text-gray-300">{image.width} × {image.height}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Created:</span>
-                                    <span className="text-gray-300">
-                                        {new Date(image.createdAt).toLocaleDateString()}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Status:</span>
-                                    <span className="text-gray-300 capitalize">{image.status}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Technical details */}
-                        {image.converseParams && (
-                            <div>
-                                <h3 className="text-white font-medium mb-2 special-gothic-label">Technical Info</h3>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-400">Model:</span>
-                                        <span className="text-gray-300 text-xs">
-                                            {image.converseParams.modelId}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
