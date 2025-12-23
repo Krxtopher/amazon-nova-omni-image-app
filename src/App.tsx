@@ -4,6 +4,7 @@ import { PromptInputArea, GeneratingStatus, Sidebar } from '@/components';
 import { SimpleVirtualizedGallery } from '@/components/SimpleVirtualizedGallery';
 import { Lightbox } from '@/components/Lightbox';
 import { MagicalEffectsDemo } from '@/components/MagicalEffectsDemo';
+import WordRevealDemo from '@/pages/WordRevealDemo';
 
 import { DebugCounter } from '@/components/DebugCounter';
 
@@ -168,6 +169,9 @@ function AppContent() {
       <Routes>
         {/* Demo route - standalone */}
         <Route path="/demo" element={<MagicalEffectsDemo />} />
+
+        {/* Word Reveal Demo */}
+        <Route path="/word-reveal" element={<WordRevealDemo />} />
 
 
 
