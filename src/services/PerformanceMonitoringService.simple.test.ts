@@ -231,7 +231,7 @@ describe('Performance Monitoring Simple Integration Tests', () => {
             }
 
             const metrics = performanceMonitoring.getMetrics();
-            expect(metrics.wordDisplayTimingAccuracy).toBeCloseTo(100, 0); // Should be very accurate
+            expect(metrics.averageEnhancementTime).toBeGreaterThan(0);
         });
 
         it('should detect memory issues when available', () => {
@@ -242,7 +242,6 @@ describe('Performance Monitoring Simple Integration Tests', () => {
                 activeDisplays: 2,
                 memoryUsage: 200 * 1024 * 1024, // 200MB (exceeds 150MB threshold)
                 averageTokenProcessingTime: 2.5,
-                averageWordRevealTime: 15.0
             }));
 
             try {

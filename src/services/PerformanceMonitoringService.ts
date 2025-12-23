@@ -9,7 +9,6 @@ import { PerformanceOptimizer, type PerformanceMetrics } from '../utils/Performa
 
 export interface StreamingPerformanceMetrics extends PerformanceMetrics {
     enhancementResponseTimes: number[];
-    wordDisplayTimingAccuracy: number;
     concurrentDisplayCount: number;
     memoryLeakDetected: boolean;
     averageEnhancementTime: number;
@@ -146,7 +145,6 @@ export class PerformanceMonitoringService {
         return {
             ...baseMetrics,
             enhancementResponseTimes: [...this.enhancementTimes],
-            wordDisplayTimingAccuracy: this.calculateTimingAccuracy(),
             concurrentDisplayCount: baseMetrics.activeDisplays,
             memoryLeakDetected: this.detectMemoryLeak(),
             averageEnhancementTime: this.calculateAverage(this.enhancementTimes),
@@ -259,19 +257,6 @@ export class PerformanceMonitoringService {
     }
 
     /**
-     * Calculate timing accuracy
-     */
-    private calculateTimingAccuracy(): number {
-        if (this.displayTimes.length === 0) return 100;
-
-        const average = this.calculateAverage(this.displayTimes);
-        const deviations = this.displayTimes.map(time => Math.abs(time - average) / average * 100);
-        const averageDeviation = this.calculateAverage(deviations);
-
-        return Math.max(0, 100 - averageDeviation);
-    }
-
-    /**
      * Detect potential memory leaks
      */
     private detectMemoryLeak(): boolean {
@@ -344,10 +329,6 @@ export class PerformanceMonitoringService {
 
         if (metrics.activeTimers > 50) {
             recommendations.push('High number of active timers - ensure proper cleanup');
-        }
-
-        if (this.calculateTimingAccuracy() < 80) {
-            recommendations.push('Word display timing accuracy is low - check for performance bottlenecks');
         }
 
         return recommendations;

@@ -46,13 +46,10 @@ export type {
 
 // Streaming prompt enhancement types
 export type {
-    WordDisplayStatus,
-    DisplayWord,
-    WordDisplayConfig,
+    StreamingStatus,
     StreamingEnhancementState,
     StreamingToken,
     StreamingPromptEnhancer,
-    WordByWordDisplay,
 } from './streaming';
 
 // Configuration types

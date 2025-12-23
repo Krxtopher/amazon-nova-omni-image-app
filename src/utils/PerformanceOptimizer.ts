@@ -13,7 +13,6 @@ export interface PerformanceMetrics {
     activeDisplays: number;
     memoryUsage: number;
     averageTokenProcessingTime: number;
-    averageWordRevealTime: number;
 }
 
 export interface TokenBuffer {
@@ -56,11 +55,9 @@ export class PerformanceOptimizer {
         activeDisplays: 0,
         memoryUsage: 0,
         averageTokenProcessingTime: 0,
-        averageWordRevealTime: 0
     };
 
     private tokenProcessingTimes: number[] = [];
-    private wordRevealTimes: number[] = [];
     private readonly MAX_METRIC_SAMPLES = 100;
 
     private constructor() {
@@ -169,10 +166,6 @@ export class PerformanceOptimizer {
             try {
                 callback();
             } finally {
-                // Record word reveal time
-                const revealTime = performance.now() - startTime;
-                this.recordWordRevealTime(revealTime);
-
                 // Clean up timer from pool
                 this.removePooledTimer(timerId);
             }
@@ -279,16 +272,6 @@ export class PerformanceOptimizer {
     /**
      * Record word reveal time for metrics
      */
-    private recordWordRevealTime(time: number): void {
-        this.wordRevealTimes.push(time);
-        if (this.wordRevealTimes.length > this.MAX_METRIC_SAMPLES) {
-            this.wordRevealTimes.shift();
-        }
-
-        this.metrics.averageWordRevealTime =
-            this.wordRevealTimes.reduce((a, b) => a + b, 0) / this.wordRevealTimes.length;
-    }
-
     /**
      * Start memory usage monitoring
      */
@@ -334,7 +317,6 @@ export class PerformanceOptimizer {
             activeDisplays: 0,
             memoryUsage: 0,
             averageTokenProcessingTime: 0,
-            averageWordRevealTime: 0
         };
     }
 }

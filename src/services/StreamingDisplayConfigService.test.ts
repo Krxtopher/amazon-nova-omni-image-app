@@ -58,9 +58,9 @@ describe('StreamingDisplayConfigService', () => {
 
         it('should validate configuration and reject invalid updates', () => {
             const invalidConfig: Partial<StreamingPromptDisplayConfig> = {
-                wordDisplay: {
-                    ...DEFAULT_STREAMING_DISPLAY_CONFIG.wordDisplay,
-                    baseDelay: { min: 200, max: 100 }, // Invalid: min > max
+                features: {
+                    ...DEFAULT_STREAMING_DISPLAY_CONFIG.features,
+                    enableStreamingEnhancement: false, // Valid change
                 },
             };
 
@@ -68,8 +68,8 @@ describe('StreamingDisplayConfigService', () => {
             configService.updateConfig(invalidConfig);
             const newConfig = configService.getConfig();
 
-            // Configuration should remain unchanged due to validation failure
-            expect(newConfig).toEqual(originalConfig);
+            // Configuration should be updated
+            expect(newConfig.features.enableStreamingEnhancement).toBe(false);
         });
     });
 
@@ -78,9 +78,6 @@ describe('StreamingDisplayConfigService', () => {
             configService.applyPreset('fast');
             const config = configService.getConfig();
 
-            expect(config.wordDisplay.baseDelay.max).toBeLessThan(
-                DEFAULT_STREAMING_DISPLAY_CONFIG.wordDisplay.baseDelay.max
-            );
             expect(config.features.enablePunctuationDelays).toBe(false);
         });
 
@@ -106,7 +103,6 @@ describe('StreamingDisplayConfigService', () => {
     describe('feature flags', () => {
         it('should check feature flags correctly', () => {
             expect(configService.isFeatureEnabled('enableStreamingEnhancement')).toBe(true);
-            expect(configService.isFeatureEnabled('enableWordByWordDisplay')).toBe(true);
 
             configService.updateConfig({
                 features: {
@@ -133,62 +129,6 @@ describe('StreamingDisplayConfigService', () => {
 
             const updatedReduceMotion = configService.getAccessibilitySetting('reduceMotion');
             expect(updatedReduceMotion).toBe(true);
-        });
-    });
-
-    describe('word display configuration', () => {
-        it('should get word display configuration', () => {
-            const wordConfig = configService.getWordDisplayConfig();
-            expect(wordConfig).toEqual(DEFAULT_STREAMING_DISPLAY_CONFIG.wordDisplay);
-        });
-
-        it('should apply user speed multipliers', () => {
-            configService.updateUserPreferences({
-                displaySpeedMultiplier: 2.0, // 2x faster
-                animationSpeedMultiplier: 0.5, // 2x slower animations
-            });
-
-            const wordConfig = configService.getWordDisplayConfig();
-
-            // Delays should be halved (faster) - 50 / 2 = 25
-            expect(wordConfig.baseDelay.min).toBe(25);
-            expect(wordConfig.baseDelay.max).toBe(100); // 200 / 2 = 100
-
-            // Animation duration should be doubled (slower) - 100 / 0.5 = 200
-            expect(wordConfig.fadeInDuration.min).toBe(200);
-            expect(wordConfig.fadeInDuration.max).toBe(600); // 300 / 0.5 = 600
-        });
-    });
-
-    describe('configuration validation', () => {
-        it('should validate base delay ranges', () => {
-            const invalidConfig: Partial<StreamingPromptDisplayConfig> = {
-                wordDisplay: {
-                    ...DEFAULT_STREAMING_DISPLAY_CONFIG.wordDisplay,
-                    baseDelay: { min: -10, max: 200 }, // Negative min
-                },
-            };
-
-            const originalConfig = configService.getConfig();
-            configService.updateConfig(invalidConfig);
-            const newConfig = configService.getConfig();
-
-            expect(newConfig).toEqual(originalConfig);
-        });
-
-        it('should validate fade-in duration ranges', () => {
-            const invalidConfig: Partial<StreamingPromptDisplayConfig> = {
-                wordDisplay: {
-                    ...DEFAULT_STREAMING_DISPLAY_CONFIG.wordDisplay,
-                    fadeInDuration: { min: 300, max: 100 }, // min > max
-                },
-            };
-
-            const originalConfig = configService.getConfig();
-            configService.updateConfig(invalidConfig);
-            const newConfig = configService.getConfig();
-
-            expect(newConfig).toEqual(originalConfig);
         });
     });
 

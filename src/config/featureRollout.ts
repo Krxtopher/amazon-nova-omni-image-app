@@ -73,25 +73,6 @@ export const FEATURE_ROLLOUT_CONFIGS: Record<string, FeatureRolloutConfig> = {
         }
     },
 
-    wordByWordDisplay: {
-        featureId: 'word-by-word-display',
-        rolloutPercentage: 100, // Fully rolled out
-        enabled: true,
-        monitoring: {
-            errorThreshold: 3,
-            performanceThreshold: 1000,
-            adoptionTarget: 90
-        },
-        rollback: {
-            enabled: true,
-            triggers: {
-                errorRate: 8,
-                performanceRegression: 30,
-                userFeedback: 15
-            }
-        }
-    },
-
     fadeInAnimations: {
         featureId: 'fade-in-animations',
         rolloutPercentage: 100, // Fully rolled out
@@ -491,13 +472,6 @@ export const featureRolloutManager = new FeatureRolloutManager();
  */
 export function isStreamingEnhancementEnabled(userId?: string, userSegment?: string): boolean {
     return featureRolloutManager.isFeatureEnabled('streaming-enhancement', userId, userSegment);
-}
-
-/**
- * Convenience function to check if word-by-word display is enabled
- */
-export function isWordByWordDisplayEnabled(userId?: string, userSegment?: string): boolean {
-    return featureRolloutManager.isFeatureEnabled('word-by-word-display', userId, userSegment);
 }
 
 /**

@@ -5,7 +5,6 @@ import { StreamingDisplayConfigProvider } from '../contexts/StreamingDisplayConf
 
 // Mock the services and utilities
 vi.mock('../services/StreamingPromptEnhancementService');
-vi.mock('../utils/WordByWordDisplayEngine');
 
 // Test wrapper with configuration provider
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -46,23 +45,6 @@ describe('StreamingPromptDisplay', () => {
         expect(screen.getByLabelText('Text is being revealed word by word')).toBeInTheDocument();
     });
 
-    it('handles display completion callback', () => {
-        const onDisplayComplete = vi.fn();
-
-        render(
-            <TestWrapper>
-                <StreamingPromptDisplay
-                    originalPrompt="Test prompt"
-                    enhancementType="off"
-                    onDisplayComplete={onDisplayComplete}
-                />
-            </TestWrapper>
-        );
-
-        // Component should render without errors
-        expect(screen.getByLabelText('Text is being revealed word by word')).toBeInTheDocument();
-    });
-
     it('applies custom className', () => {
         const { container } = render(
             <TestWrapper>
@@ -79,9 +61,6 @@ describe('StreamingPromptDisplay', () => {
     });
 
     it('supports multiple concurrent instances independently', () => {
-        const onComplete1 = vi.fn();
-        const onComplete2 = vi.fn();
-
         // Render two instances with different prompts
         const { container } = render(
             <TestWrapper>
@@ -89,12 +68,10 @@ describe('StreamingPromptDisplay', () => {
                     <StreamingPromptDisplay
                         originalPrompt="First prompt"
                         enhancementType="off"
-                        onDisplayComplete={onComplete1}
                     />
                     <StreamingPromptDisplay
                         originalPrompt="Second prompt"
                         enhancementType="off"
-                        onDisplayComplete={onComplete2}
                     />
                 </div>
             </TestWrapper>

@@ -1,8 +1,6 @@
 /**
- * Configuration types for streaming prompt enhancement and word-by-word display
+ * Configuration types for streaming prompt enhancement
  */
-
-import type { WordDisplayConfig } from './streaming';
 
 /**
  * Feature flags for streaming display functionality
@@ -10,9 +8,6 @@ import type { WordDisplayConfig } from './streaming';
 export interface StreamingDisplayFeatureFlags {
     /** Enable/disable streaming prompt enhancement */
     enableStreamingEnhancement: boolean;
-
-    /** Enable/disable word-by-word display */
-    enableWordByWordDisplay: boolean;
 
     /** Enable/disable fade-in animations */
     enableFadeInAnimations: boolean;
@@ -82,9 +77,6 @@ export interface StreamingPromptDisplayConfig {
 
     /** Performance settings */
     performance: StreamingDisplayPerformanceSettings;
-
-    /** Word display timing and animation configuration */
-    wordDisplay: WordDisplayConfig;
 
     /** Debug mode for development */
     debug: boolean;

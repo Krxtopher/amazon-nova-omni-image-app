@@ -12,9 +12,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { StreamingPromptDisplay } from '../components/StreamingPromptDisplay';
 import { ImageCard } from '../components/ImageCard';
-import { WordRevealContainer } from '../components/WordRevealContainer';
 import { StreamingDisplayConfigProvider } from '../contexts/StreamingDisplayConfigContext';
-import type { GeneratedImage, DisplayWord } from '../types';
+import type { GeneratedImage } from '../types';
 
 // Mock the streaming service to avoid AWS dependencies
 vi.mock('../services/StreamingPromptEnhancementService', () => ({
@@ -87,70 +86,6 @@ describe('Streaming Prompt Enhancement Simple Integration', () => {
         vi.useRealTimers();
     });
 
-    describe('WordRevealContainer Component', () => {
-        it('should render words with proper visibility states', () => {
-            const testWords: DisplayWord[] = [
-                {
-                    text: 'Hello',
-                    delay: 100,
-                    fadeInDuration: 200,
-                    isVisible: true,
-                    hasAnimated: true
-                },
-                {
-                    text: 'world',
-                    delay: 150,
-                    fadeInDuration: 200,
-                    isVisible: false,
-                    hasAnimated: false
-                }
-            ];
-
-            render(
-                <WordRevealContainer
-                    words={testWords}
-                    isActive={true}
-                    showCursor={true}
-                />
-            );
-
-            // First word should be visible
-            expect(screen.getByText('Hello')).toBeInTheDocument();
-
-            // Second word should not be visible (or should have opacity 0)
-            const worldElement = screen.queryByText('world');
-            if (worldElement) {
-                // If rendered, it should have opacity 0 or be hidden
-                const styles = window.getComputedStyle(worldElement);
-                expect(styles.opacity === '0' || styles.visibility === 'hidden').toBe(true);
-            }
-        });
-
-        it('should show cursor when active', () => {
-            const testWords: DisplayWord[] = [
-                {
-                    text: 'Test',
-                    delay: 100,
-                    fadeInDuration: 200,
-                    isVisible: true,
-                    hasAnimated: true
-                }
-            ];
-
-            render(
-                <WordRevealContainer
-                    words={testWords}
-                    isActive={true}
-                    showCursor={true}
-                />
-            );
-
-            // Should show some kind of cursor indicator
-            const container = screen.getByText('Test').closest('div');
-            expect(container).toBeInTheDocument();
-        });
-    });
-
     describe('StreamingPromptDisplay Component Integration', () => {
         it('should render with original prompt when enhancement is off', async () => {
             const testPrompt = 'A beautiful sunset';
@@ -160,7 +95,6 @@ describe('Streaming Prompt Enhancement Simple Integration', () => {
                     <StreamingPromptDisplay
                         originalPrompt={testPrompt}
                         enhancementType="off"
-                        onDisplayComplete={vi.fn()}
                     />
                 </TestWrapper>
             );
@@ -171,8 +105,8 @@ describe('Streaming Prompt Enhancement Simple Integration', () => {
             }, { timeout: 2000 });
         });
 
-        it('should call completion callback when display finishes', async () => {
-            const onDisplayComplete = vi.fn();
+        it('should call completion callback when enhancement finishes', async () => {
+            const onEnhancementComplete = vi.fn();
             const testPrompt = 'Short test';
 
             render(
@@ -180,16 +114,16 @@ describe('Streaming Prompt Enhancement Simple Integration', () => {
                     <StreamingPromptDisplay
                         originalPrompt={testPrompt}
                         enhancementType="off"
-                        onDisplayComplete={onDisplayComplete}
+                        onEnhancementComplete={onEnhancementComplete}
                     />
                 </TestWrapper>
             );
 
-            // Fast-forward timers to complete display
+            // Fast-forward timers to complete enhancement
             vi.advanceTimersByTime(5000);
 
             await waitFor(() => {
-                expect(onDisplayComplete).toHaveBeenCalled();
+                expect(onEnhancementComplete).toHaveBeenCalled();
             }, { timeout: 1000 });
         });
 

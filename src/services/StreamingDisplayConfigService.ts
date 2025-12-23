@@ -14,14 +14,12 @@ import type {
     StreamingDisplayPreset,
     ConfigValidationResult
 } from '../types/config';
-import type { WordDisplayConfig } from '../types/streaming';
 
 /**
  * Default feature flags configuration
  */
 export const DEFAULT_FEATURE_FLAGS: StreamingDisplayFeatureFlags = {
     enableStreamingEnhancement: true,
-    enableWordByWordDisplay: true,
     enableFadeInAnimations: true,
     enableTypingCursor: true,
     enablePunctuationDelays: true,
@@ -52,31 +50,12 @@ export const DEFAULT_PERFORMANCE_SETTINGS: StreamingDisplayPerformanceSettings =
 };
 
 /**
- * Default word display configuration
- */
-export const DEFAULT_WORD_DISPLAY_CONFIG: WordDisplayConfig = {
-    baseDelay: { min: 50, max: 200 },
-    longWordThreshold: 8,
-    longWordDelayMultiplier: 1.5,
-    punctuationDelays: {
-        '.': 300,
-        '!': 300,
-        '?': 300,
-        ',': 150,
-        ';': 200,
-        ':': 200,
-    },
-    fadeInDuration: { min: 100, max: 300 },
-};
-
-/**
  * Default complete configuration
  */
 export const DEFAULT_STREAMING_DISPLAY_CONFIG: StreamingPromptDisplayConfig = {
     features: DEFAULT_FEATURE_FLAGS,
     accessibility: DEFAULT_ACCESSIBILITY_SETTINGS,
     performance: DEFAULT_PERFORMANCE_SETTINGS,
-    wordDisplay: DEFAULT_WORD_DISPLAY_CONFIG,
     debug: false,
 };
 
@@ -87,11 +66,6 @@ export const CONFIG_PRESETS: Record<StreamingDisplayPreset, Partial<StreamingPro
     default: {},
 
     fast: {
-        wordDisplay: {
-            ...DEFAULT_WORD_DISPLAY_CONFIG,
-            baseDelay: { min: 25, max: 100 },
-            fadeInDuration: { min: 50, max: 150 },
-        },
         features: {
             ...DEFAULT_FEATURE_FLAGS,
             enablePunctuationDelays: false,
@@ -99,11 +73,9 @@ export const CONFIG_PRESETS: Record<StreamingDisplayPreset, Partial<StreamingPro
     },
 
     slow: {
-        wordDisplay: {
-            ...DEFAULT_WORD_DISPLAY_CONFIG,
-            baseDelay: { min: 100, max: 400 },
-            fadeInDuration: { min: 200, max: 500 },
-            longWordDelayMultiplier: 2.0,
+        features: {
+            ...DEFAULT_FEATURE_FLAGS,
+            enablePunctuationDelays: true,
         },
     },
 
@@ -242,33 +214,6 @@ export class StreamingDisplayConfigService {
     }
 
     /**
-     * Get word display configuration with user preferences applied
-     */
-    getWordDisplayConfig(): WordDisplayConfig {
-        const config = { ...this.config.wordDisplay };
-
-        // Apply user speed multipliers
-        if (this.userPreferences.displaySpeedMultiplier) {
-            const multiplier = 1 / this.userPreferences.displaySpeedMultiplier;
-            config.baseDelay.min *= multiplier;
-            config.baseDelay.max *= multiplier;
-
-            // Apply to punctuation delays
-            Object.keys(config.punctuationDelays).forEach(key => {
-                config.punctuationDelays[key] *= multiplier;
-            });
-        }
-
-        if (this.userPreferences.animationSpeedMultiplier) {
-            const multiplier = 1 / this.userPreferences.animationSpeedMultiplier;
-            config.fadeInDuration.min *= multiplier;
-            config.fadeInDuration.max *= multiplier;
-        }
-
-        return config;
-    }
-
-    /**
      * Subscribe to configuration changes
      */
     subscribe(listener: (config: StreamingPromptDisplayConfig) => void): () => void {
@@ -391,7 +336,6 @@ export class StreamingDisplayConfigService {
             features: { ...base.features, ...updates.features },
             accessibility: { ...base.accessibility, ...updates.accessibility },
             performance: { ...base.performance, ...updates.performance },
-            wordDisplay: { ...base.wordDisplay, ...updates.wordDisplay },
             debug: updates.debug ?? base.debug,
         };
     }
@@ -402,31 +346,6 @@ export class StreamingDisplayConfigService {
     private validateConfig(config: StreamingPromptDisplayConfig): ConfigValidationResult {
         const errors: string[] = [];
         const warnings: string[] = [];
-
-        // Validate word display config
-        if (config.wordDisplay.baseDelay.min < 0 || config.wordDisplay.baseDelay.max < 0) {
-            errors.push('Base delay values must be non-negative');
-        }
-
-        if (config.wordDisplay.baseDelay.min > config.wordDisplay.baseDelay.max) {
-            errors.push('Base delay minimum must be less than or equal to maximum');
-        }
-
-        if (config.wordDisplay.fadeInDuration.min < 0 || config.wordDisplay.fadeInDuration.max < 0) {
-            errors.push('Fade-in duration values must be non-negative');
-        }
-
-        if (config.wordDisplay.fadeInDuration.min > config.wordDisplay.fadeInDuration.max) {
-            errors.push('Fade-in duration minimum must be less than or equal to maximum');
-        }
-
-        if (config.wordDisplay.longWordThreshold < 1) {
-            errors.push('Long word threshold must be at least 1');
-        }
-
-        if (config.wordDisplay.longWordDelayMultiplier < 1) {
-            warnings.push('Long word delay multiplier less than 1 will make long words faster');
-        }
 
         // Validate performance settings
         if (config.performance.maxConcurrentDisplays < 1) {
@@ -440,13 +359,6 @@ export class StreamingDisplayConfigService {
         if (config.performance.updateDebounceMs < 0) {
             errors.push('Update debounce must be non-negative');
         }
-
-        // Validate punctuation delays
-        Object.entries(config.wordDisplay.punctuationDelays).forEach(([punct, delay]) => {
-            if (delay < 0) {
-                errors.push(`Punctuation delay for '${punct}' must be non-negative`);
-            }
-        });
 
         return {
             isValid: errors.length === 0,

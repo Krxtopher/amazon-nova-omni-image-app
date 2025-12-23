@@ -7,7 +7,6 @@ export { BedrockServiceProvider, useBedrockService } from './BedrockServiceConte
 export {
     StreamingDisplayConfigProvider,
     useStreamingDisplayConfig,
-    useWordDisplayConfig,
     useFeatureFlag,
     useAccessibilitySettings,
     usePerformanceSettings,

@@ -380,14 +380,6 @@ export function trackStreamingEnhancementError(error: string, duration?: number,
     featureAdoptionMonitoring.trackFeatureError('streaming-enhancement', error, duration, userId, sessionId);
 }
 
-export function trackWordByWordDisplayUsed(userId?: string, sessionId?: string, metadata?: Record<string, any>): void {
-    featureAdoptionMonitoring.trackFeatureUsed('word-by-word-display', userId, sessionId, metadata);
-}
-
-export function trackWordByWordDisplayPerformance(duration: number, success: boolean, userId?: string, sessionId?: string): void {
-    featureAdoptionMonitoring.trackFeaturePerformance('word-by-word-display', duration, success, userId, sessionId);
-}
-
 export function trackFadeInAnimationUsed(userId?: string, sessionId?: string): void {
     featureAdoptionMonitoring.trackFeatureUsed('fade-in-animations', userId, sessionId);
 }

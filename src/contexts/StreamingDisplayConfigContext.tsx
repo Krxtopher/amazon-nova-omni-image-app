@@ -15,7 +15,6 @@ import type {
     StreamingDisplayUserPreferences,
     StreamingDisplayPreset,
 } from '../types/config';
-import type { WordDisplayConfig } from '../types/streaming';
 
 /**
  * Context value interface
@@ -38,9 +37,6 @@ interface StreamingDisplayConfigContextValue {
 
     /** Check if a feature is enabled */
     isFeatureEnabled: (feature: keyof StreamingPromptDisplayConfig['features']) => boolean;
-
-    /** Get word display configuration with user preferences applied */
-    getWordDisplayConfig: () => WordDisplayConfig;
 
     /** Reset to default configuration */
     reset: () => void;
@@ -110,10 +106,6 @@ export function StreamingDisplayConfigProvider({
             return configService.isFeatureEnabled(feature);
         }, [configService]),
 
-        getWordDisplayConfig: useCallback(() => {
-            return configService.getWordDisplayConfig();
-        }, [configService]),
-
         reset: useCallback(() => {
             configService.reset();
         }, [configService]),
@@ -141,14 +133,6 @@ export function useStreamingDisplayConfig(): StreamingDisplayConfigContextValue 
     }
 
     return context;
-}
-
-/**
- * Hook to get word display configuration with automatic updates
- */
-export function useWordDisplayConfig(): WordDisplayConfig {
-    const { getWordDisplayConfig } = useStreamingDisplayConfig();
-    return getWordDisplayConfig();
 }
 
 /**

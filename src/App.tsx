@@ -4,6 +4,7 @@ import { PromptInputArea, GeneratingStatus, Sidebar } from '@/components';
 import { SimpleVirtualizedGallery } from '@/components/SimpleVirtualizedGallery';
 import { Lightbox } from '@/components/Lightbox';
 import { MagicalEffectsDemo } from '@/components/MagicalEffectsDemo';
+
 import { DebugCounter } from '@/components/DebugCounter';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -73,9 +74,6 @@ function AppContent() {
       if (isStreamingEnhancementEnabled(userId)) {
         featureAdoptionMonitoring.trackFeatureEnabled('streaming-enhancement', userId);
       }
-
-      featureAdoptionMonitoring.trackFeatureEnabled('word-by-word-display', userId);
-      featureAdoptionMonitoring.trackFeatureEnabled('fade-in-animations', userId);
     }).catch((error) => {
       console.error('App initialization failed:', error);
     });
@@ -170,6 +168,8 @@ function AppContent() {
       <Routes>
         {/* Demo route - standalone */}
         <Route path="/demo" element={<MagicalEffectsDemo />} />
+
+
 
 
 
