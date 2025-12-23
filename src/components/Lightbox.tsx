@@ -178,7 +178,10 @@ export function Lightbox() {
                     alt={image.prompt}
                     className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 backdrop-blur-[100px] brightness-75 bg-black/30" />
+                {/* Blur and tint overlay */}
+                <div
+                    className="absolute inset-0 backdrop-blur-[100px] brightness-75 bg-neutral-900/30"
+                />
             </div>
 
             {/* Close button */}
