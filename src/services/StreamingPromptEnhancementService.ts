@@ -65,19 +65,28 @@ Return only the enhanced prompt, nothing else.`
 };
 
 /**
+ * Request context for tracking individual streaming requests
+ */
+interface StreamingRequestContext {
+    id: string;
+    abortController: AbortController;
+    tokenAccumulator: TokenAccumulator;
+    timeout: NodeJS.Timeout | null;
+    startTime: number;
+}
+
+/**
  * Service class for streaming prompt enhancement using Amazon Bedrock's Nova 2 Omni model
  * via the ConverseStream API for real-time token streaming.
+ * FIXED: Now supports concurrent requests by using per-request contexts
  */
 export class StreamingPromptEnhancementService implements StreamingPromptEnhancer {
     private client: BedrockRuntimeClient;
     private readonly modelId = 'us.amazon.nova-2-omni-v1:0';
-    private activeStream: AbortController | null = null;
-    private tokenAccumulator: TokenAccumulator = new TokenAccumulator();
+    private activeRequests: Map<string, StreamingRequestContext> = new Map();
     private errorConfig: StreamingErrorConfig;
-    private streamTimeout: NodeJS.Timeout | null = null;
     private errorHandler: StreamingErrorHandler;
     private performanceMonitoring: PerformanceMonitoringService;
-    private enhancementStartTime: number = 0;
 
     /**
      * Creates a new StreamingPromptEnhancementService instance
@@ -97,6 +106,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
     /**
      * Enhances a user prompt using streaming API with real-time token processing
      * Includes comprehensive error handling, timeout detection, and fallback mechanisms
+     * FIXED: Now supports concurrent requests by creating separate contexts
      * 
      * @param originalPrompt - The original user prompt to enhance
      * @param enhancementType - The type of enhancement to apply
@@ -111,88 +121,116 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
         onComplete: (finalText: string) => void,
         onError: (error: string) => void
     ): Promise<void> {
-        // Record enhancement start time for performance monitoring
-        this.enhancementStartTime = performance.now();
+        // Create unique request context for this enhancement
+        const requestId = `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        const requestContext: StreamingRequestContext = {
+            id: requestId,
+            abortController: new AbortController(),
+            tokenAccumulator: new TokenAccumulator(),
+            timeout: null,
+            startTime: performance.now()
+        };
 
-        // Wrap onComplete to record performance metrics
+        // Store the request context
+        this.activeRequests.set(requestId, requestContext);
+
+        // Wrap onComplete to record performance metrics and cleanup
         const wrappedOnComplete = (finalText: string) => {
             // Record enhancement completion time
-            if (this.enhancementStartTime > 0) {
-                this.performanceMonitoring.recordEnhancementTime(this.enhancementStartTime, performance.now());
+            if (requestContext.startTime > 0) {
+                this.performanceMonitoring.recordEnhancementTime(requestContext.startTime, performance.now());
             }
+
+            // Cleanup request context
+            this.cleanupRequest(requestId);
 
             // Call original completion callback
             onComplete(finalText);
         };
 
-        // Return original prompt if enhancement is off
-        if (enhancementType === 'off') {
-            // Simulate streaming for consistency by revealing original prompt word by word
-            this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, wrappedOnComplete);
-            return;
-        }
+        // Wrap onError to cleanup request context
+        const wrappedOnError = (error: string) => {
+            this.cleanupRequest(requestId);
+            onError(error);
+        };
 
-        // Check circuit breaker before attempting request
-        if (!this.errorHandler.canMakeRequest()) {
-            const circuitError = this.errorHandler.handleStreamingError(
-                new Error('Circuit breaker open'),
-                originalPrompt
-            );
-            this.handleFallback(circuitError, originalPrompt, onToken, wrappedOnComplete, onError);
-            return;
-        }
-
-        let retryCount = 0;
-        let lastError: unknown = null;
-        let partialData = '';
-
-        // Retry loop for handling transient errors
-        while (retryCount <= this.errorConfig.maxRetries) {
-            try {
-                await this.attemptStreamingEnhancement(
-                    originalPrompt,
-                    enhancementType,
-                    onToken,
-                    wrappedOnComplete,
-                    onError,
-                    (data) => { partialData = data; } // Track partial data
-                );
-
-                // Success - record it and exit
-                this.errorHandler.recordSuccess();
+        try {
+            // Return original prompt if enhancement is off
+            if (enhancementType === 'off') {
+                // Simulate streaming for consistency by revealing original prompt word by word
+                this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, wrappedOnComplete);
                 return;
-            } catch (error) {
-                lastError = error;
-                retryCount++;
+            }
 
-                // Use error handler to determine if we should retry
-                const streamingError = this.errorHandler.handleStreamingError(
-                    error,
-                    originalPrompt,
-                    partialData
+            // Check circuit breaker before attempting request
+            if (!this.errorHandler.canMakeRequest()) {
+                const circuitError = this.errorHandler.handleStreamingError(
+                    new Error('Circuit breaker open'),
+                    originalPrompt
                 );
+                this.handleFallback(circuitError, originalPrompt, onToken, wrappedOnComplete, wrappedOnError);
+                return;
+            }
 
-                if (!streamingError.shouldRetry || retryCount > this.errorConfig.maxRetries) {
-                    this.handleFallback(streamingError, originalPrompt, onToken, wrappedOnComplete, onError);
+            let retryCount = 0;
+            let lastError: unknown = null;
+            let partialData = '';
+
+            // Retry loop for handling transient errors
+            while (retryCount <= this.errorConfig.maxRetries) {
+                try {
+                    await this.attemptStreamingEnhancement(
+                        requestContext,
+                        originalPrompt,
+                        enhancementType,
+                        onToken,
+                        wrappedOnComplete,
+                        wrappedOnError,
+                        (data) => { partialData = data; } // Track partial data
+                    );
+
+                    // Success - record it and exit
+                    this.errorHandler.recordSuccess();
                     return;
-                }
+                } catch (error) {
+                    lastError = error;
+                    retryCount++;
 
-                // Wait before retry if specified
-                if (streamingError.retryAfterMs) {
-                    await this.sleep(streamingError.retryAfterMs);
+                    // Use error handler to determine if we should retry
+                    const streamingError = this.errorHandler.handleStreamingError(
+                        error,
+                        originalPrompt,
+                        partialData
+                    );
+
+                    if (!streamingError.shouldRetry || retryCount > this.errorConfig.maxRetries) {
+                        this.handleFallback(streamingError, originalPrompt, onToken, wrappedOnComplete, wrappedOnError);
+                        return;
+                    }
+
+                    // Wait before retry if specified
+                    if (streamingError.retryAfterMs) {
+                        await this.sleep(streamingError.retryAfterMs);
+                    }
                 }
             }
-        }
 
-        // All retries failed, handle final fallback
-        const finalError = this.errorHandler.handleStreamingError(lastError, originalPrompt, partialData);
-        this.handleFallback(finalError, originalPrompt, onToken, wrappedOnComplete, onError);
+            // All retries failed, handle final fallback
+            const finalError = this.errorHandler.handleStreamingError(lastError, originalPrompt, partialData);
+            this.handleFallback(finalError, originalPrompt, onToken, wrappedOnComplete, wrappedOnError);
+        } catch (error) {
+            // Ensure cleanup happens even if there's an unexpected error
+            this.cleanupRequest(requestId);
+            throw error;
+        }
     }
 
     /**
      * Attempts streaming enhancement with timeout and interruption handling
+     * FIXED: Now uses request context for concurrent request support
      */
     private async attemptStreamingEnhancement(
+        requestContext: StreamingRequestContext,
         originalPrompt: string,
         enhancementType: PromptEnhancement,
         onToken: (token: StreamingToken) => void,
@@ -201,17 +239,15 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
         onPartialData?: (data: string) => void // Track partial data for fallback
     ): Promise<void> {
         // Reset token accumulator for new stream
-        this.tokenAccumulator.reset();
+        requestContext.tokenAccumulator.reset();
 
-        // Create abort controller for cancellation
-        this.activeStream = new AbortController();
-        console.log('Created new AbortController for streaming');
+        console.log(`Created new request context ${requestContext.id} for streaming`);
 
-        // Set up timeout
-        this.streamTimeout = setTimeout(() => {
-            console.log('Stream timeout triggered');
-            if (this.activeStream) {
-                this.activeStream.abort();
+        // Set up timeout for this specific request
+        requestContext.timeout = setTimeout(() => {
+            console.log(`Stream timeout triggered for request ${requestContext.id}`);
+            if (requestContext.abortController) {
+                requestContext.abortController.abort();
             }
         }, this.errorConfig.timeoutMs);
 
@@ -243,13 +279,13 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
 
             const command = new ConverseStreamCommand(commandParams);
 
-            console.log('Sending streaming request to Bedrock API');
+            console.log(`Sending streaming request to Bedrock API for ${requestContext.id}`);
             // Send the streaming request
             const response = await this.client.send(command, {
-                abortSignal: this.activeStream?.signal
+                abortSignal: requestContext.abortController?.signal
             });
 
-            console.log('Received response from Bedrock API, starting to process stream');
+            console.log(`Received response from Bedrock API for ${requestContext.id}, starting to process stream`);
 
             if (!response.stream) {
                 throw new Error('No stream received from Bedrock API');
@@ -259,13 +295,13 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
             let partialText = '';
 
             // Process the streaming response
-            console.log('Starting to process streaming chunks');
+            console.log(`Starting to process streaming chunks for ${requestContext.id}`);
             for await (const chunk of response.stream) {
-                console.log('Received chunk:', Object.keys(chunk));
+                console.log(`Received chunk for ${requestContext.id}:`, Object.keys(chunk));
 
                 // Check if stream was cancelled
-                if (this.activeStream?.signal?.aborted) {
-                    console.log('Stream was cancelled, handling partial results');
+                if (requestContext.abortController?.signal?.aborted) {
+                    console.log(`Stream was cancelled for ${requestContext.id}, handling partial results`);
                     // Handle partial results if we received some tokens
                     if (hasReceivedTokens && partialText.trim()) {
                         if (onPartialData) {
@@ -280,7 +316,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                 // Process content block delta (text tokens)
                 if (chunk.contentBlockDelta?.delta?.text) {
                     const tokenText = chunk.contentBlockDelta.delta.text;
-                    console.log('Received token:', tokenText);
+                    console.log(`Received token for ${requestContext.id}:`, tokenText);
                     hasReceivedTokens = true;
                     partialText += tokenText;
 
@@ -290,7 +326,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                     }
 
                     // Add token to accumulator and get completed words
-                    const result = this.tokenAccumulator.addTokenSync(tokenText);
+                    const result = requestContext.tokenAccumulator.addTokenSync(tokenText);
 
                     // Send new completed words as tokens
                     result.newWords.forEach(word => {
@@ -313,7 +349,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
             }
 
             // Get final accumulated text
-            const finalText = this.tokenAccumulator.getAccumulatedText().trim();
+            const finalText = requestContext.tokenAccumulator.getAccumulatedText().trim();
 
             // Validate we received meaningful content
             if (!finalText || finalText.length < 3) {
@@ -324,8 +360,8 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
             onComplete(finalText);
 
         } finally {
-            // Clean up resources
-            this.cleanup();
+            // Clean up request-specific resources
+            this.cleanupRequestResources(requestContext);
         }
     }
 
@@ -382,40 +418,48 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
     }
 
     /**
-     * Clean up active resources and prevent memory leaks
-     * Called automatically after streaming completion or cancellation
+     * Clean up resources for a specific request
      */
-    private cleanup(): void {
-        if (this.streamTimeout) {
-            clearTimeout(this.streamTimeout);
-            this.streamTimeout = null;
-        }
-
-        if (this.activeStream) {
-            this.activeStream = null;
+    private cleanupRequestResources(requestContext: StreamingRequestContext): void {
+        if (requestContext.timeout) {
+            clearTimeout(requestContext.timeout);
+            requestContext.timeout = null;
         }
     }
 
     /**
-     * Cancels the active streaming request and cleans up all resources
+     * Clean up and remove a request context
+     */
+    private cleanupRequest(requestId: string): void {
+        const requestContext = this.activeRequests.get(requestId);
+        if (requestContext) {
+            this.cleanupRequestResources(requestContext);
+            this.activeRequests.delete(requestId);
+        }
+    }
+
+    /**
+     * Cancels all active streaming requests and cleans up all resources
      * Handles cancellation during various streaming states safely
      */
     cancelStreaming(): void {
-        // Abort the active stream if it exists
-        if (this.activeStream) {
+        // Abort all active streams
+        for (const [requestId, requestContext] of this.activeRequests.entries()) {
             try {
-                this.activeStream.abort();
+                if (requestContext.abortController) {
+                    requestContext.abortController.abort();
+                }
             } catch (error) {
-                console.warn('Error aborting stream:', error);
+                console.warn(`Error aborting stream for request ${requestId}:`, error);
             }
-            this.activeStream = null;
         }
 
-        // Clean up timeout and other resources
-        this.cleanup();
+        // Clean up all request contexts
+        for (const requestId of this.activeRequests.keys()) {
+            this.cleanupRequest(requestId);
+        }
 
-        // Reset token accumulator to prevent stale data
-        this.tokenAccumulator.reset();
+        console.log('All streaming requests cancelled and cleaned up');
     }
 
     /**
