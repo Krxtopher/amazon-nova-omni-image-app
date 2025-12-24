@@ -43,16 +43,16 @@ export function ImageCard({
     const { containerRef: textContainerRef, lineClamp: textLineClamp } = useDynamicLineClamp({
         lineHeight: 28, // text-lg line height (1.75rem * 16px = 28px)
         minLines: 2,
-        maxLines: 12,
-        padding: 60 // account for padding, "Generating..." text, and margins
+        maxLines: 20,
+        padding: 0 // account for padding, "Generating..." text, and margins
     });
 
     // Dynamic line clamp for prompt overlay
     const { containerRef: overlayContainerRef, lineClamp: overlayLineClamp } = useDynamicLineClamp({
         lineHeight: 20, // text-sm line height (1.25rem * 16px = 20px)
-        minLines: 1,
-        maxLines: 4,
-        padding: 40 // account for padding and gradient overlay
+        minLines: 2,
+        maxLines: 12,
+        padding: 80 // account for padding and gradient overlay
     });
 
     // Load image data on demand when visible and status is complete
@@ -187,6 +187,7 @@ export function ImageCard({
 
     return (
         <div
+            ref={overlayContainerRef}
             className={`relative rounded-lg overflow-hidden w-full h-full bg-linear-to-b from-white/1 to-transparent ${item.status === 'complete' ? 'group' : ''}`}
             style={{
                 boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0, 0, 0, 0.3)',
@@ -250,7 +251,7 @@ export function ImageCard({
             {/* Prompt overlay - always present but controlled by opacity */}
             {item.status === 'complete' && item.prompt && (
                 <div
-                    ref={overlayContainerRef}
+                    // ref={overlayContainerRef}
                     className={`absolute bottom-0 left-0 right-0 z-10 bg-linear-to-t from-neutral-800/80 via-black/40 to-transparent p-4 pt-8 transition-opacity duration-200 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}
                 >
                     <p className="text-white text-sm leading-relaxed flex items-start gap-2 select-none">
