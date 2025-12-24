@@ -1,20 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 
 interface WordRevealContainerProps {
     words: string[];
     delayPerCharacterMsec?: number;
 }
 
-export default function WordRevealContainer({ words, delayPerCharacterMsec = 50 }: WordRevealContainerProps) {
+const WordRevealContainer = memo(function WordRevealContainer({ words, delayPerCharacterMsec = 50 }: WordRevealContainerProps) {
     const [visibleWordCount, setVisibleWordCount] = useState(0);
+    const wordsRef = useRef<string[]>([]);
+    const isAnimatingRef = useRef(false);
 
     useEffect(() => {
         if (words.length === 0) return;
 
+        // Only restart animation if words actually changed or animation hasn't started
+        const wordsChanged = JSON.stringify(words) !== JSON.stringify(wordsRef.current);
+        if (!wordsChanged && isAnimatingRef.current) {
+            return;
+        }
+
+        wordsRef.current = words;
+        isAnimatingRef.current = true;
+        setVisibleWordCount(0);
+
         let timeoutId: NodeJS.Timeout;
 
         const revealNextWord = (currentIndex: number) => {
-            if (currentIndex >= words.length) return;
+            if (currentIndex >= words.length) {
+                isAnimatingRef.current = false;
+                return;
+            }
 
             setVisibleWordCount(currentIndex + 1);
 
@@ -30,6 +45,8 @@ export default function WordRevealContainer({ words, delayPerCharacterMsec = 50 
                 timeoutId = setTimeout(() => {
                     revealNextWord(currentIndex + 1);
                 }, delay);
+            } else {
+                isAnimatingRef.current = false;
             }
         };
 
@@ -41,7 +58,7 @@ export default function WordRevealContainer({ words, delayPerCharacterMsec = 50 
                 clearTimeout(timeoutId);
             }
         };
-    }, [words]);
+    }, [words, delayPerCharacterMsec]);
 
     return (
         <div style={{ whiteSpace: 'pre-wrap' }}>
@@ -74,4 +91,12 @@ export default function WordRevealContainer({ words, delayPerCharacterMsec = 50 
             }} />
         </div>
     );
-}
+}, (prevProps, nextProps) => {
+    // Only re-render if words array actually changed
+    return (
+        JSON.stringify(prevProps.words) === JSON.stringify(nextProps.words) &&
+        prevProps.delayPerCharacterMsec === nextProps.delayPerCharacterMsec
+    );
+});
+
+export default WordRevealContainer;

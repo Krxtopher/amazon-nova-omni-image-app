@@ -345,11 +345,26 @@ export const useImageStore = create<ImageStore>()((set) => ({
      */
     updateImage: async (id: string, updates: Partial<GeneratedImage>) => {
         // Update UI immediately for responsive feel
-        set((state) => ({
-            images: state.images.map((img) =>
-                img.id === id ? { ...img, ...updates } : img
-            ),
-        }));
+        // PERFORMANCE FIX: Use immer-style update to minimize re-renders
+        set((state) => {
+            const imageIndex = state.images.findIndex(img => img.id === id);
+            if (imageIndex === -1) return state; // No change if image not found
+
+            const updatedImage = { ...state.images[imageIndex], ...updates };
+
+            // Only create new array if the image actually changed
+            if (JSON.stringify(updatedImage) === JSON.stringify(state.images[imageIndex])) {
+                return state; // No change needed
+            }
+
+            const newImages = [...state.images];
+            newImages[imageIndex] = updatedImage;
+
+            return {
+                ...state,
+                images: newImages
+            };
+        });
 
         // Coordinate updates between SQLite (metadata) and IndexedDB (binary data)
         // Requirements: 5.2 - Route operations to appropriate storage mechanisms

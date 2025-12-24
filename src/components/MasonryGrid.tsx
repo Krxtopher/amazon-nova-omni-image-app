@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
   useMemo,
+  memo,
   type HTMLAttributes,
 } from "react";
 
@@ -302,7 +303,7 @@ interface MasonryItemContainerProps extends HTMLAttributes<HTMLDivElement> {
   gap: number;
 }
 
-function MasonryItemContainer({
+const MasonryItemContainer = memo(function MasonryItemContainer({
   item,
   displayWidth,
   displayHeight,
@@ -343,6 +344,18 @@ function MasonryItemContainer({
       {renderer(rendererProps)}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if position, size, or item changed
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.displayWidth === nextProps.displayWidth &&
+    prevProps.displayHeight === nextProps.displayHeight &&
+    prevProps.left === nextProps.left &&
+    prevProps.top === nextProps.top &&
+    prevProps.gap === nextProps.gap &&
+    // Deep comparison for item properties that affect rendering
+    JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item)
+  );
+});
 
 export { HMasonryGrid, VMasonryGrid };

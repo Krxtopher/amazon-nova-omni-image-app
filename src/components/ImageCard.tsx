@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GeneratedImage, PromptEnhancement } from '../types';
 import type { MasonryItemRendererProps } from './MasonryGrid';
@@ -23,9 +23,10 @@ interface ImageRendererProps extends MasonryItemRendererProps {
 /**
  * Renderer component for displaying GeneratedImage items in MasonryGrid
  * FIXED: Simplified animation logic to prevent invisible images
+ * PERFORMANCE FIX: Memoized to prevent unnecessary re-renders when other images update
  * DEV_CACHE_BUST: 1766463500000
  */
-export function ImageCard({
+export const ImageCard = memo(function ImageCard({
     item,
     displayWidth: _displayWidth,
     displayHeight: _displayHeight,
@@ -282,7 +283,22 @@ export function ImageCard({
             )}
         </div>
     );
-}
+}, (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+    // Only re-render if the specific item or relevant props changed
+    return (
+        prevProps.item.id === nextProps.item.id &&
+        prevProps.item.status === nextProps.item.status &&
+        prevProps.item.url === nextProps.item.url &&
+        prevProps.item.error === nextProps.item.error &&
+        prevProps.item.prompt === nextProps.item.prompt &&
+        prevProps.item.enhancedPrompt === nextProps.item.enhancedPrompt &&
+        prevProps.displayWidth === nextProps.displayWidth &&
+        prevProps.displayHeight === nextProps.displayHeight &&
+        prevProps.isVisible === nextProps.isVisible &&
+        prevProps.enhancementType === nextProps.enhancementType
+    );
+});
 
 /**
  * Creates a renderer function for use with MasonryGrid
@@ -290,6 +306,7 @@ export function ImageCard({
 export function createImageRenderer(
     onDelete: (id: string) => void,
     onEdit: (image: GeneratedImage) => Promise<void>,
+    _enableStreamingDisplay?: boolean, // Legacy parameter, kept for compatibility
     enhancementType: PromptEnhancement = 'off'
 ) {
     return (props: MasonryItemRendererProps) => (
