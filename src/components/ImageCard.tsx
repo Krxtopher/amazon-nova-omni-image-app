@@ -138,14 +138,16 @@ export function ImageCard({
             <div className="absolute inset-0">
                 <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
                 <div className="absolute inset-0 flex flex-col p-4 z-10 mix-blend-overlay">
-                    <div className="flex-1 flex items-start justify-start min-h-0 pt-4">
+                    <div className="flex-1 flex items-start justify-start min-h-0 pt-4 overflow-hidden relative">
                         {item.prompt && (
-                            <div className="text-white text-left text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
-                                <WordRevealContainer
-                                    words={(enhancementType !== 'off' && item.enhancedPrompt ? item.enhancedPrompt : item.prompt).split(' ')}
-                                    delayPerCharacterMsec={30}
-                                />
-                            </div>
+                            <>
+                                <div className="text-white text-left text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
+                                    <WordRevealContainer
+                                        words={(enhancementType !== 'off' && item.enhancedPrompt ? item.enhancedPrompt : item.prompt).split(' ')}
+                                        delayPerCharacterMsec={30}
+                                    />
+                                </div>
+                            </>
                         )}
                     </div>
                     <div className="text-white text-center shrink-0 mt-2">
@@ -251,7 +253,6 @@ export function ImageCard({
 export function createImageRenderer(
     onDelete: (id: string) => void,
     onEdit: (image: GeneratedImage) => Promise<void>,
-    enableStreamingDisplay: boolean = false,
     enhancementType: PromptEnhancement = 'off'
 ) {
     return (props: MasonryItemRendererProps) => (
@@ -260,7 +261,6 @@ export function createImageRenderer(
             item={props.item as ImageMasonryItem}
             onDelete={onDelete}
             onEdit={onEdit}
-            enableStreamingDisplay={enableStreamingDisplay}
             enhancementType={enhancementType}
         />
     );
