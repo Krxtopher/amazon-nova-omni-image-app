@@ -25,6 +25,7 @@ export type {
     CustomPersona,
     BuiltInPersona,
     PromptEnhancement,
+    Persona,
 } from './persona';
 
 // Bedrock API types

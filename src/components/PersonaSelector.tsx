@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Wand2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { personaService } from '@/services/personaService';
 import { loadIcon } from '@/utils/iconLoader';
 import type { PromptEnhancement } from '@/types';
@@ -14,50 +14,24 @@ interface PersonaSelectorProps {
 }
 
 /**
- * Built-in persona options with their visual representations
- */
-const BUILT_IN_PERSONAS = [
-    {
-        value: 'off' as const,
-        label: 'Off',
-        icon: X,
-        description: 'Use your prompt as-is without a persona'
-    },
-    {
-        value: 'standard' as const,
-        label: 'Standard',
-        icon: Sparkles,
-        description: 'Professional photographer persona with technical expertise'
-    },
-    {
-        value: 'creative' as const,
-        label: 'Creative',
-        icon: Wand2,
-        description: 'Artistic persona that adds creative flair and imagination'
-    }
-];
-
-/**
- * Get the persona data for display
+ * Get the persona data for display using unified interface
  */
 const getPersonaDisplayData = async (personaId: PromptEnhancement) => {
-    const builtIn = BUILT_IN_PERSONAS.find(p => p.value === personaId);
-    if (builtIn) {
+    const persona = await personaService.getPersona(personaId);
+
+    if (!persona) {
+        // Fallback for unknown personas
         return {
-            label: builtIn.label,
-            description: builtIn.description,
-            icon: builtIn.icon
+            label: 'Unknown',
+            description: 'Unknown persona',
+            icon: X
         };
     }
 
-    // Custom persona - load the icon dynamically
-    const persona = await personaService.getCustomPersona(personaId);
-    const info = await personaService.getPersonaInfo(personaId);
-
     return {
-        label: info?.label || 'Custom',
-        description: info?.description || 'Custom persona',
-        icon: loadIcon(persona?.icon || 'Edit')
+        label: persona.name,
+        description: persona.description,
+        icon: loadIcon(persona.icon)
     };
 };
 

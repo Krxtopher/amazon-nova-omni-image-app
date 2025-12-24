@@ -2,7 +2,7 @@ import { BedrockRuntimeClient, ConverseStreamCommand } from '@aws-sdk/client-bed
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { PromptEnhancement, StreamingPromptEnhancer, StreamingToken } from '../types';
 import { personaService } from './personaService';
-import { PERSONA_SYSTEM_PROMPTS } from './personaPrompts';
+import { STANDARD_PERSONAS } from './standardPersonas';
 import { TokenAccumulator } from '../utils/TokenAccumulator';
 import { StreamingErrorHandler, type StreamingError } from '../utils/StreamingErrorHandler';
 import { PerformanceMonitoringService } from './PerformanceMonitoringService';
@@ -433,7 +433,8 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                 if (enhancementType === 'off') {
                     return null;
                 }
-                return PERSONA_SYSTEM_PROMPTS[enhancementType];
+                const persona = STANDARD_PERSONAS[enhancementType];
+                return persona.systemPrompt;
             } else {
                 // Handle custom persona by ID
                 return await personaService.getSystemPrompt(enhancementType);

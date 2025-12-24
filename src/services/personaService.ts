@@ -1,29 +1,40 @@
 import { sqliteService } from './sqliteService';
-import type { CustomPersona, BuiltInPersona } from '../types';
+import type { CustomPersona, BuiltInPersona, Persona } from '../types';
+import { STANDARD_PERSONAS } from './standardPersonas';
 
 /**
- * Service for managing custom personas
+ * Service for managing all personas (built-in and custom) with a unified interface
  */
 class PersonaService {
     private readonly PERSONAS_KEY = 'customPersonas';
 
     /**
-     * Built-in persona definitions
+     * Built-in persona definitions from centralized source
      */
-    readonly builtInPersonas = {
-        off: {
-            label: 'Off',
-            description: 'Use your prompt as-is without a persona'
-        },
-        standard: {
-            label: 'Standard',
-            description: 'Professional photographer persona with technical expertise'
-        },
-        creative: {
-            label: 'Creative',
-            description: 'Artistic persona that adds creative flair and imagination'
+    readonly builtInPersonas = STANDARD_PERSONAS;
+
+    /**
+     * Get all personas (built-in and custom) as unified Persona objects
+     */
+    async getAllPersonas(): Promise<Persona[]> {
+        const customPersonas = await this.getCustomPersonas();
+        const builtInPersonasList = Object.values(this.builtInPersonas);
+
+        return [...builtInPersonasList, ...customPersonas];
+    }
+
+    /**
+     * Get a specific persona by ID (built-in or custom)
+     */
+    async getPersona(id: string): Promise<Persona | null> {
+        // Check built-in personas first
+        if (this.isBuiltInPersona(id)) {
+            return this.builtInPersonas[id];
         }
-    } as const;
+
+        // Check custom personas
+        return await this.getCustomPersona(id);
+    }
 
     /**
      * Get all custom personas
@@ -31,7 +42,15 @@ class PersonaService {
     async getCustomPersonas(): Promise<CustomPersona[]> {
         try {
             const personas = await sqliteService.getSetting(this.PERSONAS_KEY);
-            return personas ? JSON.parse(personas as string) : [];
+            const rawPersonas = personas ? JSON.parse(personas as string) : [];
+
+            // Ensure all custom personas have isEditable: true and proper typing
+            return rawPersonas.map((p: any): CustomPersona => ({
+                ...p,
+                isEditable: true,
+                createdAt: new Date(p.createdAt),
+                updatedAt: new Date(p.updatedAt)
+            }));
         } catch (error) {
             return [];
         }
@@ -60,6 +79,7 @@ class PersonaService {
             description: description?.trim() || 'Custom persona',
             systemPrompt: systemPrompt,
             icon: icon || 'Edit', // Default to Edit icon if none provided
+            isEditable: true,
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -86,10 +106,11 @@ class PersonaService {
             ? { systemPrompt: this.generateSystemPromptFromTemplate(updates.personaDescription) }
             : {};
 
-        const updatedPersona = {
+        const updatedPersona: CustomPersona = {
             ...personas[index],
             ...updates,
             ...systemPromptUpdate,
+            isEditable: true, // Ensure this remains true
             updatedAt: new Date()
         };
 
@@ -128,24 +149,15 @@ class PersonaService {
      * Get the system prompt for a persona (built-in or custom)
      */
     async getSystemPrompt(personaId: string): Promise<string | null> {
-        if (this.isBuiltInPersona(personaId)) {
-            // Return null for built-in personas - they're handled by BedrockImageService
-            return null;
-        }
-
-        const persona = await this.getCustomPersona(personaId);
+        const persona = await this.getPersona(personaId);
         return persona?.systemPrompt || null;
     }
 
     /**
-     * Get display information for any persona
+     * Get display information for any persona using unified interface
      */
     async getPersonaInfo(personaId: string): Promise<{ label: string; description: string } | null> {
-        if (this.isBuiltInPersona(personaId)) {
-            return this.builtInPersonas[personaId];
-        }
-
-        const persona = await this.getCustomPersona(personaId);
+        const persona = await this.getPersona(personaId);
         if (!persona) {
             return null;
         }

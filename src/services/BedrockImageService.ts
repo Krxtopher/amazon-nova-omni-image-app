@@ -3,7 +3,7 @@ import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams, PromptEnhancement } from '../types';
 import { personaService } from './personaService';
-import { PERSONA_SYSTEM_PROMPTS } from './personaPrompts';
+import { STANDARD_PERSONAS } from './standardPersonas';
 
 
 /**
@@ -436,7 +436,8 @@ export class BedrockImageService {
                 if (enhancementType === 'off') {
                     return originalPrompt;
                 }
-                systemPrompt = PERSONA_SYSTEM_PROMPTS[enhancementType];
+                const persona = STANDARD_PERSONAS[enhancementType];
+                systemPrompt = persona.systemPrompt!; // Non-null assertion safe for non-'off' personas
             } else {
                 // Handle custom persona by ID
                 const customSystemPrompt = await personaService.getSystemPrompt(enhancementType);
@@ -509,7 +510,8 @@ export class BedrockImageService {
                 if (enhancementType === 'off') {
                     return { enhancedPrompt: originalPrompt };
                 }
-                systemPrompt = PERSONA_SYSTEM_PROMPTS[enhancementType];
+                const persona = STANDARD_PERSONAS[enhancementType];
+                systemPrompt = persona.systemPrompt!; // Non-null assertion safe for non-'off' personas
             } else {
                 // Handle custom persona by ID
                 const customSystemPrompt = await personaService.getSystemPrompt(enhancementType);

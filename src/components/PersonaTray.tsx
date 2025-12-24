@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Wand2, X, Plus, Edit, Trash2, Check } from 'lucide-react';
+import { Sparkles, Plus, Edit, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,7 @@ import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { personaService } from '@/services/personaService';
 import { useBedrockService } from '@/contexts/BedrockServiceContext';
 import { loadIcon } from '@/utils/iconLoader';
-import type { PromptEnhancement, CustomPersona } from '@/types';
+import type { PromptEnhancement, CustomPersona, Persona } from '@/types';
 
 interface PersonaTrayProps {
     selectedPersona: PromptEnhancement;
@@ -15,35 +15,9 @@ interface PersonaTrayProps {
     onClose: () => void;
 }
 
-/**
- * Built-in persona options with their visual representations
- */
-const BUILT_IN_PERSONAS = [
-    {
-        value: 'off' as const,
-        label: 'Off',
-        icon: X,
-        description: 'Use your prompt as-is without a persona'
-    },
-    {
-        value: 'standard' as const,
-        label: 'Standard',
-        icon: Sparkles,
-        description: 'Professional photographer persona with technical expertise'
-    },
-    {
-        value: 'creative' as const,
-        label: 'Creative',
-        icon: Wand2,
-        description: 'Artistic persona that adds creative flair and imagination'
-    }
-];
-
-
-
 export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: PersonaTrayProps) {
     const bedrockService = useBedrockService();
-    const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]);
+    const [allPersonas, setAllPersonas] = useState<Persona[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [editingPersona, setEditingPersona] = useState<CustomPersona | null>(null);
     const [name, setName] = useState('');
@@ -53,15 +27,15 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
     const [selectedIcon, setSelectedIcon] = useState('Edit');
     const [errors, setErrors] = useState<{ name?: string; personaDescription?: string }>({});
 
-    // Load custom personas when component mounts
+    // Load all personas when component mounts
     useEffect(() => {
-        loadCustomPersonas();
+        loadAllPersonas();
     }, []);
 
-    const loadCustomPersonas = async () => {
+    const loadAllPersonas = async () => {
         try {
-            const personas = await personaService.getCustomPersonas();
-            setCustomPersonas(personas);
+            const personas = await personaService.getAllPersonas();
+            setAllPersonas(personas);
         } catch (error) {
             // Silently handle load errors
         }
@@ -103,7 +77,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             }
 
             // Reload the list
-            await loadCustomPersonas();
+            await loadAllPersonas();
         } catch (error) {
             // Silently handle delete errors
         }
@@ -157,7 +131,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             }
 
             // Reload the list
-            await loadCustomPersonas();
+            await loadAllPersonas();
 
             // If this was a new persona, select it
             if (!editingPersona) {
@@ -216,42 +190,21 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             {!isCreating ? (
                 // Persona selection view
                 <div className="flex flex-wrap items-start justify-center gap-2 py-2">
-                    {/* Built-in personas */}
-                    {BUILT_IN_PERSONAS.map((persona) => {
-                        const IconComponent = persona.icon;
-                        return (
-                            <button
-                                key={persona.value}
-                                onClick={() => handlePersonaSelect(persona.value)}
-                                className={`flex flex-col items-center gap-2 p-3 min-w-[80px] max-w-[100px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPersona === persona.value
-                                    ? 'bg-white/10 border border-transparent'
-                                    : 'border border-transparent hover:border-border'
-                                    }`}
-                                aria-label={`Select persona ${persona.label}: ${persona.description}`}
-                                title={persona.description}
-                            >
-                                <div className="flex items-center justify-center h-8">
-                                    <IconComponent className="h-5 w-5" />
-                                </div>
-                                <span className="text-xs font-medium text-center leading-tight">
-                                    {persona.label}
-                                </span>
-                            </button>
-                        );
-                    })}
+                    {/* All personas (built-in and custom) */}
+                    {allPersonas.map((persona) => {
+                        const PersonaIcon = loadIcon(persona.icon);
+                        const isSelected = selectedPersona === persona.id;
 
-                    {/* Custom personas */}
-                    {customPersonas.map((persona) => {
-                        const PersonaIcon = loadIcon(persona.icon || 'Edit');
                         return (
                             <div
                                 key={persona.id}
-                                className={`group relative flex flex-col items-center gap-2 p-3 min-w-[80px] max-w-[100px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedPersona === persona.id
+                                className={`group relative flex flex-col items-center gap-2 p-3 min-w-[80px] max-w-[100px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${isSelected
                                     ? 'bg-white/10 border border-transparent'
                                     : 'border border-transparent hover:border-border'
                                     }`}
                                 onClick={() => handlePersonaSelect(persona.id)}
                                 title={persona.description}
+                                aria-label={`Select persona ${persona.name}: ${persona.description}`}
                             >
                                 <div className="flex items-center justify-center h-8">
                                     <PersonaIcon className="h-5 w-5" />
@@ -260,23 +213,25 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                                     {persona.name}
                                 </span>
 
-                                {/* Edit and delete buttons */}
-                                <div className="absolute -top-1 -right-1 flex gap-1 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={(e) => handleEditPersona(persona, e)}
-                                        className="p-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs"
-                                        title="Edit persona"
-                                    >
-                                        <Edit className="h-3 w-3" />
-                                    </button>
-                                    <button
-                                        onClick={(e) => handleDeletePersona(persona, e)}
-                                        className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs"
-                                        title="Delete persona"
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </button>
-                                </div>
+                                {/* Edit and delete buttons - only show for editable personas */}
+                                {persona.isEditable && (
+                                    <div className="absolute -top-1 -right-1 flex gap-1 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={(e) => handleEditPersona(persona as CustomPersona, e)}
+                                            className="p-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs"
+                                            title="Edit persona"
+                                        >
+                                            <Edit className="h-3 w-3" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeletePersona(persona as CustomPersona, e)}
+                                            className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs"
+                                            title="Delete persona"
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
