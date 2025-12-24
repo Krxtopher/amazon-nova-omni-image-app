@@ -171,7 +171,7 @@ export const ImageCard = memo(function ImageCard({
                                     >
                                         <WordRevealContainer
                                             words={(enhancementType === 'off' ? item.prompt : item.enhancedPrompt || '').split(' ')}
-                                            delayPerCharacterMsec={30}
+                                            delayPerCharacterMsec={50}
                                         />
                                     </div>
                                 </div>

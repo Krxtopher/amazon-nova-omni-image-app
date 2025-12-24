@@ -6,67 +6,64 @@ interface WordRevealContainerProps {
 }
 
 const WordRevealContainer = memo(function WordRevealContainer({ words, delayPerCharacterMsec = 50 }: WordRevealContainerProps) {
-    const [visibleWordCount, setVisibleWordCount] = useState(0);
+    const [domWords, setDomWords] = useState<string[]>([]);
     const wordsRef = useRef<string[]>([]);
     const isAnimatingRef = useRef(false);
+    const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
     useEffect(() => {
         if (words.length === 0) return;
 
         wordsRef.current = words;
         isAnimatingRef.current = true;
-        setVisibleWordCount(0);
+        setDomWords([]);
 
-        let timeoutId: NodeJS.Timeout;
+        // Clear any existing timeouts
+        timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+        timeoutsRef.current = [];
 
-        const revealNextWord = (currentIndex: number) => {
-            if (currentIndex >= words.length) {
-                isAnimatingRef.current = false;
-                return;
-            }
+        let cumulativeDelay = 0;
 
-            setVisibleWordCount(currentIndex + 1);
+        words.forEach((word, index) => {
+            const timeoutId = setTimeout(() => {
+                setDomWords(prev => [...prev, word]);
 
-            if (currentIndex + 1 < words.length) {
-                // Calculate delay based on current word's character count
-                const currentWord = words[currentIndex + 1];
-                let delay = currentWord.length * delayPerCharacterMsec;
+                if (index === words.length - 1) {
+                    isAnimatingRef.current = false;
+                }
+            }, cumulativeDelay);
 
-                // Add extra delay for punctuation
-                delay += /[.!?]/.test(currentWord) ? delayPerCharacterMsec * 12 : 0;
-                delay += /[,;:]/.test(currentWord) ? delayPerCharacterMsec * 6 : 0;
+            timeoutsRef.current.push(timeoutId);
 
-                timeoutId = setTimeout(() => {
-                    revealNextWord(currentIndex + 1);
-                }, delay);
-            } else {
-                isAnimatingRef.current = false;
-            }
-        };
+            // Calculate delay for next word based on current word's character count.
+            // Use an exponential curve to make short words appear faster and long words slower.
+            let delay = expRiseMapped(word.length, 5, 0, 10, delayPerCharacterMsec, delayPerCharacterMsec * 10)
 
-        // Start revealing words
-        revealNextWord(0);
+            // Add extra delay for punctuation
+            delay += /[.!?]/.test(word) ? delayPerCharacterMsec * 6 : 0;
+            delay += /[,;:]/.test(word) ? delayPerCharacterMsec * 4 : 0;
+
+            cumulativeDelay += delay;
+        });
 
         return () => {
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
+            timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+            timeoutsRef.current = [];
         };
     }, [words, delayPerCharacterMsec]);
 
     return (
         <div style={{ whiteSpace: 'pre-wrap' }}>
-            {words.slice(0, visibleWordCount).map((word, wordIndex) => (
+            {domWords.map((word, wordIndex) => (
                 <span
                     key={`${wordIndex}-${word}`}
                     className="opacity-0 animate-fade-in"
                     style={{
                         animation: 'fadeIn 0.6s ease-in-out forwards',
-                        display: 'inline',
-                        animationDelay: `${wordIndex * 50}ms`
+                        display: 'inline'
                     }}
                 >
-                    {word}{wordIndex < words.length - 1 ? ' ' : ''}
+                    {word}{wordIndex < domWords.length - 1 ? ' ' : ''}
                 </span>
             ))}
             <style dangerouslySetInnerHTML={{
@@ -92,5 +89,42 @@ const WordRevealContainer = memo(function WordRevealContainer({ words, delayPerC
         prevProps.delayPerCharacterMsec === nextProps.delayPerCharacterMsec
     );
 });
+
+/**
+ * Exponential rise curve mapped to an arbitrary range,
+ * with ergonomic defaults.
+ *
+ * Defaults:
+ * - k = 4
+ * - input range = [0, 1]
+ * - output range = [0, 1]
+ */
+export function expRiseMapped(
+    x: number,
+    k: number = 4,
+    inMin: number = 0,
+    inMax: number = 1,
+    outMin: number = 0,
+    outMax: number = 1
+): number {
+    if (k <= 0) {
+        throw new Error("k must be > 0");
+    }
+    if (inMax === inMin) {
+        throw new Error("inMax must not equal inMin");
+    }
+
+    // Normalize input to [0, 1]
+    const t = (x - inMin) / (inMax - inMin);
+
+    // Clamp to [0, 1]
+    const clampedT = Math.min(Math.max(t, 0), 1);
+
+    // Exponential rise in [0, 1]
+    const y01 = 1 - Math.exp(-k * clampedT);
+
+    // Map to output range
+    return outMin + (outMax - outMin) * y01;
+}
 
 export default WordRevealContainer;
