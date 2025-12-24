@@ -7,7 +7,7 @@ import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
 
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import { StreamingPromptEnhancementService } from '@/services/StreamingPromptEnhancementService';
-import type { AspectRatio, EditSource, GeneratedImage, StreamingToken, ConverseRequestParams } from '@/types';
+import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
 import { PersonaSelector } from './PersonaSelector';
@@ -281,44 +281,29 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 // Step 1: Enhance the prompt if persona is enabled
                 let enhancedPrompt = prompt;
-                let promptEnhanceParams: ConverseRequestParams | undefined;
-                if (selectedPromptEnhancement !== 'off') {
+                if (selectedPromptEnhancement !== 'off' && streamingServiceRef.current) {
                     try {
-                        // Use streaming enhancement if available, fallback to regular enhancement
-                        if (streamingServiceRef.current) {
-                            // Use streaming enhancement with promise-based wrapper
-                            enhancedPrompt = await new Promise<string>((resolve) => {
-                                let accumulatedText = '';
+                        // Use streaming enhancement with promise-based wrapper
+                        enhancedPrompt = await new Promise<string>((resolve) => {
+                            streamingServiceRef.current!.enhancePromptStreaming(
+                                prompt,
+                                selectedPromptEnhancement,
+                                () => {
+                                    // Accumulate tokens but don't update UI here since we're in generation flow
+                                },
+                                (finalText: string) => {
+                                    resolve(finalText);
+                                },
+                                (error: string) => {
+                                    console.warn('Streaming enhancement failed, using original prompt:', error);
+                                    resolve(prompt); // Fallback to original prompt
+                                }
+                            );
+                        });
 
-                                streamingServiceRef.current!.enhancePromptStreaming(
-                                    prompt,
-                                    selectedPromptEnhancement,
-                                    (token: StreamingToken) => {
-                                        // Accumulate tokens but don't update UI here since we're in generation flow
-                                        if (token.isComplete) {
-                                            accumulatedText += (accumulatedText ? ' ' : '') + token.text;
-                                        }
-                                    },
-                                    (finalText: string) => {
-                                        resolve(finalText);
-                                    },
-                                    (error: string) => {
-                                        console.warn('Streaming enhancement failed, using original prompt:', error);
-                                        resolve(prompt); // Fallback to original prompt
-                                    }
-                                );
-                            });
-                        } else {
-                            // Fallback to regular enhancement with parameters
-                            const enhancementResult = await bedrockService.enhancePrompt(prompt, selectedPromptEnhancement);
-                            enhancedPrompt = enhancementResult.enhancedPrompt;
-                            promptEnhanceParams = enhancementResult.converseParams;
-                        }
-
-                        // Store the enhanced prompt and enhancement parameters separately
+                        // Store the enhanced prompt
                         updateImage(placeholderId, {
-                            enhancedPrompt: enhancedPrompt,
-                            promptEnhanceParams: promptEnhanceParams
+                            enhancedPrompt: enhancedPrompt
                         });
                     } catch (error) {
                         enhancedPrompt = prompt;

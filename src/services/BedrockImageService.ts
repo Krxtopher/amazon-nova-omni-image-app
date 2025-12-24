@@ -1,9 +1,7 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
-import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams, PromptEnhancement } from '../types';
-import { personaService } from './personaService';
-import { STANDARD_PERSONAS } from './standardPersonas';
+import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams } from '../types';
 
 
 /**
@@ -416,98 +414,7 @@ export class BedrockImageService {
 
 
 
-    /**
-     * Enhance a prompt using a persona or built-in enhancement and return both the enhanced prompt and API parameters
-     * 
-     * @param originalPrompt - The original user prompt
-     * @param enhancementType - The type of enhancement to apply
-     * @returns Promise resolving to an object with the enhanced prompt and API parameters
-     * @throws Error if enhancement fails
-     */
-    async enhancePrompt(originalPrompt: string, enhancementType: PromptEnhancement): Promise<{ enhancedPrompt: string; converseParams?: ConverseRequestParams }> {
-        // Return original prompt if enhancement is off
-        if (enhancementType === 'off') {
-            return { enhancedPrompt: originalPrompt };
-        }
 
-        try {
-            let systemPrompt: string;
-
-            // Check if it's a built-in persona
-            if (personaService.isBuiltInPersona(enhancementType)) {
-                if (enhancementType === 'off') {
-                    return { enhancedPrompt: originalPrompt };
-                }
-                const persona = STANDARD_PERSONAS.find(p => p.id === enhancementType);
-                systemPrompt = persona?.systemPrompt!; // Non-null assertion safe for non-'off' personas
-            } else {
-                // Handle custom persona by ID
-                const customSystemPrompt = await personaService.getSystemPrompt(enhancementType);
-                if (!customSystemPrompt) {
-                    return { enhancedPrompt: originalPrompt };
-                }
-                systemPrompt = customSystemPrompt;
-            }
-
-            const commandParams: any = {
-                modelId: this.modelId,
-                messages: [
-                    {
-                        role: 'user',
-                        content: [{ text: originalPrompt }],
-                    },
-                ],
-                system: [
-                    {
-                        text: systemPrompt
-                    }
-                ],
-                inferenceConfig: {
-                    temperature: 1.0
-                }
-            };
-
-            const command = new ConverseCommand(commandParams);
-            const response = await this.client.send(command);
-
-            // Create converseParams for storage
-            const converseParams: ConverseRequestParams = {
-                modelId: this.modelId,
-                messages: [
-                    {
-                        role: 'user',
-                        content: [{ text: originalPrompt }],
-                    },
-                ],
-                system: [
-                    {
-                        text: systemPrompt
-                    }
-                ],
-            };
-
-            // Extract the enhanced prompt from the response
-            if (!response.output?.message?.content) {
-                throw new Error('Invalid response structure: missing content');
-            }
-
-            const textContent = response.output.message.content.find(
-                (item) => item.text !== undefined
-            );
-
-            if (!textContent?.text) {
-                throw new Error('No text content found in enhancement response');
-            }
-
-            return {
-                enhancedPrompt: textContent.text.trim(),
-                converseParams
-            };
-        } catch (error) {
-            // Fall back to original prompt if enhancement fails
-            return { enhancedPrompt: originalPrompt };
-        }
-    }
 
     /**
      * Generates content using Amazon Bedrock's Nova 2 Omni model via the Converse API

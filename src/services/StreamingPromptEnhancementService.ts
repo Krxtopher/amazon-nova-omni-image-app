@@ -6,6 +6,7 @@ import { STANDARD_PERSONAS } from './standardPersonas';
 import { TokenAccumulator } from '../utils/TokenAccumulator';
 import { StreamingErrorHandler, type StreamingError } from '../utils/StreamingErrorHandler';
 import { PerformanceMonitoringService } from './PerformanceMonitoringService';
+import { processPromptTemplate } from '@/utils/promptTemplating';
 
 /**
  * Configuration for StreamingPromptEnhancementService
@@ -219,10 +220,13 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
 
         try {
             // Get system prompt based on enhancement type
-            const systemPrompt = await this.getSystemPromptForEnhancement(enhancementType);
+            let systemPrompt = await this.getSystemPromptForEnhancement(enhancementType);
             if (!systemPrompt) {
                 throw new Error('Unable to get system prompt for enhancement type');
             }
+
+            // Process any template variables in the system prompt
+            systemPrompt = processPromptTemplate(systemPrompt)
 
             // Build the streaming command
             const commandParams: any = {

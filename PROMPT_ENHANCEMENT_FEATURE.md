@@ -55,7 +55,7 @@ export type PromptEnhancement = 'off' | 'standard' | 'creative' | 'custom';
 - Default value is 'off' to maintain backward compatibility
 
 ### Service Layer
-- Added `enhancePrompt()` method to `BedrockImageService`
+- Uses `StreamingPromptEnhancementService.enhancePromptStreaming()` method for real-time prompt enhancement
 - Uses Nova 2 Omni with specialized persona system prompts
 - Graceful fallback to original prompt if persona enhancement fails
 

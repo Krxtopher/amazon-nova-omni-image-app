@@ -17,14 +17,15 @@ export const STANDARD_PERSONAS: readonly Persona[] = [
     },
     {
         id: 'standard',
-        name: 'Standard',
+        name: 'General Enhancement',
         description: 'Offers basic prompt enhancement',
         systemPrompt: `You are an image generation prompt enhancer. Your task is to take a user's image generation prompt and enhance it with more descriptive language while preserving the user's original intent.
 
 Guidelines for enhancement:
 - Add relevant visual details as if describing the image without embelishment to a blind person.
-- Remain faithful to any style description from the user. When the user has NOT specified a style, choose from the wide range of popular visual styles including both photographic (40% chance) and other artistic styles (60% chance). (Never use the term "photorealistic" as it is not descriptive enough.)
-- Include relevant descriptors of the art style or photographic style
+- Remain faithful to any style description from the user. When the user has NOT specified a style, choose from a wide range of {photographic styles|illustration styles|art styles|visually uniqu styles}
+- Always start the prompt with relevant descriptors of the visual style
+- Avoid the word "realistic" unless explicitly mentioned by the user
 - Maintain the original tone and mood
 - Don't change the fundamental meaning or subject
 - Limit your prompt to about 200 words or fewer
