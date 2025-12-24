@@ -40,8 +40,8 @@ const WordRevealContainer = memo(function WordRevealContainer({ words, delayPerC
             let delay = expRiseMapped(word.length, 5, 0, 10, delayPerCharacterMsec, delayPerCharacterMsec * 10)
 
             // Add extra delay for punctuation
-            delay += /[.!?]/.test(word) ? delayPerCharacterMsec * 6 : 0;
-            delay += /[,;:]/.test(word) ? delayPerCharacterMsec * 4 : 0;
+            delay += /[.!?]/.test(word) ? delayPerCharacterMsec * 20 : 0;
+            delay += /[,;:]/.test(word) ? delayPerCharacterMsec * 7 : 0;
 
             cumulativeDelay += delay;
         });
