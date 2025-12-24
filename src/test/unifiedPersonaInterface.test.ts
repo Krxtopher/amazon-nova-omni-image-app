@@ -17,7 +17,7 @@ describe('Unified Persona Interface', () => {
 
     describe('Built-in Personas', () => {
         it('should have isEditable: false for all built-in personas', () => {
-            const builtInPersonas = Object.values(personaService.builtInPersonas);
+            const builtInPersonas = personaService.builtInPersonas;
 
             builtInPersonas.forEach(persona => {
                 expect(persona.isEditable).toBe(false);
@@ -34,7 +34,7 @@ describe('Unified Persona Interface', () => {
         });
 
         it('should have correct structure for built-in personas', () => {
-            const offPersona = personaService.builtInPersonas.off;
+            const offPersona = personaService.builtInPersonas.find(p => p.id === 'off');
 
             expect(offPersona).toMatchObject({
                 id: 'off',
@@ -49,19 +49,20 @@ describe('Unified Persona Interface', () => {
         });
 
         it('should have system prompts stored directly in persona objects', () => {
-            const standardPersona = personaService.builtInPersonas.standard;
-            const creativePersona = personaService.builtInPersonas.creative;
+            const standardPersona = personaService.builtInPersonas.find(p => p.id === 'standard');
+            const creativePersona = personaService.builtInPersonas.find(p => p.id === 'creative');
+            const offPersona = personaService.builtInPersonas.find(p => p.id === 'off');
 
             // Standard persona should have its system prompt
-            expect(standardPersona.systemPrompt).toBeTruthy();
-            expect(standardPersona.systemPrompt).toContain('professional photographer persona');
+            expect(standardPersona?.systemPrompt).toBeTruthy();
+            expect(standardPersona?.systemPrompt).toContain('professional photographer persona');
 
             // Creative persona should have its system prompt
-            expect(creativePersona.systemPrompt).toBeTruthy();
-            expect(creativePersona.systemPrompt).toContain('artistic persona');
+            expect(creativePersona?.systemPrompt).toBeTruthy();
+            expect(creativePersona?.systemPrompt).toContain('artistic persona');
 
             // Off persona should have null system prompt
-            expect(personaService.builtInPersonas.off.systemPrompt).toBeNull();
+            expect(offPersona?.systemPrompt).toBeNull();
         });
     });
 

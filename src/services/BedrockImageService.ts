@@ -436,8 +436,8 @@ export class BedrockImageService {
                 if (enhancementType === 'off') {
                     return originalPrompt;
                 }
-                const persona = STANDARD_PERSONAS[enhancementType];
-                systemPrompt = persona.systemPrompt!; // Non-null assertion safe for non-'off' personas
+                const persona = STANDARD_PERSONAS.find(p => p.id === enhancementType);
+                systemPrompt = persona?.systemPrompt!; // Non-null assertion safe for non-'off' personas
             } else {
                 // Handle custom persona by ID
                 const customSystemPrompt = await personaService.getSystemPrompt(enhancementType);
@@ -510,8 +510,8 @@ export class BedrockImageService {
                 if (enhancementType === 'off') {
                     return { enhancedPrompt: originalPrompt };
                 }
-                const persona = STANDARD_PERSONAS[enhancementType];
-                systemPrompt = persona.systemPrompt!; // Non-null assertion safe for non-'off' personas
+                const persona = STANDARD_PERSONAS.find(p => p.id === enhancementType);
+                systemPrompt = persona?.systemPrompt!; // Non-null assertion safe for non-'off' personas
             } else {
                 // Handle custom persona by ID
                 const customSystemPrompt = await personaService.getSystemPrompt(enhancementType);

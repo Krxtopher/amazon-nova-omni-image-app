@@ -1,3 +1,5 @@
+import type { STANDARD_PERSONAS } from '../services/standardPersonas';
+
 /**
  * Unified persona interface for both built-in and custom personas
  */
@@ -21,9 +23,9 @@ export interface CustomPersona extends Persona {
 }
 
 /**
- * Built-in persona types
+ * Built-in persona types - derived from the STANDARD_PERSONAS array
  */
-export type BuiltInPersona = 'off' | 'standard' | 'creative';
+export type BuiltInPersona = typeof STANDARD_PERSONAS[number]['id'];
 
 /**
  * Enhanced prompt enhancement type that supports custom persona IDs

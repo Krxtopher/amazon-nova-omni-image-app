@@ -18,7 +18,7 @@ class PersonaService {
      */
     async getAllPersonas(): Promise<Persona[]> {
         const customPersonas = await this.getCustomPersonas();
-        const builtInPersonasList = Object.values(this.builtInPersonas);
+        const builtInPersonasList = [...this.builtInPersonas];
 
         return [...builtInPersonasList, ...customPersonas];
     }
@@ -28,8 +28,9 @@ class PersonaService {
      */
     async getPersona(id: string): Promise<Persona | null> {
         // Check built-in personas first
-        if (this.isBuiltInPersona(id)) {
-            return this.builtInPersonas[id];
+        const builtInPersona = this.builtInPersonas.find(p => p.id === id);
+        if (builtInPersona) {
+            return builtInPersona;
         }
 
         // Check custom personas
@@ -142,7 +143,7 @@ class PersonaService {
      * Check if a persona ID is a built-in persona
      */
     isBuiltInPersona(personaId: string): personaId is BuiltInPersona {
-        return personaId in this.builtInPersonas;
+        return this.builtInPersonas.some(p => p.id === personaId);
     }
 
     /**
@@ -185,7 +186,7 @@ Take inspiration from the user's prompt and create your own unique vision. Be su
      */
     extractPersonaDescription(systemPrompt: string): string {
         // Try to extract the description between the template markers
-        const match = systemPrompt.match(/People describe you as follows:\s*\n\n(.*?)\n\nTake inspiration from/s);
+        const match = systemPrompt.match(/People describe you as follows:\s*\n\n([\s\S]*?)\n\nTake inspiration from/);
         if (match && match[1]) {
             return match[1].trim();
         }

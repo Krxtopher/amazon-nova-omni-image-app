@@ -433,8 +433,8 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                 if (enhancementType === 'off') {
                     return null;
                 }
-                const persona = STANDARD_PERSONAS[enhancementType];
-                return persona.systemPrompt;
+                const persona = STANDARD_PERSONAS.find(p => p.id === enhancementType);
+                return persona?.systemPrompt || null;
             } else {
                 // Handle custom persona by ID
                 return await personaService.getSystemPrompt(enhancementType);
