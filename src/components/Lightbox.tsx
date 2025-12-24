@@ -286,6 +286,14 @@ export function Lightbox() {
                             </p>
                         </div>
 
+                        {/* Enhanced prompt section */}
+                        {image.enhancedPrompt ? (<div className="space-y-2 mb-6">
+                            <h3 className="text-sm font-semibold text-gray-900">Enhanced Prompt:</h3>
+                            <p className="text-sm leading-relaxed text-gray-800">
+                                {image.enhancedPrompt}
+                            </p>
+                        </div>) : null}
+
                         {/* Attribute badges */}
                         <div className="flex flex-row sm:flex-col flex-wrap gap-2 items-start">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs">
