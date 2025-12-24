@@ -169,7 +169,7 @@ export function ImageCard({
                                         }}
                                     >
                                         <WordRevealContainer
-                                            words={(enhancementType !== 'off' && item.enhancedPrompt ? item.enhancedPrompt : item.prompt).split(' ')}
+                                            words={(enhancementType === 'off' ? item.prompt : item.enhancedPrompt || '').split(' ')}
                                             delayPerCharacterMsec={30}
                                         />
                                     </div>
