@@ -424,7 +424,7 @@ export class BedrockImageService {
      * @returns Promise resolving to an object with the enhanced prompt and API parameters
      * @throws Error if enhancement fails
      */
-    async enhancePromptWithParams(originalPrompt: string, enhancementType: PromptEnhancement): Promise<{ enhancedPrompt: string; converseParams?: ConverseRequestParams }> {
+    async enhancePrompt(originalPrompt: string, enhancementType: PromptEnhancement): Promise<{ enhancedPrompt: string; converseParams?: ConverseRequestParams }> {
         // Return original prompt if enhancement is off
         if (enhancementType === 'off') {
             return { enhancedPrompt: originalPrompt };

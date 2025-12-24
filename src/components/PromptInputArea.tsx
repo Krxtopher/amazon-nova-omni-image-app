@@ -310,7 +310,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                             });
                         } else {
                             // Fallback to regular enhancement with parameters
-                            const enhancementResult = await bedrockService.enhancePromptWithParams(prompt, selectedPromptEnhancement);
+                            const enhancementResult = await bedrockService.enhancePrompt(prompt, selectedPromptEnhancement);
                             enhancedPrompt = enhancementResult.enhancedPrompt;
                             promptEnhanceParams = enhancementResult.converseParams;
                         }
