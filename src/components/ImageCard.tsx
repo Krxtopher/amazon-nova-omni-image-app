@@ -7,6 +7,7 @@ import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
 import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';
 import { useImageData } from '../hooks/useImageData';
 import { StreamingPromptDisplay } from './StreamingPromptDisplay';
+import WordRevealContainer from './WordRevealContainer';
 
 interface ImageMasonryItem extends GeneratedImage {
     // MasonryGrid expects id, width, height which GeneratedImage already has
@@ -141,27 +142,13 @@ export function ImageCard({
             <div className="absolute inset-0">
                 <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
                 <div className="absolute inset-0 flex flex-col p-4 z-10 mix-blend-overlay">
-                    <div className="flex-1 flex items-center justify-center min-h-0">
+                    <div className="flex-1 flex items-start justify-start min-h-0 pt-4">
                         {item.prompt && (
-                            <div className="text-white text-center text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
-                                {enableStreamingDisplay ? (
-                                    <StreamingPromptDisplay
-                                        key={item.id} // Add key to ensure proper component lifecycle
-                                        originalPrompt={item.prompt}
-                                        enhancementType={enhancementType}
-                                        className="italic"
-                                        onEnhancementComplete={(enhanced) => {
-                                            // Update the image with the enhanced prompt when streaming completes
-                                            // This ensures the enhanced prompt is saved for display on completed images
-                                            if (enhanced !== item.prompt) {
-                                                // Only update if we have a parent callback to update the image
-                                                // For now, we'll rely on the PromptInputArea to handle this
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <span className="italic">{item.enhancedPrompt || item.prompt}</span>
-                                )}
+                            <div className="text-white text-left text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
+                                <WordRevealContainer
+                                    words={item.prompt.split(' ')}
+                                    delayPerCharacterMsec={30}
+                                />
                             </div>
                         )}
                     </div>

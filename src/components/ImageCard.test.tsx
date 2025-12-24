@@ -155,8 +155,8 @@ describe('ImageCard - ConverseParams Support', () => {
             </BrowserRouter>
         );
 
-        // Check that the prompt text is displayed during generation
-        const promptText = screen.getByText('A beautiful sunset over mountains');
+        // Check that the prompt text is displayed during generation (first word should be visible)
+        const promptText = screen.getByText('A');
         expect(promptText).toBeInTheDocument();
 
         // Check that the parent container has the overlay blend mode

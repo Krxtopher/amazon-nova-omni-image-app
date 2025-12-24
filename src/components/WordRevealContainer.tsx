@@ -44,17 +44,18 @@ export default function WordRevealContainer({ words, delayPerCharacterMsec = 50 
     }, [words]);
 
     return (
-        <div style={{ whiteSpace: 'pre' }}>
+        <div style={{ whiteSpace: 'pre-wrap' }}>
             {words.slice(0, visibleWordCount).map((word, wordIndex) => (
                 <span
                     key={`${wordIndex}-${word}`}
                     className="opacity-0 animate-fade-in"
                     style={{
                         animation: 'fadeIn 0.6s ease-in-out forwards',
-                        display: 'inline'
+                        display: 'inline',
+                        animationDelay: `${wordIndex * 50}ms`
                     }}
                 >
-                    {word}
+                    {word}{wordIndex < words.length - 1 ? ' ' : ''}
                 </span>
             ))}
             <style dangerouslySetInnerHTML={{
