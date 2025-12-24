@@ -6,7 +6,6 @@ import { Button } from './ui/button';
 import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
 import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';
 import { useImageData } from '../hooks/useImageData';
-import { StreamingPromptDisplay } from './StreamingPromptDisplay';
 import WordRevealContainer from './WordRevealContainer';
 
 interface ImageMasonryItem extends GeneratedImage {
@@ -17,8 +16,6 @@ interface ImageRendererProps extends MasonryItemRendererProps {
     item: ImageMasonryItem;
     onDelete: (id: string) => void;
     onEdit: (image: GeneratedImage) => Promise<void>;
-    // New props for streaming display
-    enableStreamingDisplay?: boolean;
     enhancementType?: PromptEnhancement;
 }
 
@@ -34,7 +31,6 @@ export function ImageCard({
     isVisible,
     onDelete,
     onEdit,
-    enableStreamingDisplay = false,
     enhancementType = 'off'
 }: ImageRendererProps) {
     const navigate = useNavigate();
@@ -146,7 +142,7 @@ export function ImageCard({
                         {item.prompt && (
                             <div className="text-white text-left text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
                                 <WordRevealContainer
-                                    words={item.prompt.split(' ')}
+                                    words={(enhancementType !== 'off' && item.enhancedPrompt ? item.enhancedPrompt : item.prompt).split(' ')}
                                     delayPerCharacterMsec={30}
                                 />
                             </div>
