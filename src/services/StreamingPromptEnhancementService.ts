@@ -241,11 +241,8 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
         // Reset token accumulator for new stream
         requestContext.tokenAccumulator.reset();
 
-        console.log(`Created new request context ${requestContext.id} for streaming`);
-
         // Set up timeout for this specific request
         requestContext.timeout = setTimeout(() => {
-            console.log(`Stream timeout triggered for request ${requestContext.id}`);
             if (requestContext.abortController) {
                 requestContext.abortController.abort();
             }
@@ -279,13 +276,10 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
 
             const command = new ConverseStreamCommand(commandParams);
 
-            console.log(`Sending streaming request to Bedrock API for ${requestContext.id}`);
             // Send the streaming request
             const response = await this.client.send(command, {
                 abortSignal: requestContext.abortController?.signal
             });
-
-            console.log(`Received response from Bedrock API for ${requestContext.id}, starting to process stream`);
 
             if (!response.stream) {
                 throw new Error('No stream received from Bedrock API');
@@ -295,13 +289,9 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
             let partialText = '';
 
             // Process the streaming response
-            console.log(`Starting to process streaming chunks for ${requestContext.id}`);
             for await (const chunk of response.stream) {
-                console.log(`Received chunk for ${requestContext.id}:`, Object.keys(chunk));
-
                 // Check if stream was cancelled
                 if (requestContext.abortController?.signal?.aborted) {
-                    console.log(`Stream was cancelled for ${requestContext.id}, handling partial results`);
                     // Handle partial results if we received some tokens
                     if (hasReceivedTokens && partialText.trim()) {
                         if (onPartialData) {
@@ -316,7 +306,6 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                 // Process content block delta (text tokens)
                 if (chunk.contentBlockDelta?.delta?.text) {
                     const tokenText = chunk.contentBlockDelta.delta.text;
-                    console.log(`Received token for ${requestContext.id}:`, tokenText);
                     hasReceivedTokens = true;
                     partialText += tokenText;
 
@@ -458,8 +447,6 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
         for (const requestId of this.activeRequests.keys()) {
             this.cleanupRequest(requestId);
         }
-
-        console.log('All streaming requests cancelled and cleaned up');
     }
 
     /**

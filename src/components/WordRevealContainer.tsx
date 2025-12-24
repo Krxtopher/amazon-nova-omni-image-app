@@ -13,12 +13,6 @@ const WordRevealContainer = memo(function WordRevealContainer({ words, delayPerC
     useEffect(() => {
         if (words.length === 0) return;
 
-        // Only restart animation if words actually changed or animation hasn't started
-        const wordsChanged = JSON.stringify(words) !== JSON.stringify(wordsRef.current);
-        if (!wordsChanged && isAnimatingRef.current) {
-            return;
-        }
-
         wordsRef.current = words;
         isAnimatingRef.current = true;
         setVisibleWordCount(0);
@@ -35,7 +29,7 @@ const WordRevealContainer = memo(function WordRevealContainer({ words, delayPerC
 
             if (currentIndex + 1 < words.length) {
                 // Calculate delay based on current word's character count
-                const currentWord = words[currentIndex];
+                const currentWord = words[currentIndex + 1];
                 let delay = currentWord.length * delayPerCharacterMsec;
 
                 // Add extra delay for punctuation

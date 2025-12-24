@@ -238,9 +238,6 @@ function App() {
 
   useEffect(() => {
     // Initialize application and feature rollout system
-    console.log('Streaming Prompt Enhancement System initialized');
-    console.log('Current migration phase:', featureRolloutManager.getCurrentPhase());
-    console.log('Streaming enhancement enabled (rollout):', isStreamingEnhancementEnabled());
   }, []);
 
   return (
