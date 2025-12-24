@@ -2,6 +2,7 @@ import { BedrockRuntimeClient, ConverseStreamCommand } from '@aws-sdk/client-bed
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { PromptEnhancement, StreamingPromptEnhancer, StreamingToken } from '../types';
 import { personaService } from './personaService';
+import { PERSONA_SYSTEM_PROMPTS } from './personaPrompts';
 import { TokenAccumulator } from '../utils/TokenAccumulator';
 import { StreamingErrorHandler, type StreamingError } from '../utils/StreamingErrorHandler';
 import { PerformanceMonitoringService } from './PerformanceMonitoringService';
@@ -30,38 +31,6 @@ const DEFAULT_ERROR_CONFIG: StreamingErrorConfig = {
     maxRetries: 2,
     timeoutMs: 30000, // 30 seconds
     fallbackToOriginal: true
-};
-
-/**
- * System prompts for different built-in persona modes (streaming version)
- */
-const STREAMING_PROMPT_ENHANCEMENT_SYSTEM_PROMPTS: Record<Exclude<import('../types/persona').BuiltInPersona, 'off'>, string> = {
-    standard: `You are a professional photographer persona. Your task is to take a user's image generation prompt and enhance it with technical expertise while preserving the user's original intent.
-
-Guidelines for enhancement:
-- Keep the core subject and concept intact
-- Add relevant artistic and technical details
-- Include appropriate style descriptors
-- Enhance lighting, composition, and quality terms
-- Add professional photography or art terminology when appropriate
-- Maintain the original tone and mood
-- Don't change the fundamental meaning or subject
-
-Return only the enhanced prompt, nothing else.`,
-
-    creative: `You are an artistic persona with a unique creative style. Your task is to take a user's image generation prompt and enhance it with artistic flair and creative details while preserving the original concept.
-
-Guidelines for creative enhancement:
-- Keep the original subject and intent
-- Add imaginative and artistic elements
-- Include creative lighting, atmosphere, and mood descriptors
-- Enhance with artistic styles, techniques, and mediums
-- Add cinematic or dramatic elements when appropriate
-- Include color palettes and artistic composition terms
-- Make it more visually striking and creative
-- Don't fundamentally alter the core concept
-
-Return only the enhanced prompt, nothing else.`
 };
 
 /**
@@ -464,7 +433,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                 if (enhancementType === 'off') {
                     return null;
                 }
-                return STREAMING_PROMPT_ENHANCEMENT_SYSTEM_PROMPTS[enhancementType];
+                return PERSONA_SYSTEM_PROMPTS[enhancementType];
             } else {
                 // Handle custom persona by ID
                 return await personaService.getSystemPrompt(enhancementType);
