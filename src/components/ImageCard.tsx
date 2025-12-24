@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
 import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';
 import { useImageData } from '../hooks/useImageData';
+import { useDynamicLineClamp } from '../hooks/useDynamicLineClamp';
 import WordRevealContainer from './WordRevealContainer';
 
 interface ImageMasonryItem extends GeneratedImage {
@@ -37,6 +38,22 @@ export function ImageCard({
     const [isHovered, setIsHovered] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
+
+    // Dynamic line clamp for generating state text
+    const { containerRef: textContainerRef, lineClamp: textLineClamp } = useDynamicLineClamp({
+        lineHeight: 28, // text-lg line height (1.75rem * 16px = 28px)
+        minLines: 2,
+        maxLines: 12,
+        padding: 60 // account for padding, "Generating..." text, and margins
+    });
+
+    // Dynamic line clamp for prompt overlay
+    const { containerRef: overlayContainerRef, lineClamp: overlayLineClamp } = useDynamicLineClamp({
+        lineHeight: 20, // text-sm line height (1.25rem * 16px = 20px)
+        minLines: 1,
+        maxLines: 4,
+        padding: 40 // account for padding and gradient overlay
+    });
 
     // Load image data on demand when visible and status is complete
     const shouldLoadImage = isVisible && item.status === 'complete';
@@ -138,16 +155,26 @@ export function ImageCard({
             <div className="absolute inset-0">
                 <MagicalImagePlaceholder className="absolute inset-0" variant="shader" />
                 <div className="absolute inset-0 flex flex-col p-4 z-10 mix-blend-overlay">
-                    <div className="flex-1 flex items-start justify-start min-h-0 pt-4 overflow-hidden relative">
+                    <div ref={textContainerRef} className="flex-1 min-h-0 overflow-hidden relative">
                         {item.prompt && (
-                            <>
+                            <div className="h-full flex items-start justify-start pt-4">
                                 <div className="text-white text-left text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
-                                    <WordRevealContainer
-                                        words={(enhancementType !== 'off' && item.enhancedPrompt ? item.enhancedPrompt : item.prompt).split(' ')}
-                                        delayPerCharacterMsec={30}
-                                    />
+                                    <div
+                                        className="overflow-hidden"
+                                        style={{
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: textLineClamp,
+                                            WebkitBoxOrient: 'vertical',
+                                            lineHeight: '1.75rem' // Ensure consistent line height
+                                        }}
+                                    >
+                                        <WordRevealContainer
+                                            words={(enhancementType !== 'off' && item.enhancedPrompt ? item.enhancedPrompt : item.prompt).split(' ')}
+                                            delayPerCharacterMsec={30}
+                                        />
+                                    </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
                     <div className="text-white text-center shrink-0 mt-2">
@@ -223,10 +250,19 @@ export function ImageCard({
             {/* Prompt overlay - always present but controlled by opacity */}
             {item.status === 'complete' && item.prompt && (
                 <div
+                    ref={overlayContainerRef}
                     className={`absolute bottom-0 left-0 right-0 z-10 bg-linear-to-t from-neutral-800/80 via-black/40 to-transparent p-4 pt-8 transition-opacity duration-200 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}
                 >
                     <p className="text-white text-sm leading-relaxed flex items-start gap-2 select-none">
-                        <span className="flex-1 overflow-hidden">
+                        <span
+                            className="flex-1 overflow-hidden"
+                            style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: overlayLineClamp,
+                                WebkitBoxOrient: 'vertical',
+                                lineHeight: '1.25rem' // Ensure consistent line height
+                            }}
+                        >
                             {item.enhancedPrompt || item.prompt}
                         </span>
                         <button
