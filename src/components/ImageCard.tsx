@@ -213,18 +213,47 @@ export const ImageCard = memo(function ImageCard({
                     <Button
                         size="icon"
                         variant="secondary"
-                        onClick={() => {
+                        onClick={async () => {
                             if (displayUrl) {
+                                // Download the image
                                 const imageLink = document.createElement('a');
                                 imageLink.href = displayUrl;
-                                imageLink.download = `image-${item.id}.png`;
+                                imageLink.download = `${item.id}-image.png`;
                                 document.body.appendChild(imageLink);
                                 imageLink.click();
                                 document.body.removeChild(imageLink);
+
+                                // Download image generation parameters if available
+                                if (item.converseParams) {
+                                    const imageGenParams = JSON.stringify(item.converseParams, null, 2);
+                                    const imageGenBlob = new Blob([imageGenParams], { type: 'application/json' });
+                                    const imageGenUrl = URL.createObjectURL(imageGenBlob);
+                                    const imageGenLink = document.createElement('a');
+                                    imageGenLink.href = imageGenUrl;
+                                    imageGenLink.download = `${item.id}-image-gen-request.json`;
+                                    document.body.appendChild(imageGenLink);
+                                    imageGenLink.click();
+                                    document.body.removeChild(imageGenLink);
+                                    URL.revokeObjectURL(imageGenUrl);
+                                }
+
+                                // Download prompt enhancement parameters if available
+                                if (item.promptEnhanceParams) {
+                                    const promptEnhanceParams = JSON.stringify(item.promptEnhanceParams, null, 2);
+                                    const promptEnhanceBlob = new Blob([promptEnhanceParams], { type: 'application/json' });
+                                    const promptEnhanceUrl = URL.createObjectURL(promptEnhanceBlob);
+                                    const promptEnhanceLink = document.createElement('a');
+                                    promptEnhanceLink.href = promptEnhanceUrl;
+                                    promptEnhanceLink.download = `${item.id}-prompt-enhance-request.json`;
+                                    document.body.appendChild(promptEnhanceLink);
+                                    promptEnhanceLink.click();
+                                    document.body.removeChild(promptEnhanceLink);
+                                    URL.revokeObjectURL(promptEnhanceUrl);
+                                }
                             }
                         }}
                         className="h-8 w-8 shadow-lg backdrop-blur-sm"
-                        aria-label="Download image"
+                        aria-label="Download image and parameters"
                     >
                         <Download className="h-4 w-4" />
                     </Button>
@@ -293,6 +322,8 @@ export const ImageCard = memo(function ImageCard({
         prevProps.item.error === nextProps.item.error &&
         prevProps.item.prompt === nextProps.item.prompt &&
         prevProps.item.enhancedPrompt === nextProps.item.enhancedPrompt &&
+        prevProps.item.converseParams === nextProps.item.converseParams &&
+        prevProps.item.promptEnhanceParams === nextProps.item.promptEnhanceParams &&
         prevProps.displayWidth === nextProps.displayWidth &&
         prevProps.displayHeight === nextProps.displayHeight &&
         prevProps.isVisible === nextProps.isVisible &&

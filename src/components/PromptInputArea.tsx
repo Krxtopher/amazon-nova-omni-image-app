@@ -7,7 +7,7 @@ import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
 
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import { StreamingPromptEnhancementService } from '@/services/StreamingPromptEnhancementService';
-import type { AspectRatio, EditSource, GeneratedImage, StreamingToken } from '@/types';
+import type { AspectRatio, EditSource, GeneratedImage, StreamingToken, ConverseRequestParams } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
 import { PersonaSelector } from './PersonaSelector';
@@ -281,6 +281,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 // Step 1: Enhance the prompt if persona is enabled
                 let enhancedPrompt = prompt;
+                let promptEnhanceParams: ConverseRequestParams | undefined;
                 if (selectedPromptEnhancement !== 'off') {
                     try {
                         // Use streaming enhancement if available, fallback to regular enhancement
@@ -308,12 +309,17 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                 );
                             });
                         } else {
-                            // Fallback to regular enhancement
-                            enhancedPrompt = await bedrockService.enhancePrompt(prompt, selectedPromptEnhancement);
+                            // Fallback to regular enhancement with parameters
+                            const enhancementResult = await bedrockService.enhancePromptWithParams(prompt, selectedPromptEnhancement);
+                            enhancedPrompt = enhancementResult.enhancedPrompt;
+                            promptEnhanceParams = enhancementResult.converseParams;
                         }
 
-                        // Store the enhanced prompt separately so we can display both original and enhanced
-                        updateImage(placeholderId, { enhancedPrompt: enhancedPrompt });
+                        // Store the enhanced prompt and enhancement parameters separately
+                        updateImage(placeholderId, {
+                            enhancedPrompt: enhancedPrompt,
+                            promptEnhanceParams: promptEnhanceParams
+                        });
                     } catch (error) {
                         enhancedPrompt = prompt;
                     }

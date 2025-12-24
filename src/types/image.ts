@@ -55,7 +55,8 @@ export interface ImageMetadata {
     height: number;
     createdAt: Date;
     error?: string;
-    converseParams?: ConverseRequestParams; // Original API request parameters
+    converseParams?: ConverseRequestParams; // Original API request parameters for image generation
+    promptEnhanceParams?: ConverseRequestParams; // API request parameters for prompt enhancement
     hasBinaryData?: boolean; // Tracks if binary data exists in IndexedDB
     binaryDataSize?: number; // Size of binary data in bytes
 }

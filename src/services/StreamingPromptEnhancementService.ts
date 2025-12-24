@@ -274,6 +274,9 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                 }
             };
 
+            // TEMP: Log
+            console.log('Sending streaming command to Bedrock:', commandParams);
+
             const command = new ConverseStreamCommand(commandParams);
 
             // Send the streaming request

@@ -135,6 +135,10 @@ class SQLiteService {
                 this.db.run('ALTER TABLE image_metadata ADD COLUMN enhancedPrompt TEXT');
             }
 
+            if (!columns.includes('promptEnhanceParams')) {
+                this.db.run('ALTER TABLE image_metadata ADD COLUMN promptEnhanceParams TEXT');
+            }
+
             // If image_data table exists, migrate data and drop it
             const tables = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='image_data'");
             if (tables.length > 0) {
@@ -255,8 +259,8 @@ class SQLiteService {
 
             // Insert metadata only - binary data is handled by BinaryStorageService
             this.db.run(
-                `INSERT INTO image_metadata (id, prompt, enhancedPrompt, status, aspectRatio, width, height, createdAt, error, converseParams, hasBinaryData, binaryDataSize)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO image_metadata (id, prompt, enhancedPrompt, status, aspectRatio, width, height, createdAt, error, converseParams, promptEnhanceParams, hasBinaryData, binaryDataSize)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     image.id,
                     image.prompt,
@@ -268,6 +272,7 @@ class SQLiteService {
                     image.createdAt.getTime(),
                     image.error || null,
                     image.converseParams ? JSON.stringify(image.converseParams) : null,
+                    image.promptEnhanceParams ? JSON.stringify(image.promptEnhanceParams) : null,
                     image.url ? 1 : 0, // hasBinaryData (convert boolean to number)
                     image.url ? image.url.length : 0, // binaryDataSize (approximate)
                 ]
@@ -353,6 +358,10 @@ class SQLiteService {
         if (updates.converseParams !== undefined) {
             setClauses.push('converseParams = ?');
             values.push(updates.converseParams ? JSON.stringify(updates.converseParams) : null);
+        }
+        if (updates.promptEnhanceParams !== undefined) {
+            setClauses.push('promptEnhanceParams = ?');
+            values.push(updates.promptEnhanceParams ? JSON.stringify(updates.promptEnhanceParams) : null);
         }
         if (updates.hasBinaryData !== undefined) {
             setClauses.push('hasBinaryData = ?');
@@ -459,6 +468,7 @@ class SQLiteService {
                     createdAt: new Date(image.createdAt),
                     error: image.error || undefined,
                     converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+                    promptEnhanceParams: image.promptEnhanceParams ? JSON.parse(image.promptEnhanceParams) : undefined,
                     hasBinaryData: Boolean(image.hasBinaryData),
                     binaryDataSize: image.binaryDataSize || 0,
                 });
@@ -507,6 +517,7 @@ class SQLiteService {
                 createdAt: new Date(image.createdAt),
                 error: image.error || undefined,
                 converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+                promptEnhanceParams: image.promptEnhanceParams ? JSON.parse(image.promptEnhanceParams) : undefined,
                 hasBinaryData: Boolean(image.hasBinaryData),
                 binaryDataSize: image.binaryDataSize || 0,
             });
@@ -579,6 +590,7 @@ class SQLiteService {
                 createdAt: new Date(image.createdAt),
                 error: image.error || undefined,
                 converseParams: image.converseParams ? JSON.parse(image.converseParams) : undefined,
+                promptEnhanceParams: image.promptEnhanceParams ? JSON.parse(image.promptEnhanceParams) : undefined,
                 hasBinaryData: Boolean(image.hasBinaryData),
                 binaryDataSize: image.binaryDataSize || 0,
             });
