@@ -11,7 +11,6 @@ interface SimpleVirtualizedGalleryProps {
     onImageDelete: (id: string) => void;
     onTextDelete: (id: string) => void; // Kept for compatibility but not used
     onImageEdit: (image: GeneratedImage) => Promise<void>;
-    enableStreamingDisplay?: boolean;
 }
 
 
@@ -22,8 +21,7 @@ interface SimpleVirtualizedGalleryProps {
 export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGallery({
     onImageDelete,
     onTextDelete: _onTextDelete, // Kept for compatibility but not used
-    onImageEdit,
-    enableStreamingDisplay = false
+    onImageEdit
 }: SimpleVirtualizedGalleryProps) {
     // 🚀 PERFORMANCE FIX: Use selective subscriptions to prevent unnecessary re-renders
     // Only subscribe to the data this component actually needs
@@ -69,10 +67,9 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
         return createImageRenderer(
             onImageDelete,
             onImageEdit,
-            enableStreamingDisplay,
             selectedPromptEnhancement
         );
-    }, [onImageDelete, onImageEdit, enableStreamingDisplay, selectedPromptEnhancement]);
+    }, [onImageDelete, onImageEdit, selectedPromptEnhancement]);
 
     // Handle empty state
     if (sortedImages.length === 0) {

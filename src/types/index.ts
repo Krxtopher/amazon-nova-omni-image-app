@@ -52,14 +52,3 @@ export type {
     StreamingToken,
     StreamingPromptEnhancer,
 } from './streaming';
-
-// Configuration types
-export type {
-    StreamingDisplayFeatureFlags,
-    StreamingDisplayAccessibilitySettings,
-    StreamingDisplayPerformanceSettings,
-    StreamingPromptDisplayConfig,
-    StreamingDisplayUserPreferences,
-    StreamingDisplayPreset,
-    ConfigValidationResult,
-} from './config';

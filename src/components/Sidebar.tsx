@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/SettingsModal';
-import { FeatureConfigPanel } from '@/components/FeatureConfigPanel';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '@/stores/uiStore';
 import { VerticalMasonryIcon, HorizontalMasonryIcon } from '@/components/icons/MasonryIcons';
@@ -12,8 +11,7 @@ import {
     Image,
     Palette,
     Download,
-    TestTube,
-    Zap
+    TestTube
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -73,14 +71,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
             }
         },
         {
-            id: 'features',
-            icon: Zap,
-            label: 'Feature Configuration',
-            action: () => {
-                // Feature config panel is handled by the component itself
-            }
-        },
-        {
             id: 'settings',
             icon: Settings,
             label: 'Settings',
@@ -130,16 +120,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
                 {sidebarButtons.map((button) => {
                     const Icon = button.icon;
                     const isActive = activeButton === button.id;
-
-                    // Special handling for feature config panel
-                    if (button.id === 'features') {
-                        return (
-                            <FeatureConfigPanel
-                                key={button.id}
-                                className={`w-10 h-10 ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-                            />
-                        );
-                    }
 
                     return (
                         <Button

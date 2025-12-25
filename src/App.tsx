@@ -11,14 +11,11 @@ import { DebugCounter } from '@/components/DebugCounter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
-import { StreamingDisplayConfigProvider } from '@/contexts/StreamingDisplayConfigContext';
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
 import { useEditSourceStore } from '@/stores/uiStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import { featureRolloutManager, isStreamingEnhancementEnabled } from '@/config/featureRollout';
-import { featureAdoptionMonitoring } from '@/services/FeatureAdoptionMonitoringService';
 
 import './App.css';
 
@@ -65,16 +62,10 @@ function AppContent() {
 
   const [activeRequests, setActiveRequests] = useState(0);
 
-  // Initialize the store and feature monitoring
+  // Initialize the store
   useEffect(() => {
     initialize().then(() => {
       // Initialization complete
-      // Track feature enablement for monitoring
-      const userId = 'anonymous'; // In a real app, this would be the actual user ID
-
-      if (isStreamingEnhancementEnabled(userId)) {
-        featureAdoptionMonitoring.trackFeatureEnabled('streaming-enhancement', userId);
-      }
     }).catch((error) => {
       console.error('App initialization failed:', error);
     });
@@ -205,7 +196,6 @@ function AppContent() {
                     onImageDelete={handleImageDelete}
                     onTextDelete={() => { }} // No-op since we no longer use text items
                     onImageEdit={handleImageEdit}
-                    enableStreamingDisplay={true}
                   />
                 </section>
               </main>
@@ -237,18 +227,16 @@ function App() {
   const bedrockService = createBedrockService();
 
   useEffect(() => {
-    // Initialize application and feature rollout system
+    // Initialize application
   }, []);
 
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <StreamingDisplayConfigProvider>
-          <BedrockServiceProvider service={bedrockService}>
-            <AppContent />
-            <Toaster />
-          </BedrockServiceProvider>
-        </StreamingDisplayConfigProvider>
+        <BedrockServiceProvider service={bedrockService}>
+          <AppContent />
+          <Toaster />
+        </BedrockServiceProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

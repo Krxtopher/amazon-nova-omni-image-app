@@ -337,7 +337,6 @@ export const ImageCard = memo(function ImageCard({
 export function createImageRenderer(
     onDelete: (id: string) => void,
     onEdit: (image: GeneratedImage) => Promise<void>,
-    _enableStreamingDisplay?: boolean, // Legacy parameter, kept for compatibility
     enhancementType: PromptEnhancement = 'off'
 ) {
     return (props: MasonryItemRendererProps) => (

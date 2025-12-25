@@ -161,8 +161,6 @@ export class PerformanceOptimizer {
         const timerId = `timer_${++this.timerIdCounter}`;
 
         const wrappedCallback = () => {
-            const startTime = performance.now();
-
             try {
                 callback();
             } finally {

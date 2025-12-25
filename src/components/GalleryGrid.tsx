@@ -10,7 +10,6 @@ interface GalleryGridProps {
     onImageDelete: (id: string) => void;
     onTextDelete: (id: string) => void;
     onImageEdit: (image: GeneratedImage) => Promise<void>;
-    enableStreamingDisplay?: boolean;
 }
 
 /**
@@ -31,7 +30,7 @@ function isGeneratedText(item: GalleryItem): item is GeneratedText {
  * GalleryGrid component displays generated images and text responses in a responsive masonry layout
  * Requirements: 3.1, 3.2, 3.3, 3.4, 8.4
  */
-export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit, enableStreamingDisplay = false }: GalleryGridProps) {
+export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit }: GalleryGridProps) {
     const { layoutMode, selectedPromptEnhancement } = useUIStore();
     // Handle empty state
     if (items.length === 0) {
@@ -58,7 +57,6 @@ export function GalleryGrid({ items, onImageDelete, onTextDelete, onImageEdit, e
             const imageRenderer = createImageRenderer(
                 onImageDelete,
                 onImageEdit,
-                enableStreamingDisplay,
                 selectedPromptEnhancement
             );
             return imageRenderer(props);
