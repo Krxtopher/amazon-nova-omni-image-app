@@ -163,6 +163,20 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                     this.errorHandler.recordSuccess();
                     return;
                 } catch (error) {
+                    // Print full exception to console for debugging
+                    console.error('Bedrock Streaming API Exception:', {
+                        error,
+                        stack: error instanceof Error ? error.stack : undefined,
+                        message: error instanceof Error ? error.message : String(error),
+                        name: (error as any)?.name,
+                        metadata: (error as any)?.$metadata,
+                        timestamp: new Date().toISOString(),
+                        service: 'StreamingPromptEnhancementService',
+                        requestId: requestContext.id,
+                        retryCount,
+                        originalPrompt: originalPrompt.substring(0, 100) + '...' // Truncate for logging
+                    });
+
                     lastError = error;
                     retryCount++;
 
@@ -189,6 +203,19 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
             const finalError = this.errorHandler.handleStreamingError(lastError, originalPrompt, partialData);
             this.handleFallback(finalError, originalPrompt, onToken, wrappedOnComplete, wrappedOnError);
         } catch (error) {
+            // Print full exception to console for debugging
+            console.error('Bedrock Streaming Service Exception:', {
+                error,
+                stack: error instanceof Error ? error.stack : undefined,
+                message: error instanceof Error ? error.message : String(error),
+                name: (error as any)?.name,
+                metadata: (error as any)?.$metadata,
+                timestamp: new Date().toISOString(),
+                service: 'StreamingPromptEnhancementService',
+                requestId,
+                context: 'enhancePromptStreaming'
+            });
+
             // Ensure cleanup happens even if there's an unexpected error
             this.cleanupRequest(requestId);
             throw error;
@@ -415,6 +442,17 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                     requestContext.abortController.abort();
                 }
             } catch (error) {
+                // Print full exception to console for debugging
+                console.error('Bedrock Stream Abort Exception:', {
+                    error,
+                    stack: error instanceof Error ? error.stack : undefined,
+                    message: error instanceof Error ? error.message : String(error),
+                    timestamp: new Date().toISOString(),
+                    service: 'StreamingPromptEnhancementService',
+                    method: 'cancelRequest',
+                    requestId
+                });
+
                 console.warn(`Error aborting stream for request ${requestId}:`, error);
             }
         }
@@ -444,6 +482,17 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                 return await personaService.getSystemPrompt(enhancementType);
             }
         } catch (error) {
+            // Print full exception to console for debugging
+            console.error('Bedrock System Prompt Exception:', {
+                error,
+                stack: error instanceof Error ? error.stack : undefined,
+                message: error instanceof Error ? error.message : String(error),
+                timestamp: new Date().toISOString(),
+                service: 'StreamingPromptEnhancementService',
+                method: 'getSystemPromptForEnhancement',
+                enhancementType
+            });
+
             // Return null if we can't get system prompt
             return null;
         }

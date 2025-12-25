@@ -89,6 +89,21 @@ export class StreamingErrorHandler {
         originalPrompt: string,
         partialData?: string
     ): StreamingError {
+        // Print full exception to console for debugging
+        console.error('Streaming Error Handler - Processing Exception:', {
+            error,
+            stack: error instanceof Error ? error.stack : undefined,
+            message: error instanceof Error ? error.message : String(error),
+            name: (error as any)?.name,
+            metadata: (error as any)?.$metadata,
+            timestamp: new Date().toISOString(),
+            service: 'StreamingErrorHandler',
+            originalPrompt: originalPrompt.substring(0, 100) + '...',
+            hasPartialData: !!partialData,
+            partialDataLength: partialData?.length || 0,
+            circuitBreakerState: this.circuitBreaker.state
+        });
+
         // Check circuit breaker state first
         if (this.circuitBreaker.state === 'open') {
             return this.createCircuitBreakerError(originalPrompt);

@@ -118,6 +118,16 @@ export class BedrockImageService {
 
             throw new Error('Unsupported image source type');
         } catch (error) {
+            // Print full exception to console for debugging
+            console.error('Bedrock Image Encoding Exception:', {
+                error,
+                stack: error instanceof Error ? error.stack : undefined,
+                message: error instanceof Error ? error.message : String(error),
+                timestamp: new Date().toISOString(),
+                service: 'BedrockImageService',
+                method: 'encodeImageToBytes'
+            });
+
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             throw new Error(`Failed to encode image: ${errorMessage}`);
         }
@@ -315,6 +325,18 @@ export class BedrockImageService {
 
             return textContent.text.trim();
         } catch (error) {
+            // Print full exception to console for debugging
+            console.error('Bedrock Persona Name Generation Exception:', {
+                error,
+                stack: error instanceof Error ? error.stack : undefined,
+                message: error instanceof Error ? error.message : String(error),
+                name: (error as any)?.name,
+                metadata: (error as any)?.$metadata,
+                timestamp: new Date().toISOString(),
+                service: 'BedrockImageService',
+                method: 'generatePersonaName'
+            });
+
             throw new Error('Failed to generate persona name. Please try again.');
         }
     }
@@ -408,6 +430,18 @@ export class BedrockImageService {
 
             return iconName;
         } catch (error) {
+            // Print full exception to console for debugging
+            console.error('Bedrock Persona Icon Generation Exception:', {
+                error,
+                stack: error instanceof Error ? error.stack : undefined,
+                message: error instanceof Error ? error.message : String(error),
+                name: (error as any)?.name,
+                metadata: (error as any)?.$metadata,
+                timestamp: new Date().toISOString(),
+                service: 'BedrockImageService',
+                method: 'generatePersonaIcon'
+            });
+
             throw new Error('Failed to generate persona icon. Please try again.');
         }
     }
@@ -581,6 +615,16 @@ export class BedrockImageService {
                 converseParams,
             };
         } catch (error) {
+            // Print full exception to console for debugging
+            console.error('Bedrock Response Parsing Exception:', {
+                error,
+                stack: error instanceof Error ? error.stack : undefined,
+                message: error instanceof Error ? error.message : String(error),
+                timestamp: new Date().toISOString(),
+                service: 'BedrockImageService',
+                method: 'parseConverseResponse'
+            });
+
             const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
             throw new Error(`Failed to parse response: ${errorMessage}`);
         }
@@ -608,6 +652,17 @@ export class BedrockImageService {
      * @returns AppError with categorized error information
      */
     private handleError(error: unknown): AppError {
+        // Print full exception to console for debugging
+        console.error('Bedrock API Exception:', {
+            error,
+            stack: error instanceof Error ? error.stack : undefined,
+            message: error instanceof Error ? error.message : String(error),
+            name: (error as any)?.name,
+            metadata: (error as any)?.$metadata,
+            timestamp: new Date().toISOString(),
+            service: 'BedrockImageService'
+        });
+
         // Handle AWS SDK errors
         if (error && typeof error === 'object' && 'name' in error) {
             const awsError = error as { name: string; message: string; $metadata?: { httpStatusCode?: number } };
