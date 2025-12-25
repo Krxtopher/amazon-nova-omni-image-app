@@ -75,11 +75,11 @@ export const DEFAULT_THROTTLING_CONFIG: ThrottlingConfig = {
     globalEnabled: true, // Always enabled - no user control
     models: {
         'us.amazon.nova-2-omni-v1:0': {
-            maxRequestsPerMinute: 10,
+            maxRequestsPerMinute: 40,
             enabled: true, // Always enabled - no user control
         },
         'us.amazon.nova-2-lite-v1:0': {
-            maxRequestsPerMinute: 20,
+            maxRequestsPerMinute: 40,
             enabled: true, // Always enabled - no user control
         },
     },

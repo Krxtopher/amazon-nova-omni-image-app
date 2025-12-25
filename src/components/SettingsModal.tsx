@@ -108,7 +108,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             onClick={onClose}
         >
             <div
-                className="bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col transition-all duration-200"
+                className="bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col transition-all duration-200"
                 style={{
                     boxShadow: '0 30px 80px rgba(0, 0, 0, 0.15)'
                 }}
@@ -118,7 +118,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 aria-describedby="settings-modal-description"
             >
                 {/* Fixed Header */}
-                <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
+                <div className="flex items-center justify-between p-2 px-6 border-b border-border shrink-0">
                     <h2
                         id="settings-modal-title"
                         className="text-lg font-semibold text-foreground special-gothic-label"
@@ -136,75 +136,36 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-10">
                     {/* Data Management Section */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium text-foreground special-gothic-label">
                             Data Management
                         </h3>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                    <p className="text-sm text-foreground">Delete Images Only</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Delete all generated images but keep settings and personas
-                                    </p>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowDeleteImagesConfirm(true)}
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    aria-label="Delete images only"
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete Images
-                                </Button>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                    <p className="text-sm text-foreground">Reset All Data</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Permanently delete all generated images and settings
-                                    </p>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowResetConfirm(true)}
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    aria-label="Reset all data"
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Reset All
-                                </Button>
-                            </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowDeleteImagesConfirm(true)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                aria-label="Delete images only"
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Images
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowResetConfirm(true)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                aria-label="Reset all data"
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Reset All Data
+                            </Button>
                         </div>
                     </div>
 
-                    <Separator />
-
-                    {/* Debug Panel Settings */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
-                            Developer Options
-                        </h3>
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <Label htmlFor="debug-panel-toggle">Show Debug Panel</Label>
-                                <p className="text-xs text-muted-foreground">
-                                    Display debug information and throttling statistics
-                                </p>
-                            </div>
-                            <Switch
-                                id="debug-panel-toggle"
-                                checked={showDebugPanel}
-                                onCheckedChange={setShowDebugPanel}
-                            />
-                        </div>
-                    </div>
-
-                    <Separator />
 
                     {/* Throttling Settings Section */}
                     <div className="space-y-4">
@@ -216,19 +177,36 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             onHasUnsavedChanges={setHasThrottlingChanges}
                         />
                     </div>
+
+                    {/* Debug Panel Settings */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
+                            Developer Options
+                        </h3>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <Label htmlFor="debug-panel-toggle">Show Debug Panel</Label>
+                            </div>
+                            <Switch
+                                id="debug-panel-toggle"
+                                checked={showDebugPanel}
+                                onCheckedChange={setShowDebugPanel}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Fixed Footer */}
-                <div className="border-t border-border p-6 shrink-0">
-                    <div className="flex items-center justify-between">
-                        <Button
+                <div className="border-t border-border px-6 py-2 shrink-0">
+                    <div className="flex items-center justify-end">
+                        {/* <Button
                             variant="outline"
                             onClick={() => throttlingRef.current?.reset()}
                             className="flex items-center gap-2"
                         >
                             <RotateCcw className="h-4 w-4" />
                             Reset to Defaults
-                        </Button>
+                        </Button> */}
 
                         <div className="flex items-center gap-2">
                             {hasThrottlingChanges && (

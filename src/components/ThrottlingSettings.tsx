@@ -92,54 +92,46 @@ export const ThrottlingSettings = forwardRef<ThrottlingSettingsRef, ThrottlingSe
             return modelId.split(':')[0].split('.').pop() || modelId;
         };
 
+        const getModelUseDescription = (modelId: string): string => {
+            if (modelId.includes("amazon.nova-2-omni")) return "Used for prompt enhancment and image generation"
+            if (modelId.includes("amazon.nova-2-lite")) return "Used for persona auto-fill"
+            return "Not currently used."
+        }
+
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Zap className="h-5 w-5" />
-                        Request Rate Limits
-                    </CardTitle>
-                    <CardDescription>
-                        Maximum requests per minute for each model.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {Object.entries(localConfigs).map(([modelId, modelConfig]) => {
-                        return (
-                            <div key={modelId} className="space-y-3">
-                                <div>
-                                    <h4 className="font-medium">{formatModelName(modelId)}</h4>
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                    <Label htmlFor={`${modelId}-rate`} className="min-w-fit">
-                                        Max per minute
-                                    </Label>
-                                    <Input
-                                        id={`${modelId}-rate`}
-                                        type="number"
-                                        min="1"
-                                        max="100"
-                                        value={modelConfig.maxRequestsPerMinute}
-                                        onChange={(e) =>
-                                            handleModelConfigChange(
-                                                modelId,
-                                                'maxRequestsPerMinute',
-                                                parseInt(e.target.value) || 1
-                                            )
-                                        }
-                                        className="w-24"
-                                    />
-                                </div>
-
-                                {modelId !== Object.keys(localConfigs)[Object.keys(localConfigs).length - 1] && (
-                                    <div className="border-t pt-3" />
-                                )}
+            <div className="flex flex-col gap-4">
+                {Object.entries(localConfigs).map(([modelId, modelConfig]) => {
+                    return (
+                        <div key={modelId} className="flex gap-4 w-full">
+                            <div className="flex-1">
+                                <h4 className="font-medium">{formatModelName(modelId)}</h4>
+                                <p className="text-xs text-muted-foreground">{getModelUseDescription(modelId)}</p>
                             </div>
-                        );
-                    })}
-                </CardContent>
-            </Card>
+
+                            <div className="flex flex-col items-center gap-2">
+                                <Input
+                                    id={`${modelId}-rate`}
+                                    type="number"
+                                    min="1"
+                                    max="200"
+                                    value={modelConfig.maxRequestsPerMinute}
+                                    onChange={(e) =>
+                                        handleModelConfigChange(
+                                            modelId,
+                                            'maxRequestsPerMinute',
+                                            parseInt(e.target.value) || 1
+                                        )
+                                    }
+                                    className="w-25"
+                                />
+                                <Label htmlFor={`${modelId}-rate`} className="min-w-fit text-white/50 special-gothic-label">
+                                    Requests per min
+                                </Label>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         );
     }
 );
