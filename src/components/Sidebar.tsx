@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { SettingsModal } from '@/components/SettingsModal';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '@/stores/uiStore';
-import { VerticalMasonryIcon, HorizontalMasonryIcon } from '@/components/icons/MasonryIcons';
 import {
     Home,
     Settings,
@@ -11,7 +10,9 @@ import {
     Image,
     Palette,
     Download,
-    TestTube
+    TestTube,
+    Columns3,
+    Rows3
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -47,7 +48,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
         },
         {
             id: 'layout',
-            icon: layoutMode === 'vertical' ? VerticalMasonryIcon : HorizontalMasonryIcon,
+            icon: layoutMode === 'vertical' ? Rows3 : Columns3,
             label: `Switch to ${layoutMode === 'vertical' ? 'Horizontal' : 'Vertical'} Layout`,
             action: () => {
                 const newMode = layoutMode === 'vertical' ? 'horizontal' : 'vertical';
@@ -103,7 +104,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
 
     return (
         <aside
-            className={`fixed left-0 top-0 h-full w-16 bg-background border-r border-border flex flex-col items-center py-4 z-30 ${className}`}
+            className={`fixed left-0 top-0 h-full bg-background border-r border-border flex flex-col items-center py-4 px-2 z-30 ${className}`}
             aria-label="Main navigation"
         >
             {/* Amazon Nova Logo */}
@@ -111,7 +112,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
                 <img
                     src="/AmazonNova_Symbol_Gradient_RGB.svg"
                     alt="Amazon Nova"
-                    className="w-8 h-8"
+                    className="w-7 h-7"
                 />
             </div>
 
@@ -126,12 +127,12 @@ export function Sidebar({ className = '' }: SidebarProps) {
                             key={button.id}
                             variant={isActive ? "default" : "ghost"}
                             size="icon"
-                            className={`w-10 h-10 ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                            className={`${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'} flex items-center justify-center [&_svg]:!size-[20px]`}
                             onClick={() => handleButtonClick(button.id, button.action)}
                             title={button.label}
                             aria-label={button.label}
                         >
-                            <Icon className="w-5 h-5" />
+                            <Icon strokeWidth={1.5} />
                         </Button>
                     );
                 })}
