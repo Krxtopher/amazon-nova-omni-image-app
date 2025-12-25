@@ -7,7 +7,7 @@ This document explains the throttling system implemented to manage Bedrock API r
 The throttling system provides:
 - **Per-model rate limiting**: Configure different limits for each Bedrock model
 - **Request queuing**: Automatically queue requests that exceed rate limits
-- **Real-time statistics**: Monitor queue status and throttling activity
+- **Real-time monitoring**: Debug panel shows queue status and throttling activity
 - **User configuration**: Settings panel for adjusting throttling parameters
 
 ## Architecture
@@ -25,13 +25,18 @@ The throttling system provides:
 
 3. **ThrottlingSettings** (`src/components/ThrottlingSettings.tsx`)
    - UI component for configuring throttling settings
-   - Real-time display of queue statistics
+   - Focused on configuration only
+
+4. **DebugCounter** (`src/components/DebugCounter.tsx`)
+   - Enhanced debug panel with throttling monitoring
+   - Real-time display of queue statistics and model status
 
 ### Integration Points
 
 - **BedrockImageService**: Image generation requests are throttled
 - **StreamingPromptEnhancementService**: Streaming enhancement requests are throttled
-- **SettingsModal**: Throttling configuration is accessible via settings
+- **SettingsModal**: Throttling configuration and debug panel toggle
+- **Debug Panel**: Real-time monitoring (hidden by default)
 
 ## Configuration
 
@@ -57,11 +62,23 @@ The throttling system provides:
 
 Users can configure throttling through the Settings panel:
 
-1. **Global Enable/Disable**: Turn throttling on/off for all models
-2. **Per-Model Settings**: 
-   - Enable/disable throttling for specific models
-   - Set maximum requests per minute (1-100)
-3. **Real-time Statistics**: View current queue status and throttling activity
+1. **Request Rate Limits**: Set maximum requests per minute (1-100) for each model
+2. **Debug Panel Toggle**: Show/hide the debug panel with monitoring info
+
+**Note**: Throttling is always enabled to prevent rate limit errors. Users can only adjust the rate limits, not disable throttling entirely.
+
+### Debug Panel
+
+The debug panel (hidden by default) shows:
+- **Image Loading Stats**: Gallery loading information
+- **Throttling Overview**: System status and total queued requests
+- **Per-Model Stats**: Request counts, queue status, and next available slots
+- **Real-time Updates**: Refreshes every second when visible
+
+To enable the debug panel:
+1. Open Settings (gear icon in sidebar)
+2. Go to "Developer Options"
+3. Toggle "Show Debug Panel"
 
 ## How It Works
 
@@ -108,17 +125,15 @@ updateModelConfig('us.amazon.nova-2-omni-v1:0', {
 });
 ```
 
-### Statistics Monitoring
+### Debug Panel Control
 
 ```typescript
-import { useThrottlingStore } from '@/stores/throttlingStore';
+import { useUIStore } from '@/stores/uiStore';
 
-const { stats, refreshStats } = useThrottlingStore();
+const { showDebugPanel, setShowDebugPanel } = useUIStore();
 
-// Get current statistics
-refreshStats();
-console.log(stats.totalQueuedRequests);
-console.log(stats.models['us.amazon.nova-2-omni-v1:0'].isThrottling);
+// Toggle debug panel visibility
+setShowDebugPanel(!showDebugPanel);
 ```
 
 ## Benefits
@@ -126,17 +141,23 @@ console.log(stats.models['us.amazon.nova-2-omni-v1:0'].isThrottling);
 1. **Prevents Rate Limit Errors**: Automatically manages request rates to stay within AWS limits
 2. **Improved User Experience**: Requests are queued rather than failing
 3. **Configurable**: Users can adjust settings based on their AWS account limits
-4. **Transparent**: Real-time statistics show system status
+4. **Non-intrusive Monitoring**: Debug panel hidden by default, available when needed
 5. **Minimal Impact**: When disabled, adds negligible overhead
 
 ## Monitoring
 
-The system provides real-time monitoring through:
+### Settings Panel
+- Simplified configuration interface
+- Per-model rate limit settings only
+- Save/discard changes functionality
+- Reset to defaults option
 
+### Debug Panel (Optional)
 - **Queue Length**: Number of pending requests per model
 - **Requests This Minute**: Current request count in rolling window
 - **Throttling Status**: Whether model is currently throttling
 - **Next Available Slot**: When next request can be processed
+- **Visual Indicators**: Color-coded status badges and icons
 
 ## Error Handling
 
@@ -165,3 +186,4 @@ Potential improvements:
 - **Priority Queues**: Different priority levels for requests
 - **Adaptive Rates**: Automatically adjust based on AWS responses
 - **Cross-Session Persistence**: Remember rate limit state across app restarts
+- **Advanced Debug Metrics**: Request timing, success rates, error patterns

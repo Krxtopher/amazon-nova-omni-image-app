@@ -13,7 +13,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
-import { useEditSourceStore } from '@/stores/uiStore';
+import { useEditSourceStore, useUIStore } from '@/stores/uiStore';
 import { useThrottlingStore } from '@/stores/throttlingStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
@@ -61,6 +61,7 @@ function AppContent() {
   const { deleteImage, initialize, isLoading } = useImageStore();
   const { setEditSource } = useEditSourceStore();
   const { refreshStats } = useThrottlingStore();
+  const { showDebugPanel } = useUIStore();
 
   const [activeRequests, setActiveRequests] = useState(0);
 
@@ -73,11 +74,13 @@ function AppContent() {
     });
   }, [initialize]);
 
-  // Initialize throttling stats refresh
+  // Initialize throttling stats refresh when debug panel is visible
   useEffect(() => {
-    const interval = setInterval(refreshStats, 1000);
-    return () => clearInterval(interval);
-  }, [refreshStats]);
+    if (showDebugPanel) {
+      const interval = setInterval(refreshStats, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [refreshStats, showDebugPanel]);
 
   /**
    * Handle successful image generation

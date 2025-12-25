@@ -9,6 +9,7 @@ interface UIState {
     selectedAspectRatio: AspectRatio;
     selectedPromptEnhancement: PromptEnhancement;
     layoutMode: 'vertical' | 'horizontal';
+    showDebugPanel: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ interface UIActions {
     setAspectRatio: (ratio: AspectRatio) => void;
     setPromptEnhancement: (enhancement: PromptEnhancement) => void;
     setLayoutMode: (mode: 'vertical' | 'horizontal') => void;
+    setShowDebugPanel: (show: boolean) => void;
 }
 
 /**
@@ -41,6 +43,7 @@ interface EditSourceActions {
 const DEFAULT_ASPECT_RATIO: AspectRatio = 'random';
 const DEFAULT_PROMPT_ENHANCEMENT: PromptEnhancement = 'off';
 const DEFAULT_LAYOUT_MODE: 'vertical' | 'horizontal' = 'vertical';
+const DEFAULT_SHOW_DEBUG_PANEL = false;
 
 /**
  * Lightweight UI store using Zustand with localStorage persistence
@@ -58,6 +61,7 @@ export const useUIStore = create<UIState & UIActions>()(
             selectedAspectRatio: DEFAULT_ASPECT_RATIO,
             selectedPromptEnhancement: DEFAULT_PROMPT_ENHANCEMENT,
             layoutMode: DEFAULT_LAYOUT_MODE,
+            showDebugPanel: DEFAULT_SHOW_DEBUG_PANEL,
 
             // Actions - all synchronous for instant UI updates
             setAspectRatio: (ratio: AspectRatio) => {
@@ -71,6 +75,10 @@ export const useUIStore = create<UIState & UIActions>()(
             setLayoutMode: (mode: 'vertical' | 'horizontal') => {
                 set({ layoutMode: mode });
             },
+
+            setShowDebugPanel: (show: boolean) => {
+                set({ showDebugPanel: show });
+            },
         }),
         {
             name: 'ui-store', // localStorage key
@@ -79,6 +87,7 @@ export const useUIStore = create<UIState & UIActions>()(
                 selectedAspectRatio: state.selectedAspectRatio,
                 selectedPromptEnhancement: state.selectedPromptEnhancement,
                 layoutMode: state.layoutMode,
+                showDebugPanel: state.showDebugPanel,
             }),
         }
     )

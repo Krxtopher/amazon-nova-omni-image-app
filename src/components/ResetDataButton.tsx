@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
 import { sqliteService } from '@/services/sqliteService';
 import { useImageStore } from '@/stores/imageStore';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { toast } from 'sonner';
 
 /**
@@ -16,6 +17,9 @@ export function ResetDataButton() {
     const [showConfirm, setShowConfirm] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const { initialize } = useImageStore();
+
+    // Lock body scrolling when confirmation dialog is open
+    useBodyScrollLock(showConfirm);
 
     /**
      * Handle the reset action

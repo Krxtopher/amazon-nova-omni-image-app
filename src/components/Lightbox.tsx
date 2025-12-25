@@ -4,6 +4,7 @@ import { X, Download, Copy, Check, ChevronLeft, ChevronRight } from 'lucide-reac
 import { Button } from './ui/button';
 import { useImageStore } from '../stores/imageStore';
 import { useImageData } from '../hooks/useImageData';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 /**
  * Lightbox component for displaying images in fullscreen with details
@@ -15,6 +16,9 @@ export function Lightbox() {
     const { images } = useImageStore();
     const [isCopied, setIsCopied] = useState(false);
     const [shouldFadeIn, setShouldFadeIn] = useState(false);
+
+    // Lock body scrolling when lightbox is open
+    useBodyScrollLock(!!imageId);
 
     // Find the image by ID
     const image = images.find((img) => img.id === imageId);

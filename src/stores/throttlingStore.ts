@@ -18,7 +18,6 @@ interface ThrottlingState {
 interface ThrottlingActions {
     updateConfig: (config: ThrottlingConfig) => void;
     updateModelConfig: (modelId: string, modelConfig: ModelThrottleConfig) => void;
-    setGlobalEnabled: (enabled: boolean) => void;
     refreshStats: () => void;
     resetToDefaults: () => void;
 }
@@ -63,17 +62,11 @@ export const useThrottlingStore = create<ThrottlingState & ThrottlingActions>()(
                         ...currentConfig,
                         models: {
                             ...currentConfig.models,
-                            [modelId]: modelConfig,
+                            [modelId]: {
+                                ...modelConfig,
+                                enabled: true, // Always keep enabled
+                            },
                         },
-                    };
-                    get().updateConfig(newConfig);
-                },
-
-                setGlobalEnabled: (enabled: boolean) => {
-                    const currentConfig = get().config;
-                    const newConfig: ThrottlingConfig = {
-                        ...currentConfig,
-                        globalEnabled: enabled,
                     };
                     get().updateConfig(newConfig);
                 },

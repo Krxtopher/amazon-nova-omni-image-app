@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { X, Trash2, Loader2 } from 'lucide-react';
+import { X, Trash2, Loader2, RotateCcw } from 'lucide-react';
 import { sqliteService } from '@/services/sqliteService';
 import { useImageStore } from '@/stores/imageStore';
-import { ThrottlingSettings } from '@/components/ThrottlingSettings';
+import { useUIStore } from '@/stores/uiStore';
+import { ThrottlingSettings, type ThrottlingSettingsRef } from '@/components/ThrottlingSettings';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 import { toast } from 'sonner';
 
@@ -26,7 +30,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [showDeleteImagesConfirm, setShowDeleteImagesConfirm] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const [isDeletingImages, setIsDeletingImages] = useState(false);
+    const [hasThrottlingChanges, setHasThrottlingChanges] = useState(false);
     const { initialize } = useImageStore();
+    const { showDebugPanel, setShowDebugPanel } = useUIStore();
+    const throttlingRef = useRef<ThrottlingSettingsRef>(null);
+
+    // Lock body scrolling when modal is open
+    useBodyScrollLock(isOpen);
 
     /**
      * Handle the reset action
@@ -98,7 +108,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             onClick={onClose}
         >
             <div
-                className="bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto transition-all duration-200"
+                className="bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col transition-all duration-200"
                 style={{
                     boxShadow: '0 30px 80px rgba(0, 0, 0, 0.15)'
                 }}
@@ -107,8 +117,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 aria-labelledby="settings-modal-title"
                 aria-describedby="settings-modal-description"
             >
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-border">
+                {/* Fixed Header */}
+                <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
                     <h2
                         id="settings-modal-title"
                         className="text-lg font-semibold text-foreground special-gothic-label"
@@ -125,8 +135,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </Button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 space-y-6">
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Data Management Section */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium text-foreground special-gothic-label">
@@ -174,15 +184,69 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                     <Separator />
 
+                    {/* Debug Panel Settings */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
+                            Developer Options
+                        </h3>
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <Label htmlFor="debug-panel-toggle">Show Debug Panel</Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Display debug information and throttling statistics
+                                </p>
+                            </div>
+                            <Switch
+                                id="debug-panel-toggle"
+                                checked={showDebugPanel}
+                                onCheckedChange={setShowDebugPanel}
+                            />
+                        </div>
+                    </div>
+
+                    <Separator />
+
                     {/* Throttling Settings Section */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium text-foreground special-gothic-label">
                             API Request Throttling
                         </h3>
-                        <ThrottlingSettings />
+                        <ThrottlingSettings
+                            ref={throttlingRef}
+                            onHasUnsavedChanges={setHasThrottlingChanges}
+                        />
                     </div>
+                </div>
 
-                    {/* Future settings sections can be added here */}
+                {/* Fixed Footer */}
+                <div className="border-t border-border p-6 shrink-0">
+                    <div className="flex items-center justify-between">
+                        <Button
+                            variant="outline"
+                            onClick={() => throttlingRef.current?.reset()}
+                            className="flex items-center gap-2"
+                        >
+                            <RotateCcw className="h-4 w-4" />
+                            Reset to Defaults
+                        </Button>
+
+                        <div className="flex items-center gap-2">
+                            {hasThrottlingChanges && (
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => throttlingRef.current?.discard()}
+                                >
+                                    Discard Changes
+                                </Button>
+                            )}
+                            <Button
+                                onClick={() => throttlingRef.current?.save()}
+                                disabled={!hasThrottlingChanges}
+                            >
+                                Save Changes
+                            </Button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Reset Confirmation Dialog */}
