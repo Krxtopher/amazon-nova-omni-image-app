@@ -7,6 +7,7 @@ import { TokenAccumulator } from '../utils/TokenAccumulator';
 import { StreamingErrorHandler, type StreamingError } from '../utils/StreamingErrorHandler';
 import { PerformanceMonitoringService } from './PerformanceMonitoringService';
 import { processPromptTemplate } from '@/utils/promptTemplating';
+import { ThrottlingService } from './ThrottlingService';
 
 /**
  * Configuration for StreamingPromptEnhancementService
@@ -57,6 +58,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
     private errorConfig: StreamingErrorConfig;
     private errorHandler: StreamingErrorHandler;
     private performanceMonitoring: PerformanceMonitoringService;
+    private throttlingService: ThrottlingService;
 
     /**
      * Creates a new StreamingPromptEnhancementService instance
@@ -71,6 +73,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
         this.errorConfig = { ...DEFAULT_ERROR_CONFIG, ...errorConfig };
         this.errorHandler = new StreamingErrorHandler(errorConfig);
         this.performanceMonitoring = PerformanceMonitoringService.getInstance();
+        this.throttlingService = ThrottlingService.getInstance();
     }
 
     /**
@@ -279,10 +282,13 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
 
             const command = new ConverseStreamCommand(commandParams);
 
-            // Send the streaming request
-            const response = await this.client.send(command, {
-                abortSignal: requestContext.abortController?.signal
-            });
+            // Send the streaming request with throttling
+            const response = await this.throttlingService.queueRequest(
+                this.modelId,
+                () => this.client.send(command, {
+                    abortSignal: requestContext.abortController?.signal
+                })
+            );
 
             if (!response.stream) {
                 throw new Error('No stream received from Bedrock API');

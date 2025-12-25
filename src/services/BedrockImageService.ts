@@ -2,6 +2,7 @@ import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-r
 import type { ConverseCommandOutput } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, ConverseRequestParams } from '../types';
+import { ThrottlingService } from './ThrottlingService';
 
 
 /**
@@ -38,6 +39,7 @@ export class BedrockImageService {
     private client: BedrockRuntimeClient;
     private readonly modelId = 'us.amazon.nova-2-omni-v1:0';
     private readonly systemPrompt?: string;
+    private throttlingService: ThrottlingService;
 
     /**
      * Creates a new BedrockImageService instance
@@ -49,6 +51,7 @@ export class BedrockImageService {
             credentials: config.credentials,
         });
         this.systemPrompt = config.systemPrompt;
+        this.throttlingService = ThrottlingService.getInstance();
     }
 
     /**
@@ -543,8 +546,11 @@ export class BedrockImageService {
                 ];
             }
 
-            // Call the Bedrock API
-            const response = await this.client.send(command);
+            // Call the Bedrock API with throttling
+            const response = await this.throttlingService.queueRequest(
+                this.modelId,
+                () => this.client.send(command)
+            );
 
             // Parse and return the generated image
             return this.parseConverseResponse(response, converseParams);

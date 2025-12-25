@@ -14,6 +14,7 @@ import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockSer
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
 import { useEditSourceStore } from '@/stores/uiStore';
+import { useThrottlingStore } from '@/stores/throttlingStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -59,6 +60,7 @@ function AppContent() {
   const bedrockService = useBedrockService();
   const { deleteImage, initialize, isLoading } = useImageStore();
   const { setEditSource } = useEditSourceStore();
+  const { refreshStats } = useThrottlingStore();
 
   const [activeRequests, setActiveRequests] = useState(0);
 
@@ -70,6 +72,12 @@ function AppContent() {
       console.error('App initialization failed:', error);
     });
   }, [initialize]);
+
+  // Initialize throttling stats refresh
+  useEffect(() => {
+    const interval = setInterval(refreshStats, 1000);
+    return () => clearInterval(interval);
+  }, [refreshStats]);
 
   /**
    * Handle successful image generation

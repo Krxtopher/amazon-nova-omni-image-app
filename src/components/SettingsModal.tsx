@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { X, Trash2, Loader2 } from 'lucide-react';
 import { sqliteService } from '@/services/sqliteService';
 import { useImageStore } from '@/stores/imageStore';
+import { ThrottlingSettings } from '@/components/ThrottlingSettings';
+import { Separator } from '@/components/ui/separator';
 
 import { toast } from 'sonner';
 
@@ -170,7 +172,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
                     </div>
 
+                    <Separator />
 
+                    {/* Throttling Settings Section */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
+                            API Request Throttling
+                        </h3>
+                        <ThrottlingSettings />
+                    </div>
 
                     {/* Future settings sections can be added here */}
                 </div>
