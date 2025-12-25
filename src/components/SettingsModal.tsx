@@ -151,7 +151,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 aria-label="Delete images only"
                             >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Images
+                                Delete All Images
                             </Button>
                             <Button
                                 variant="outline"
