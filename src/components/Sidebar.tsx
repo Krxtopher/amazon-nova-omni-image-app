@@ -127,7 +127,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
                             key={button.id}
                             variant={isActive ? "default" : "ghost"}
                             size="icon"
-                            className={`${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'} flex items-center justify-center [&_svg]:!size-[20px]`}
+                            className={`${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'} flex items-center justify-center [&_svg]:size-5!`}
                             onClick={() => handleButtonClick(button.id, button.action)}
                             title={button.label}
                             aria-label={button.label}
