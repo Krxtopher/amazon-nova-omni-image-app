@@ -159,7 +159,7 @@ export const ImageCard = memo(function ImageCard({
                     <div ref={textContainerRef} className="flex-1 min-h-0 overflow-hidden relative">
                         {item.prompt && (
                             <div className="h-full flex items-start justify-start pt-4">
-                                <div className="text-white text-left text-lg font-medium leading-relaxed max-w-full overflow-hidden select-none">
+                                <div className="text-white text-left font-medium leading-relaxed max-w-full overflow-hidden select-none">
                                     <div
                                         className="overflow-hidden"
                                         style={{
