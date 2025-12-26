@@ -41,11 +41,11 @@ interface VMasonryGridProps extends React.HTMLAttributes<HTMLDivElement> {
     md?: number;  // width threshold for medium screens (default: 768px)
     lg?: number;  // width threshold for large screens (default: 1024px)
   };
-  columns?: {
-    xs?: number;  // columns for extra small screens (default: 1)
-    sm?: number;  // columns for small screens (default: 2)
-    md?: number;  // columns for medium screens (default: 3)
-    lg?: number;  // columns for large screens (default: 4)
+  maxColumnWidth?: {
+    xs?: number;  // max column width for extra small screens (default: 300px)
+    sm?: number;  // max column width for small screens (default: 250px)
+    md?: number;  // max column width for medium screens (default: 200px)
+    lg?: number;  // max column width for large screens (default: 180px)
   };
 }
 
@@ -61,7 +61,7 @@ function VMasonryGrid({
   renderer,
   gap = 4,
   breakpoints,
-  columns,
+  maxColumnWidth,
   ...props
 }: VMasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,24 +69,33 @@ function VMasonryGrid({
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
 
-  // Memoize breakpoints and columns to prevent infinite loops
+  // Memoize breakpoints and maxColumnWidth to prevent infinite loops
   const stableBreakpoints = useMemo(() =>
     breakpoints || { sm: 480, md: 768, lg: 1600 },
     [breakpoints]
   );
 
-  const stableColumns = useMemo(() =>
-    columns || { xs: 1, sm: 2, md: 3, lg: 4 },
-    [columns]
+  const stableMaxColumnWidth = useMemo(() =>
+    maxColumnWidth || { xs: 480, sm: 400, md: 400, lg: 400 },
+    [maxColumnWidth]
   );
 
-  // Function to determine column count based on container width
-  const getColumnCount = useMemo(() => (width: number): number => {
-    if (width >= (stableBreakpoints.lg || 1024)) return stableColumns.lg || 4;
-    if (width >= (stableBreakpoints.md || 768)) return stableColumns.md || 3;
-    if (width >= (stableBreakpoints.sm || 640)) return stableColumns.sm || 2;
-    return stableColumns.xs || 1;
-  }, [stableBreakpoints, stableColumns]);
+  // Function to determine max column width based on container width
+  const getMaxColumnWidth = useMemo(() => (width: number): number => {
+    if (width >= (stableBreakpoints.lg || 1024)) return stableMaxColumnWidth.lg || 180;
+    if (width >= (stableBreakpoints.md || 768)) return stableMaxColumnWidth.md || 200;
+    if (width >= (stableBreakpoints.sm || 640)) return stableMaxColumnWidth.sm || 250;
+    return stableMaxColumnWidth.xs || 300;
+  }, [stableBreakpoints, stableMaxColumnWidth]);
+
+  // Function to calculate column count based on container width and max column width
+  const getColumnCount = useMemo(() => (containerWidth: number): number => {
+    const maxColWidth = getMaxColumnWidth(containerWidth);
+    // Calculate how many columns can fit with the given max column width and gaps
+    // Formula: (containerWidth - gap) / (maxColumnWidth + gap)
+    // Minimum of 1 column
+    return Math.max(1, Math.floor((containerWidth - gap) / (maxColWidth + gap)));
+  }, [getMaxColumnWidth, gap]);
 
   useEffect(() => {
     if (!containerRef.current) return;

@@ -120,7 +120,7 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
                 <HMasonryGrid
                     items={sortedImages}
                     renderer={renderer}
-                    maxItemSize={350}
+                    maxItemSize={540}
                     gap={22}
                     className="w-full"
                 />
