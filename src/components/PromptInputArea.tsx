@@ -13,6 +13,7 @@ import { AspectRatioSelector } from './AspectRatioSelector';
 import { PersonaSelector } from './PersonaSelector';
 import { PersonaTray } from './PersonaTray';
 import { TextResponseModal } from './TextResponseModal';
+import { LayoutToggle } from './LayoutToggle';
 
 
 /**
@@ -573,228 +574,231 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto px-6 py-4">
+        <div className="flex w-full flex-row">
+            <div className="w-20" />
+            <div className="w-full max-w-4xl mx-auto px-6 py-4">
 
 
-            {/* Error Messages */}
-            {(validationError || fileError) && (
-                <div className="mb-4">
-                    {validationError && (
-                        <p id="prompt-error" className="text-base text-destructive" role="alert">
-                            {validationError}
-                        </p>
-                    )}
-                    {fileError && (
-                        <p className="text-base text-destructive" role="alert">
-                            {fileError}
-                        </p>
-                    )}
-                </div>
-            )}
+                {/* Error Messages */}
+                {(validationError || fileError) && (
+                    <div className="mb-4">
+                        {validationError && (
+                            <p id="prompt-error" className="text-base text-destructive" role="alert">
+                                {validationError}
+                            </p>
+                        )}
+                        {fileError && (
+                            <p className="text-base text-destructive" role="alert">
+                                {fileError}
+                            </p>
+                        )}
+                    </div>
+                )}
 
-            {/* Hidden file input */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={handleFileUpload}
-                className="hidden"
-                aria-label="File upload input"
-            />
+                {/* Hidden file input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    aria-label="File upload input"
+                />
 
 
 
-            {/* Unified Compact Input Bar */}
-            <div
-                ref={inputBarRef}
-                className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl transition-all duration-200 max-h-[80vh] overflow-y-auto"
-                style={{
-                    boxShadow: '0 12px 65px rgba(0, 0, 0, 0.15)'
-                }}
-            >
-                {/* Main layout: Left thumbnail column + Right content column */}
-                <div className="flex items-stretch gap-3 p-2">
-                    {/* Left column - Thumbnail (only when image is selected) */}
-                    {editSource && (
-                        <div className="shrink-0 flex items-start justify-center" style={{ width: '72px' }}>
-                            {/* Thumbnail preview (if image uploaded) */}
-                            <div className="relative group">
-                                <div className="relative">
-                                    <img
-                                        src={editSource.url}
-                                        alt="Edit source"
-                                        className="object-cover rounded border-2 border-primary/50"
-                                        style={{ width: '72px', height: '72px' }}
+                {/* Unified Compact Input Bar */}
+                <div
+                    ref={inputBarRef}
+                    className="unified-input-bar bg-[#3C345A]/65 backdrop-blur-md border border-border rounded-2xl transition-all duration-200 max-h-[80vh] overflow-y-auto"
+                    style={{
+                        boxShadow: '0 12px 65px rgba(0, 0, 0, 0.15)'
+                    }}
+                >
+                    {/* Main layout: Left thumbnail column + Right content column */}
+                    <div className="flex items-stretch gap-3 p-2">
+                        {/* Left column - Thumbnail (only when image is selected) */}
+                        {editSource && (
+                            <div className="shrink-0 flex items-start justify-center" style={{ width: '72px' }}>
+                                {/* Thumbnail preview (if image uploaded) */}
+                                <div className="relative group">
+                                    <div className="relative">
+                                        <img
+                                            src={editSource.url}
+                                            alt="Edit source"
+                                            className="object-cover rounded border-2 border-primary/50"
+                                            style={{ width: '72px', height: '72px' }}
+                                        />
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0 bg-white hover:bg-white border border-gray-200"
+                                        onClick={handleClearEditSource}
+                                        aria-label="Remove edit source"
+                                        title="Remove edit source"
+                                    >
+                                        <X className="h-3 w-3 text-black" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Right column - Text input and aspect ratio selector in column layout */}
+                        <div className="flex-1 flex flex-col">
+                            {/* Top row - Upload button, text input and send button */}
+                            <div className="flex items-start gap-1 mb-2">
+                                {/* Upload button - only show when no edit source is selected */}
+                                {!editSource && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleUploadClick}
+                                        className="shrink-0 h-9 w-9"
+                                        aria-label="Upload image to edit"
+                                        title="Upload image to edit"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                )}
+
+                                {/* Text Input */}
+                                <AutoExpandingTextarea
+                                    ref={textareaRef}
+                                    id="prompt-input"
+                                    placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
+                                    value={prompt}
+                                    onChange={(e) => {
+                                        setPrompt(e.target.value);
+                                        if (validationError) {
+                                            setValidationError(null);
+                                        }
+                                    }}
+                                    onFocus={() => setTextareaExpanded(true)}
+                                    onKeyDown={handleKeyDown}
+                                    forceExpanded={textareaExpanded}
+                                    className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200/60 placeholder:italic"
+                                    aria-label="Image generation prompt"
+                                    aria-invalid={!!validationError}
+                                    aria-describedby={validationError ? 'prompt-error' : undefined}
+                                />
+
+                                {/* Send Button */}
+                                <Button
+                                    onClick={handleSubmit}
+                                    disabled={!prompt.trim()}
+                                    size="icon"
+                                    className="shrink-0 h-9 w-9"
+                                    aria-label="Generate image"
+                                >
+                                    <Send className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            {/* Bottom row - Aspect ratio and prompt enhancement selectors */}
+                            <div className="flex items-center gap-4 px-2 relative justify-start">
+                                <div className="flex items-center gap-0">
+                                    <span className="text-white/50 special-gothic-label">Dimensions</span>
+                                    <AspectRatioSelector
+                                        selectedAspectRatio={selectedAspectRatio}
+                                        onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
+                                        disabled={!!editSource}
+                                        isExpanded={aspectRatioExpanded}
+                                        onExpandedChange={(expanded) => {
+                                            setAspectRatioExpanded(expanded);
+                                            // Close persona drawer when aspect ratio drawer opens
+                                            if (expanded) {
+                                                setPromptEnhancementExpanded(false);
+                                            }
+                                        }}
                                     />
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0 bg-white hover:bg-white border border-gray-200"
-                                    onClick={handleClearEditSource}
-                                    aria-label="Remove edit source"
-                                    title="Remove edit source"
-                                >
-                                    <X className="h-3 w-3 text-black" />
-                                </Button>
+                                <div className="flex items-center gap-0">
+                                    <span className="text-white/50 font-medium special-gothic-label">Persona</span>
+                                    <PersonaSelector
+                                        selectedPersona={selectedPromptEnhancement}
+                                        onPersonaChange={setPromptEnhancement}
+                                        isExpanded={promptEnhancementExpanded}
+                                        onExpandedChange={(expanded) => {
+                                            setPromptEnhancementExpanded(expanded);
+                                            // Close aspect ratio drawer when persona drawer opens
+                                            if (expanded) {
+                                                setAspectRatioExpanded(false);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Expanded aspect ratio tray - integrated within the input bar */}
+                    {aspectRatioExpanded && (
+                        <div data-aspect-ratio-tray className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
+                            <div className="flex flex-wrap items-center justify-center gap-2 py-2">
+                                {ASPECT_RATIOS.map((ratio) => (
+                                    <button
+                                        key={ratio.value}
+                                        onClick={() => {
+                                            if (!editSource) {
+                                                // 🚀 PERFORMANCE FIX: Batch state updates to prevent multiple renders
+                                                startTransition(() => {
+                                                    setAspectRatio(ratio.value);
+                                                    setAspectRatioExpanded(false);
+                                                });
+                                            }
+                                        }}
+                                        disabled={!!editSource}
+                                        className={`flex flex-col items-center gap-2 p-3 min-w-[60px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedAspectRatio === ratio.value
+                                            ? 'bg-white/10 border border-transparent'
+                                            : 'border border-transparent hover:border-border'
+                                            } ${editSource ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        aria-label={`Select aspect ratio ${ratio.label}`}
+                                    >
+                                        {/* Visual representation */}
+                                        <div className="flex items-center justify-center h-8">
+                                            {ratio.value === 'random' ? (
+                                                <Dice5 className="h-5 w-5" />
+                                            ) : (
+                                                <div
+                                                    className="border-2 border-current rounded-sm bg-current/20"
+                                                    style={{
+                                                        width: `${ratio.width}px`,
+                                                        height: `${ratio.height}px`,
+                                                        minWidth: '16px',
+                                                        minHeight: '16px',
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Label */}
+                                        <span className="text-xs font-medium whitespace-nowrap">{ratio.label}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
 
-                    {/* Right column - Text input and aspect ratio selector in column layout */}
-                    <div className="flex-1 flex flex-col">
-                        {/* Top row - Upload button, text input and send button */}
-                        <div className="flex items-start gap-1 mb-2">
-                            {/* Upload button - only show when no edit source is selected */}
-                            {!editSource && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={handleUploadClick}
-                                    className="shrink-0 h-9 w-9"
-                                    aria-label="Upload image to edit"
-                                    title="Upload image to edit"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                            )}
-
-                            {/* Text Input */}
-                            <AutoExpandingTextarea
-                                ref={textareaRef}
-                                id="prompt-input"
-                                placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}
-                                value={prompt}
-                                onChange={(e) => {
-                                    setPrompt(e.target.value);
-                                    if (validationError) {
-                                        setValidationError(null);
-                                    }
-                                }}
-                                onFocus={() => setTextareaExpanded(true)}
-                                onKeyDown={handleKeyDown}
-                                forceExpanded={textareaExpanded}
-                                className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2 placeholder:text-neutral-200/60 placeholder:italic"
-                                aria-label="Image generation prompt"
-                                aria-invalid={!!validationError}
-                                aria-describedby={validationError ? 'prompt-error' : undefined}
-                            />
-
-                            {/* Send Button */}
-                            <Button
-                                onClick={handleSubmit}
-                                disabled={!prompt.trim()}
-                                size="icon"
-                                className="shrink-0 h-9 w-9"
-                                aria-label="Generate image"
-                            >
-                                <Send className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        {/* Bottom row - Aspect ratio and prompt enhancement selectors */}
-                        <div className="flex items-center gap-4 px-2 relative justify-start">
-                            <div className="flex items-center gap-0">
-                                <span className="text-white/50 special-gothic-label">Dimensions</span>
-                                <AspectRatioSelector
-                                    selectedAspectRatio={selectedAspectRatio}
-                                    onAspectRatioChange={(ratio) => !editSource && setAspectRatio(ratio)}
-                                    disabled={!!editSource}
-                                    isExpanded={aspectRatioExpanded}
-                                    onExpandedChange={(expanded) => {
-                                        setAspectRatioExpanded(expanded);
-                                        // Close persona drawer when aspect ratio drawer opens
-                                        if (expanded) {
-                                            setPromptEnhancementExpanded(false);
-                                        }
-                                    }}
-                                />
-                            </div>
-                            <div className="flex items-center gap-0">
-                                <span className="text-white/50 font-medium special-gothic-label">Persona</span>
-                                <PersonaSelector
-                                    selectedPersona={selectedPromptEnhancement}
-                                    onPersonaChange={setPromptEnhancement}
-                                    isExpanded={promptEnhancementExpanded}
-                                    onExpandedChange={(expanded) => {
-                                        setPromptEnhancementExpanded(expanded);
-                                        // Close aspect ratio drawer when persona drawer opens
-                                        if (expanded) {
-                                            setAspectRatioExpanded(false);
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    {/* Expanded personas tray - integrated within the input bar */}
+                    {promptEnhancementExpanded && (
+                        <PersonaTray
+                            selectedPersona={selectedPromptEnhancement}
+                            onPersonaChange={setPromptEnhancement}
+                            onClose={() => setPromptEnhancementExpanded(false)}
+                        />
+                    )}
                 </div>
 
-                {/* Expanded aspect ratio tray - integrated within the input bar */}
-                {aspectRatioExpanded && (
-                    <div data-aspect-ratio-tray className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
-                        <div className="flex flex-wrap items-center justify-center gap-2 py-2">
-                            {ASPECT_RATIOS.map((ratio) => (
-                                <button
-                                    key={ratio.value}
-                                    onClick={() => {
-                                        if (!editSource) {
-                                            // 🚀 PERFORMANCE FIX: Batch state updates to prevent multiple renders
-                                            startTransition(() => {
-                                                setAspectRatio(ratio.value);
-                                                setAspectRatioExpanded(false);
-                                            });
-                                        }
-                                    }}
-                                    disabled={!!editSource}
-                                    className={`flex flex-col items-center gap-2 p-3 min-w-[60px] cursor-pointer rounded-lg hover:bg-accent/50 transition-colors ${selectedAspectRatio === ratio.value
-                                        ? 'bg-white/10 border border-transparent'
-                                        : 'border border-transparent hover:border-border'
-                                        } ${editSource ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    aria-label={`Select aspect ratio ${ratio.label}`}
-                                >
-                                    {/* Visual representation */}
-                                    <div className="flex items-center justify-center h-8">
-                                        {ratio.value === 'random' ? (
-                                            <Dice5 className="h-5 w-5" />
-                                        ) : (
-                                            <div
-                                                className="border-2 border-current rounded-sm bg-current/20"
-                                                style={{
-                                                    width: `${ratio.width}px`,
-                                                    height: `${ratio.height}px`,
-                                                    minWidth: '16px',
-                                                    minHeight: '16px',
-                                                }}
-                                            />
-                                        )}
-                                    </div>
+                {/* Text Response Modal */}
+                <TextResponseModal
+                    isOpen={showTextResponseModal}
+                    onClose={() => setShowTextResponseModal(false)}
+                    originalPrompt={textResponsePrompt}
+                />
 
-                                    {/* Label */}
-                                    <span className="text-xs font-medium whitespace-nowrap">{ratio.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Expanded personas tray - integrated within the input bar */}
-                {promptEnhancementExpanded && (
-                    <PersonaTray
-                        selectedPersona={selectedPromptEnhancement}
-                        onPersonaChange={setPromptEnhancement}
-                        onClose={() => setPromptEnhancementExpanded(false)}
-                    />
-                )}
             </div>
-
-            {/* Text Response Modal */}
-            <TextResponseModal
-                isOpen={showTextResponseModal}
-                onClose={() => setShowTextResponseModal(false)}
-                originalPrompt={textResponsePrompt}
-            />
-
-
+            <LayoutToggle className="w-20 py-6" />
         </div>
     );
 }
