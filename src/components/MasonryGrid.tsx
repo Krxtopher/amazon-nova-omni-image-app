@@ -1,5 +1,4 @@
 import useViewportVisibility from "@/hooks/useViewportVisibility";
-import { expRiseMapped } from "@/utils/mathUtils";
 import {
   useLayoutEffect,
   useRef,

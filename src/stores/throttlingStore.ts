@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ThrottlingConfig, ModelThrottleConfig, ThrottlingStats } from '../types/throttling';
 import { DEFAULT_THROTTLING_CONFIG } from '../types/throttling';
-import { ThrottlingService } from '../services/ThrottlingService';
 
 /**
  * Throttling store state interface
@@ -25,99 +24,58 @@ interface ThrottlingActions {
 /**
  * Throttling store using Zustand with localStorage persistence
  * 
- * Manages throttling configuration and provides real-time statistics
- * for the Bedrock API request throttling system.
+ * NOTE: Throttling has been disabled but UI settings are preserved
+ * for potential future use. This store maintains the configuration
+ * interface but does not apply any actual throttling.
  */
 export const useThrottlingStore = create<ThrottlingState & ThrottlingActions>()(
     persist(
-        (set, get) => {
-            // Initialize throttling service with persisted config
-            let throttlingService: ThrottlingService;
+        (set, get) => ({
+            // State
+            config: DEFAULT_THROTTLING_CONFIG,
+            stats: null,
 
-            const initializeService = (config: ThrottlingConfig) => {
-                throttlingService = ThrottlingService.getInstance(config);
+            // Actions
+            updateConfig: (config: ThrottlingConfig) => {
+                set({ config });
+                // Note: No throttling service to update since throttling is disabled
+            },
 
-                // Set up config change listener to update service
-                throttlingService.onConfigChange((newConfig) => {
-                    set({ config: newConfig });
-                });
-            };
-
-            return {
-                // State
-                config: DEFAULT_THROTTLING_CONFIG,
-                stats: null,
-
-                // Actions
-                updateConfig: (config: ThrottlingConfig) => {
-                    set({ config });
-                    if (throttlingService) {
-                        throttlingService.updateConfig(config);
-                    }
-                },
-
-                updateModelConfig: (modelId: string, modelConfig: ModelThrottleConfig) => {
-                    const currentConfig = get().config;
-                    const newConfig: ThrottlingConfig = {
-                        ...currentConfig,
-                        models: {
-                            ...currentConfig.models,
-                            [modelId]: {
-                                ...modelConfig,
-                                enabled: true, // Always keep enabled
-                            },
+            updateModelConfig: (modelId: string, modelConfig: ModelThrottleConfig) => {
+                const currentConfig = get().config;
+                const newConfig: ThrottlingConfig = {
+                    ...currentConfig,
+                    models: {
+                        ...currentConfig.models,
+                        [modelId]: {
+                            ...modelConfig,
+                            enabled: true, // Always keep enabled for UI consistency
                         },
-                    };
-                    get().updateConfig(newConfig);
-                },
+                    },
+                };
+                get().updateConfig(newConfig);
+            },
 
-                refreshStats: () => {
-                    if (throttlingService) {
-                        const stats = throttlingService.getStats();
-                        set({ stats });
-                    }
-                },
+            refreshStats: () => {
+                // Note: No stats to refresh since throttling is disabled
+                set({ stats: null });
+            },
 
-                resetToDefaults: () => {
-                    get().updateConfig(DEFAULT_THROTTLING_CONFIG);
-                },
-
-                // Initialize service when store is created
-                _initialize: (config: ThrottlingConfig) => {
-                    initializeService(config);
-                },
-            };
-        },
+            resetToDefaults: () => {
+                get().updateConfig(DEFAULT_THROTTLING_CONFIG);
+            },
+        }),
         {
             name: 'throttling-store',
             partialize: (state) => ({
                 config: state.config,
                 // Don't persist stats as they're runtime data
             }),
-            onRehydrateStorage: () => (state) => {
-                if (state) {
-                    // Initialize service with rehydrated config
-                    const throttlingService = ThrottlingService.getInstance(state.config);
-
-                    // Set up periodic stats refresh
-                    const refreshInterval = setInterval(() => {
-                        console.log('[1000ms Interval] throttlingStore.ts - stats refresh called at', new Date().toISOString());
-                        const stats = throttlingService.getStats();
-                        useThrottlingStore.setState({ stats });
-                    }, 1000); // Refresh every second
-
-                    // Store cleanup function globally (you might want to handle this better)
-                    (window as any).__throttlingStatsCleanup = () => {
-                        clearInterval(refreshInterval);
-                    };
-                }
-            },
         }
     )
 );
 
-// Helper function to get throttling service instance
-export const getThrottlingService = (): ThrottlingService => {
-    const config = useThrottlingStore.getState().config;
-    return ThrottlingService.getInstance(config);
+// Helper function kept for compatibility but returns null since throttling is disabled
+export const getThrottlingService = (): null => {
+    return null;
 };

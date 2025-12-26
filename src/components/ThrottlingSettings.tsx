@@ -1,8 +1,6 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap } from 'lucide-react';
 import { useThrottlingStore } from '@/stores/throttlingStore';
 import type { ModelThrottleConfig } from '@/types/throttling';
 
@@ -100,9 +98,13 @@ export const ThrottlingSettings = forwardRef<ThrottlingSettingsRef, ThrottlingSe
 
         return (
             <div className="flex flex-col gap-4">
+                <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted/50 rounded-lg">
+                    <strong>Note:</strong> Request throttling has been disabled. These settings are preserved for potential future use but do not affect API requests.
+                </div>
+
                 {Object.entries(localConfigs).map(([modelId, modelConfig]) => {
                     return (
-                        <div key={modelId} className="flex gap-4 w-full">
+                        <div key={modelId} className="flex gap-4 w-full opacity-60">
                             <div className="flex-1">
                                 <h4 className="font-medium">{formatModelName(modelId)}</h4>
                                 <p className="text-xs text-muted-foreground">{getModelUseDescription(modelId)}</p>
@@ -123,9 +125,10 @@ export const ThrottlingSettings = forwardRef<ThrottlingSettingsRef, ThrottlingSe
                                         )
                                     }
                                     className="w-25"
+                                    disabled
                                 />
                                 <Label htmlFor={`${modelId}-rate`} className="min-w-fit text-white/50 special-gothic-label">
-                                    Requests per min
+                                    Requests per min (disabled)
                                 </Label>
                             </div>
                         </div>
