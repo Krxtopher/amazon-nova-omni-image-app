@@ -115,6 +115,7 @@ export const SimpleVirtualizedGallery = React.memo(function SimpleVirtualizedGal
                     renderer={renderer}
                     gap={22}
                     className="w-full"
+                    mobileBreakpoint={480}
                 />
             ) : (
                 <HMasonryGrid
