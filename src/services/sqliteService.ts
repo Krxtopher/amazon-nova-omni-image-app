@@ -300,6 +300,7 @@ class SQLiteService {
 
         // Set new timeout - save after 1 second of inactivity
         this.saveTimeout = setTimeout(async () => {
+            console.log('[1000ms Timeout] sqliteService.ts - debounced save triggered at', new Date().toISOString());
             if (!this.pendingSave) {
                 this.pendingSave = true;
                 const timer = storageLogger.startOperation('debouncedSave', 'sqlite');

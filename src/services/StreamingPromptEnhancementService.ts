@@ -5,7 +5,6 @@ import { personaService } from './personaService';
 import { STANDARD_PERSONAS } from './standardPersonas';
 import { TokenAccumulator } from '../utils/TokenAccumulator';
 import { StreamingErrorHandler, type StreamingError } from '../utils/StreamingErrorHandler';
-import { PerformanceMonitoringService } from './PerformanceMonitoringService';
 import { processPromptTemplate } from '@/utils/promptTemplating';
 import { ThrottlingService } from './ThrottlingService';
 
@@ -57,7 +56,6 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
     private activeRequests: Map<string, StreamingRequestContext> = new Map();
     private errorConfig: StreamingErrorConfig;
     private errorHandler: StreamingErrorHandler;
-    private performanceMonitoring: PerformanceMonitoringService;
     private throttlingService: ThrottlingService;
 
     /**
@@ -72,7 +70,6 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
         });
         this.errorConfig = { ...DEFAULT_ERROR_CONFIG, ...errorConfig };
         this.errorHandler = new StreamingErrorHandler(errorConfig);
-        this.performanceMonitoring = PerformanceMonitoringService.getInstance();
         this.throttlingService = ThrottlingService.getInstance();
     }
 
@@ -109,10 +106,10 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
 
         // Wrap onComplete to record performance metrics and cleanup
         const wrappedOnComplete = (finalText: string) => {
-            // Record enhancement completion time
-            if (requestContext.startTime > 0) {
-                this.performanceMonitoring.recordEnhancementTime(requestContext.startTime, performance.now());
-            }
+            // Note: Performance monitoring removed
+            // if (requestContext.startTime > 0) {
+            //     this.performanceMonitoring.recordEnhancementTime(requestContext.startTime, performance.now());
+            // }
 
             // Cleanup request context
             this.cleanupRequest(requestId);

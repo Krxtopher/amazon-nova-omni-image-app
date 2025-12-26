@@ -47,6 +47,7 @@ export function useViewportAwareLoading({
 
             // Reset the checking flag after a delay to allow for content to load
             setTimeout(() => {
+                console.log('[1000ms Timeout] useViewportAwareLoading.ts - reset checking flag at', new Date().toISOString());
                 isCheckingRef.current = false;
             }, 1000);
         }

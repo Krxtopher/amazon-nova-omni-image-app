@@ -101,6 +101,7 @@ export const useThrottlingStore = create<ThrottlingState & ThrottlingActions>()(
 
                     // Set up periodic stats refresh
                     const refreshInterval = setInterval(() => {
+                        console.log('[1000ms Interval] throttlingStore.ts - stats refresh called at', new Date().toISOString());
                         const stats = throttlingService.getStats();
                         useThrottlingStore.setState({ stats });
                     }, 1000); // Refresh every second

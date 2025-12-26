@@ -136,6 +136,7 @@ export class ThrottlingService {
         const intervalMs = (60 * 1000) / modelConfig.maxRequestsPerMinute;
 
         const interval = setInterval(() => {
+            console.log('[Dynamic Interval] ThrottlingService.ts - processNextRequest called for model', modelId, 'at', new Date().toISOString(), 'interval:', intervalMs + 'ms');
             this.processNextRequest(modelId);
         }, intervalMs);
 

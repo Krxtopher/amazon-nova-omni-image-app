@@ -61,6 +61,12 @@ function AppContent() {
   const { deleteImage, initialize, isLoading } = useImageStore();
   const { setEditSource } = useEditSourceStore();
   const { refreshStats } = useThrottlingStore();
+
+  // Wrapped refreshStats with logging
+  const loggedRefreshStats = () => {
+    console.log('[1000ms Interval] App.tsx - refreshStats called at', new Date().toISOString());
+    refreshStats();
+  };
   const { showDebugPanel } = useUIStore();
 
   const [activeRequests, setActiveRequests] = useState(0);
@@ -77,7 +83,7 @@ function AppContent() {
   // Initialize throttling stats refresh when debug panel is visible
   useEffect(() => {
     if (showDebugPanel) {
-      const interval = setInterval(refreshStats, 1000);
+      const interval = setInterval(loggedRefreshStats, 1000);
       return () => clearInterval(interval);
     }
   }, [refreshStats, showDebugPanel]);

@@ -4,12 +4,8 @@
  * This class handles the accumulation of streaming tokens from the Bedrock API
  * and segments them into complete words for word-by-word display.
  * 
- * Performance optimizations:
- * - Uses token buffering to prevent UI blocking during rapid streams
- * - Batches token processing for efficiency
+ * NOTE: PerformanceOptimizer has been removed - now uses simple token processing
  */
-
-import { PerformanceOptimizer } from './PerformanceOptimizer';
 
 export interface TokenAccumulationResult {
     newWords: string[];
@@ -22,29 +18,21 @@ export interface TokenAccumulationResult {
 export class TokenAccumulator {
     private buffer: string = '';
     private completedWords: string[] = [];
-    private displayId: string;
-    private performanceOptimizer: PerformanceOptimizer;
     private pendingTokens: string[] = [];
     private isProcessingBatch: boolean = false;
 
-    constructor(displayId?: string) {
-        this.displayId = displayId || `accumulator_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        this.performanceOptimizer = PerformanceOptimizer.getInstance();
+    constructor(_displayId?: string) {
+        // displayId parameter kept for compatibility but not used
     }
     /**
      * Add a new token to the accumulator and extract any completed words
-     * Uses performance-optimized token buffering for rapid streams
+     * NOTE: Simplified without PerformanceOptimizer - processes tokens directly
      * @param token - The token string received from the streaming API
      * @returns Object containing new completed words and completion status
      */
     addToken(token: string): TokenAccumulationResult {
-        // Use buffered processing for performance optimization
-        return new Promise<TokenAccumulationResult>((resolve) => {
-            this.performanceOptimizer.bufferToken(this.displayId, token, (bufferedTokens) => {
-                const result = this.processBatchedTokens(bufferedTokens);
-                resolve(result);
-            });
-        }) as any; // Type assertion for synchronous compatibility
+        // Process token directly without buffering
+        return this.processBatchedTokens([token]);
     }
 
     /**
@@ -202,8 +190,7 @@ export class TokenAccumulator {
         this.pendingTokens = [];
         this.isProcessingBatch = false;
 
-        // Clean up performance optimizer resources
-        this.performanceOptimizer.cleanupTokenBuffer(this.displayId);
+        // Note: PerformanceOptimizer cleanup removed
     }
 
     /**
