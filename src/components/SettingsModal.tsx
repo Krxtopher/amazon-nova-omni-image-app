@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { X, Trash2, Loader2, RotateCcw } from 'lucide-react';
+import { ButtonGroup } from '@/components/ui/button-group';
+import { X, Trash2, Loader2, Columns3, Rows3 } from 'lucide-react';
 import { sqliteService } from '@/services/sqliteService';
 import { useImageStore } from '@/stores/imageStore';
 import { useUIStore } from '@/stores/uiStore';
 import { ThrottlingSettings, type ThrottlingSettingsRef } from '@/components/ThrottlingSettings';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -32,7 +32,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [isDeletingImages, setIsDeletingImages] = useState(false);
     const [hasThrottlingChanges, setHasThrottlingChanges] = useState(false);
     const { initialize } = useImageStore();
-    const { showDebugPanel, setShowDebugPanel } = useUIStore();
+    const { showDebugPanel, setShowDebugPanel, layoutMode, setLayoutMode } = useUIStore();
     const throttlingRef = useRef<ThrottlingSettingsRef>(null);
 
     // Lock body scrolling when modal is open
@@ -163,6 +163,36 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Reset All Data
                             </Button>
+                        </div>
+                    </div>
+
+                    {/* Grid Layout Section */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-foreground special-gothic-label">
+                            Grid Layout
+                        </h3>
+                        <div className="flex flex-row gap-4 items-center">
+                            <ButtonGroup>
+                                <Button
+                                    variant={layoutMode === 'vertical' ? "outlineSelected" : "outline"}
+                                    onClick={() => setLayoutMode('vertical')}
+                                    className="flex items-center gap-2"
+                                    aria-label="Column layout"
+                                >
+                                    <Columns3 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant={layoutMode === 'horizontal' ? "outlineSelected" : "outline"}
+                                    onClick={() => setLayoutMode('horizontal')}
+                                    className="flex items-center gap-2"
+                                    aria-label="Row layout"
+                                >
+                                    <Rows3 className="h-4 w-4" />
+                                </Button>
+                            </ButtonGroup>
+                            <Label className="text-sm text-muted-foreground">
+                                {layoutMode === 'vertical' ? 'Columns' : 'Rows'}
+                            </Label>
                         </div>
                     </div>
 

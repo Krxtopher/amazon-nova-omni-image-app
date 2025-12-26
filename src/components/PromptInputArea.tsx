@@ -13,7 +13,7 @@ import { AspectRatioSelector } from './AspectRatioSelector';
 import { PersonaSelector } from './PersonaSelector';
 import { PersonaTray } from './PersonaTray';
 import { TextResponseModal } from './TextResponseModal';
-import { LayoutToggle } from './LayoutToggle';
+
 
 
 /**
@@ -798,7 +798,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 />
 
             </div>
-            <LayoutToggle className="w-20 py-6" />
         </div>
     );
 }
