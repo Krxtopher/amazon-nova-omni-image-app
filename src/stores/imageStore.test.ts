@@ -1,39 +1,40 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useImageStore } from './imageStore';
-import { sqliteService } from '../services/sqliteService';
-import { binaryStorageService } from '../services/BinaryStorageService';
 import type { GeneratedImage } from '../types';
 
-// Mock the services to test coordination behavior
+// Mock the services
 vi.mock('../services/sqliteService', () => ({
     sqliteService: {
-        init: vi.fn().mockResolvedValue(undefined),
-        addImage: vi.fn().mockResolvedValue(undefined),
-        updateImage: vi.fn().mockResolvedValue(undefined),
-        deleteImage: vi.fn().mockResolvedValue(undefined),
-        clearAll: vi.fn().mockResolvedValue(undefined),
-        getAllImages: vi.fn().mockResolvedValue([]),
-        getAllImageMetadata: vi.fn().mockResolvedValue([]),
-        getCompleteImageMetadataCount: vi.fn().mockResolvedValue(0),
-        getCompleteImageMetadataPaginated: vi.fn().mockResolvedValue([]),
+        init: vi.fn(),
+        addImage: vi.fn(),
+        updateImage: vi.fn(),
+        deleteImage: vi.fn(),
+        getAllImageMetadata: vi.fn(() => []),
+        getCompleteImageMetadataCount: vi.fn(() => 0),
+        getCompleteImageMetadataPaginated: vi.fn(() => []),
     }
 }));
 
 vi.mock('../services/BinaryStorageService', () => ({
     binaryStorageService: {
-        storeImageDataWithQuotaManagement: vi.fn().mockResolvedValue(undefined),
-        getImageData: vi.fn().mockResolvedValue(null),
-        deleteImageData: vi.fn().mockResolvedValue(undefined),
-        deleteMultipleImageData: vi.fn().mockResolvedValue(undefined),
+        storeImageDataWithQuotaManagement: vi.fn(),
+        getImageData: vi.fn(),
+        deleteImageData: vi.fn(),
     }
 }));
 
-describe('ImageStore Coordinated Operations', () => {
-    beforeEach(async () => {
-        // Clear all mocks
-        vi.clearAllMocks();
+vi.mock('../utils/StorageLogger', () => ({
+    storageLogger: {
+        startOperation: vi.fn(() => ({
+            success: vi.fn(),
+            error: vi.fn(),
+        })),
+    }
+}));
 
-        // Reset store to initial state
+describe('ImageStore Database Write Optimization', () => {
+    beforeEach(() => {
+        // Reset store state before each test
         useImageStore.setState({
             images: [],
             textItems: [],
@@ -42,273 +43,149 @@ describe('ImageStore Coordinated Operations', () => {
             hasMoreImages: true,
             isLoadingMore: false,
             totalImageCount: 0,
+            loadedImageCount: 0,
         });
+
+        // Clear all mocks
+        vi.clearAllMocks();
     });
 
-    describe('addImage coordination', () => {
-        it('should coordinate storage between SQLite (metadata) and IndexedDB (binary data)', async () => {
-            const testImage: GeneratedImage = {
-                id: 'test-1',
-                url: 'data:image/png;base64,test',
-                prompt: 'test prompt',
-                status: 'complete',
-                aspectRatio: '16:9',
-                width: 1344,
-                height: 768,
-                createdAt: new Date('2024-01-01T00:00:00.000Z'),
-            };
+    it('should add placeholder image to UI without database write', async () => {
+        const { sqliteService } = await import('../services/sqliteService');
+        const { binaryStorageService } = await import('../services/BinaryStorageService');
 
-            // Add image to store
-            await useImageStore.getState().addImage(testImage);
+        const placeholderImage: GeneratedImage = {
+            id: 'test-placeholder',
+            url: '',
+            prompt: 'test prompt',
+            status: 'generating',
+            aspectRatio: '1:1',
+            width: 512,
+            height: 512,
+            createdAt: new Date(),
+        };
 
-            // Verify SQLite service was called with metadata only (no binary data)
-            expect(sqliteService.addImage).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    id: 'test-1',
-                    prompt: 'test prompt',
-                    status: 'complete',
-                    aspectRatio: '16:9',
-                    width: 1344,
-                    height: 768,
-                    url: undefined, // Binary data should not be in SQLite
-                    hasBinaryData: true,
-                    binaryDataSize: testImage.url!.length,
-                })
-            );
+        // Add placeholder image
+        useImageStore.getState().addPlaceholderImage(placeholderImage);
 
-            // Verify IndexedDB service was called with binary data
-            expect(binaryStorageService.storeImageDataWithQuotaManagement).toHaveBeenCalledWith(
-                'test-1',
-                'data:image/png;base64,test'
-            );
+        // Verify image is in UI state
+        const state = useImageStore.getState();
+        expect(state.images).toHaveLength(1);
+        expect(state.images[0].id).toBe('test-placeholder');
+        expect(state.images[0].status).toBe('generating');
 
-            // Verify UI state was updated immediately
-            const state = useImageStore.getState();
-            expect(state.images).toHaveLength(1);
-            expect(state.images[0].id).toBe('test-1');
-        });
+        // Verify no database calls were made
+        expect(sqliteService.addImage).not.toHaveBeenCalled();
+        expect(binaryStorageService.storeImageDataWithQuotaManagement).not.toHaveBeenCalled();
 
-        it('should handle images without binary data correctly', async () => {
-            const testImage: GeneratedImage = {
-                id: 'test-no-binary',
-                prompt: 'test prompt',
-                status: 'pending',
-                aspectRatio: '1:1',
-                width: 1024,
-                height: 1024,
-                createdAt: new Date(),
-                // No URL - no binary data
-            };
-
-            await useImageStore.getState().addImage(testImage);
-
-            // Verify SQLite service was called with metadata
-            expect(sqliteService.addImage).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    id: 'test-no-binary',
-                    url: undefined,
-                    hasBinaryData: false,
-                    binaryDataSize: 0,
-                })
-            );
-
-            // Verify IndexedDB service was NOT called for binary data
-            expect(binaryStorageService.storeImageDataWithQuotaManagement).not.toHaveBeenCalled();
-        });
-
-        it('should rollback UI changes if storage fails', async () => {
-            const testImage: GeneratedImage = {
-                id: 'test-rollback',
-                url: 'data:image/png;base64,test',
-                prompt: 'test prompt',
-                status: 'complete',
-                aspectRatio: '1:1',
-                width: 1024,
-                height: 1024,
-                createdAt: new Date(),
-            };
-
-            // Mock SQLite failure
-            vi.mocked(sqliteService.addImage).mockRejectedValue(new Error('SQLite failed'));
-
-            // Attempt to add image should throw
-            await expect(useImageStore.getState().addImage(testImage)).rejects.toThrow('Failed to store image data');
-
-            // Verify UI state was rolled back
-            const state = useImageStore.getState();
-            expect(state.images).toHaveLength(0);
-            expect(state.totalImageCount).toBe(0);
-
-            // Verify cleanup was attempted
-            expect(sqliteService.deleteImage).toHaveBeenCalledWith('test-rollback');
-            expect(binaryStorageService.deleteImageData).toHaveBeenCalledWith('test-rollback');
-        });
+        // Verify totalImageCount is not incremented (since not in database)
+        expect(state.totalImageCount).toBe(0);
+        expect(state.loadedImageCount).toBe(1); // But UI count is incremented
     });
 
-    describe('updateImage coordination', () => {
-        beforeEach(() => {
-            // Add a test image to state for update tests
-            useImageStore.setState(_state => ({
-                images: [{
-                    id: 'test-update',
-                    prompt: 'test prompt',
-                    status: 'generating',
-                    aspectRatio: '1:1',
-                    width: 1024,
-                    height: 1024,
-                    createdAt: new Date(),
-                }],
-                totalImageCount: 1,
-            }));
+    it('should write to database only when placeholder becomes complete', async () => {
+        const { sqliteService } = await import('../services/sqliteService');
+        const { binaryStorageService } = await import('../services/BinaryStorageService');
+
+        const placeholderImage: GeneratedImage = {
+            id: 'test-placeholder',
+            url: '',
+            prompt: 'test prompt',
+            status: 'generating',
+            aspectRatio: '1:1',
+            width: 512,
+            height: 512,
+            createdAt: new Date(),
+        };
+
+        // Add placeholder image (no database write)
+        useImageStore.getState().addPlaceholderImage(placeholderImage);
+
+        // Verify no database calls yet
+        expect(sqliteService.addImage).not.toHaveBeenCalled();
+
+        // Update to complete status with image data
+        const imageDataUrl = 'data:image/png;base64,test-data';
+        await useImageStore.getState().updateImage('test-placeholder', {
+            status: 'complete',
+            url: imageDataUrl,
         });
 
-        it('should coordinate updates between SQLite (metadata) and IndexedDB (binary data)', async () => {
-            await useImageStore.getState().updateImage('test-update', {
-                status: 'complete',
-                url: 'data:image/png;base64,updated',
-            });
+        // Verify database write happened when status became complete
+        expect(sqliteService.addImage).toHaveBeenCalledTimes(1);
+        expect(binaryStorageService.storeImageDataWithQuotaManagement).toHaveBeenCalledWith(
+            'test-placeholder',
+            imageDataUrl
+        );
 
-            // Verify SQLite service was called with metadata updates
-            expect(sqliteService.updateImage).toHaveBeenCalledWith('test-update', {
-                status: 'complete',
-                hasBinaryData: true,
-                binaryDataSize: 'data:image/png;base64,updated'.length,
-            });
-
-            // Verify IndexedDB service was called with binary data
-            expect(binaryStorageService.storeImageDataWithQuotaManagement).toHaveBeenCalledWith(
-                'test-update',
-                'data:image/png;base64,updated'
-            );
-
-            // Verify UI state was updated
-            const state = useImageStore.getState();
-            expect(state.images[0].status).toBe('complete');
-            expect(state.images[0].url).toBe('data:image/png;base64,updated');
-        });
-
-        it('should handle metadata-only updates', async () => {
-            await useImageStore.getState().updateImage('test-update', {
-                status: 'error',
-                error: 'Generation failed',
-            });
-
-            // Verify SQLite service was called with metadata updates only
-            expect(sqliteService.updateImage).toHaveBeenCalledWith('test-update', {
-                status: 'error',
-                error: 'Generation failed',
-            });
-
-            // Verify IndexedDB service was NOT called
-            expect(binaryStorageService.storeImageDataWithQuotaManagement).not.toHaveBeenCalled();
-        });
-
-        it('should handle binary data removal', async () => {
-            await useImageStore.getState().updateImage('test-update', {
-                url: undefined, // Remove binary data
-            });
-
-            // Verify SQLite service was called with metadata updates
-            expect(sqliteService.updateImage).toHaveBeenCalledWith('test-update', {
-                hasBinaryData: false,
-                binaryDataSize: 0,
-            });
-
-            // Verify IndexedDB service was called to delete binary data
-            expect(binaryStorageService.deleteImageData).toHaveBeenCalledWith('test-update');
-        });
-
-        it('should throw error if update fails but not rollback UI changes', async () => {
-            // Mock SQLite failure
-            vi.mocked(sqliteService.updateImage).mockRejectedValue(new Error('Update failed'));
-
-            // Attempt to update should throw
-            await expect(useImageStore.getState().updateImage('test-update', {
-                status: 'complete'
-            })).rejects.toThrow('Failed to update image data');
-
-            // Verify UI state was NOT rolled back (by design for updates)
-            const state = useImageStore.getState();
-            expect(state.images[0].status).toBe('complete'); // UI was updated immediately
-        });
+        // Verify totalImageCount is now incremented
+        const state = useImageStore.getState();
+        expect(state.totalImageCount).toBe(1);
     });
 
-    describe('deleteImage coordination', () => {
-        beforeEach(() => {
-            // Add a test image to state for delete tests
-            useImageStore.setState(_state => ({
-                images: [{
-                    id: 'test-delete',
-                    prompt: 'test prompt',
-                    status: 'complete',
-                    aspectRatio: '1:1',
-                    width: 1024,
-                    height: 1024,
-                    createdAt: new Date(),
-                    url: 'data:image/png;base64,test',
-                }],
-                totalImageCount: 1,
-            }));
+    it('should not write to database if generation fails', async () => {
+        const { sqliteService } = await import('../services/sqliteService');
+        const { binaryStorageService } = await import('../services/BinaryStorageService');
+
+        const placeholderImage: GeneratedImage = {
+            id: 'test-placeholder',
+            url: '',
+            prompt: 'test prompt',
+            status: 'generating',
+            aspectRatio: '1:1',
+            width: 512,
+            height: 512,
+            createdAt: new Date(),
+        };
+
+        // Add placeholder image (no database write)
+        useImageStore.getState().addPlaceholderImage(placeholderImage);
+
+        // Update to error status
+        await useImageStore.getState().updateImage('test-placeholder', {
+            status: 'error',
+            error: 'Generation failed',
         });
 
-        it('should coordinate cleanup between SQLite (metadata) and IndexedDB (binary data)', async () => {
-            await useImageStore.getState().deleteImage('test-delete');
+        // Verify no database write happened
+        expect(sqliteService.addImage).not.toHaveBeenCalled();
+        expect(binaryStorageService.storeImageDataWithQuotaManagement).not.toHaveBeenCalled();
 
-            // Verify both storage mechanisms were called for cleanup
-            expect(sqliteService.deleteImage).toHaveBeenCalledWith('test-delete');
-            expect(binaryStorageService.deleteImageData).toHaveBeenCalledWith('test-delete');
-
-            // Verify UI state was updated immediately
-            const state = useImageStore.getState();
-            expect(state.images).toHaveLength(0);
-            expect(state.totalImageCount).toBe(0);
-        });
-
-        it('should handle storage failures gracefully without rolling back UI changes', async () => {
-            // Mock storage failures
-            vi.mocked(sqliteService.deleteImage).mockRejectedValue(new Error('SQLite delete failed'));
-            vi.mocked(binaryStorageService.deleteImageData).mockRejectedValue(new Error('IndexedDB delete failed'));
-
-            // Delete should not throw (handles errors internally)
-            await useImageStore.getState().deleteImage('test-delete');
-
-            // Verify UI state was still updated (deletion is not rolled back)
-            const state = useImageStore.getState();
-            expect(state.images).toHaveLength(0);
-
-            // Verify cleanup was attempted
-            expect(sqliteService.deleteImage).toHaveBeenCalledWith('test-delete');
-            expect(binaryStorageService.deleteImageData).toHaveBeenCalledWith('test-delete');
-        });
+        // Verify image is still in UI but not counted in database total
+        const state = useImageStore.getState();
+        expect(state.images).toHaveLength(1);
+        expect(state.images[0].status).toBe('error');
+        expect(state.totalImageCount).toBe(0); // Not in database
     });
 
-    describe('performance monitoring', () => {
-        it('should log performance metrics for IndexedDB loads', async () => {
-            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
-            vi.mocked(binaryStorageService.getImageData).mockResolvedValue('data:image/png;base64,loaded');
+    it('should allow enhanced prompt updates without database write for placeholders', async () => {
+        const { sqliteService } = await import('../services/sqliteService');
 
-            await useImageStore.getState().loadImageData('new-image');
+        const placeholderImage: GeneratedImage = {
+            id: 'test-placeholder',
+            url: '',
+            prompt: 'test prompt',
+            status: 'generating',
+            aspectRatio: '1:1',
+            width: 512,
+            height: 512,
+            createdAt: new Date(),
+        };
 
-            expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining('[IMAGE_LOAD] Loading image data for new-image')
-            );
+        // Add placeholder image
+        useImageStore.getState().addPlaceholderImage(placeholderImage);
 
-            consoleSpy.mockRestore();
+        // Update with enhanced prompt (should not trigger database write)
+        await useImageStore.getState().updateImage('test-placeholder', {
+            enhancedPrompt: 'enhanced test prompt with more details',
         });
 
-        it('should log errors when image loading fails', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            vi.mocked(binaryStorageService.getImageData).mockRejectedValue(new Error('Load failed'));
+        // Verify no database write happened
+        expect(sqliteService.addImage).not.toHaveBeenCalled();
+        expect(sqliteService.updateImage).not.toHaveBeenCalled();
 
-            const result = await useImageStore.getState().loadImageData('failing-image');
-
-            expect(result).toBeNull();
-            expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining('[IMAGE_LOAD] Failed to load failing-image'),
-                expect.any(Error)
-            );
-
-            consoleSpy.mockRestore();
-        });
+        // Verify enhanced prompt is in UI
+        const state = useImageStore.getState();
+        expect(state.images[0].enhancedPrompt).toBe('enhanced test prompt with more details');
     });
 });

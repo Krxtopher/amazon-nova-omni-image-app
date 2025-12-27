@@ -27,6 +27,7 @@ interface ImageStoreState {
 interface ImageStoreActions {
     // Actions
     addImage: (image: GeneratedImage) => Promise<void>;
+    addPlaceholderImage: (image: GeneratedImage) => void; // UI-only, no database write
     addTextItem: (textItem: GeneratedText) => void;
     updateImage: (id: string, updates: Partial<GeneratedImage>) => Promise<void>;
     deleteImage: (id: string) => Promise<void>;
@@ -248,8 +249,26 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Add a new image to the gallery
-     * New images are added at the beginning of the array (newest first)
+     * Add a placeholder image to the UI only (no database write)
+     * Used for optimistic UI updates during image generation
+     * Database write happens only when generation completes successfully
+     */
+    addPlaceholderImage: (image: GeneratedImage) => {
+        // Update UI immediately for responsive feel (Requirements: 1.1 - 50ms UI update)
+        set((state) => {
+            const newState = {
+                images: [image, ...state.images],
+                // Don't increment totalImageCount for placeholders since they're not in database yet
+                loadedImageCount: state.loadedImageCount + 1, // Track in UI for debugging
+            };
+
+            return newState;
+        });
+    },
+
+    /**
+     * Add a new image to the gallery with database persistence
+     * Used only when image generation completes successfully
      * UI update is immediate, database persistence happens asynchronously
      * Coordinates storage between SQLite (metadata) and IndexedDB (binary data)
      * Requirements: 2.1, 3.3, 1.1, 1.2, 5.2
@@ -259,14 +278,26 @@ export const useImageStore = create<ImageStore>()((set) => ({
 
         // Update UI immediately for responsive feel (Requirements: 1.1 - 50ms UI update)
         set((state) => {
-            const newLoadedCount = state.loadedImageCount + 1;
-            const newState = {
-                images: [image, ...state.images],
-                totalImageCount: state.totalImageCount + 1,
-                loadedImageCount: newLoadedCount,
-            };
+            // Check if this image already exists in UI (from placeholder)
+            const existingIndex = state.images.findIndex(img => img.id === image.id);
 
-            return newState;
+            if (existingIndex !== -1) {
+                // Update existing placeholder with complete data
+                const newImages = [...state.images];
+                newImages[existingIndex] = image;
+
+                return {
+                    images: newImages,
+                    totalImageCount: state.totalImageCount + 1, // Now count it in database total
+                };
+            } else {
+                // Add new image (shouldn't happen with current flow, but handle gracefully)
+                return {
+                    images: [image, ...state.images],
+                    totalImageCount: state.totalImageCount + 1,
+                    loadedImageCount: state.loadedImageCount + 1,
+                };
+            }
         });
 
         // Coordinate storage between SQLite (metadata) and IndexedDB (binary data)
@@ -341,9 +372,19 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Used to update status, URL, or error information
      * UI update is immediate, database persistence happens asynchronously
      * Coordinates updates between SQLite (metadata) and IndexedDB (binary data)
+     * Special handling: When status becomes 'complete', triggers database write for placeholders
      * Requirements: 1.4, 1.5, 4.4, 5.2, 5.3
      */
     updateImage: async (id: string, updates: Partial<GeneratedImage>) => {
+        // Get current image state to check if this is a placeholder becoming complete
+        const currentState = useImageStore.getState();
+        const currentImage = currentState.images.find(img => img.id === id);
+
+        // Check if this update transitions a placeholder to complete status
+        const isPlaceholderBecomingComplete = currentImage &&
+            currentImage.status !== 'complete' &&
+            updates.status === 'complete';
+
         // Update UI immediately for responsive feel
         // PERFORMANCE FIX: Use immer-style update to minimize re-renders
         set((state) => {
@@ -366,35 +407,68 @@ export const useImageStore = create<ImageStore>()((set) => ({
             };
         });
 
+        // Handle placeholder becoming complete - write to database for the first time
+        if (isPlaceholderBecomingComplete && currentImage) {
+            try {
+                // Create complete image object with all data
+                const completeImage: GeneratedImage = {
+                    ...currentImage,
+                    ...updates,
+                    status: 'complete' // Ensure status is set
+                };
+
+                // Write to database using addImage (this will update the UI state again, but that's OK)
+                await useImageStore.getState().addImage(completeImage);
+                return; // Exit early since addImage handles the database write
+            } catch (error) {
+                // If database write fails, revert the status update
+                set((state) => {
+                    const imageIndex = state.images.findIndex(img => img.id === id);
+                    if (imageIndex !== -1) {
+                        const newImages = [...state.images];
+                        newImages[imageIndex] = { ...newImages[imageIndex], status: 'error', error: 'Failed to save to database' };
+                        return { ...state, images: newImages };
+                    }
+                    return state;
+                });
+                throw error;
+            }
+        }
+
+        // For non-completion updates or already-complete images, handle normally
         // Coordinate updates between SQLite (metadata) and IndexedDB (binary data)
         // Requirements: 5.2 - Route operations to appropriate storage mechanisms
         try {
-            const { url, ...metadataUpdates } = updates;
+            // Only update database if the image is already complete (has been written to database)
+            if (currentImage?.status === 'complete') {
+                const { url, ...metadataUpdates } = updates;
 
-            // Update metadata in SQLite (without binary data)
-            const sqliteUpdates: any = { ...metadataUpdates };
+                // Update metadata in SQLite (without binary data)
+                const sqliteUpdates: any = { ...metadataUpdates };
 
-            // Add binary data tracking fields if URL is being updated
-            if ('url' in updates) {
-                sqliteUpdates.hasBinaryData = Boolean(url);
-                sqliteUpdates.binaryDataSize = url ? url.length : 0;
-            }
+                // Add binary data tracking fields if URL is being updated
+                if ('url' in updates) {
+                    sqliteUpdates.hasBinaryData = Boolean(url);
+                    sqliteUpdates.binaryDataSize = url ? url.length : 0;
+                }
 
-            // Only call SQLite if there are updates to make
-            if (Object.keys(sqliteUpdates).length > 0) {
-                await sqliteService.updateImage(id, sqliteUpdates);
-            }
+                // Only call SQLite if there are updates to make
+                if (Object.keys(sqliteUpdates).length > 0) {
+                    await sqliteService.updateImage(id, sqliteUpdates);
+                }
 
-            // Update binary data in IndexedDB if URL is being updated
-            if ('url' in updates) {
-                if (url) {
-                    // Store new binary data
-                    await binaryStorageService.storeImageDataWithQuotaManagement(id, url);
-                } else {
-                    // Remove binary data if URL is being set to null/undefined
-                    await binaryStorageService.deleteImageData(id);
+                // Update binary data in IndexedDB if URL is being updated
+                if ('url' in updates) {
+                    if (url) {
+                        // Store new binary data
+                        await binaryStorageService.storeImageDataWithQuotaManagement(id, url);
+                    } else {
+                        // Remove binary data if URL is being set to null/undefined
+                        await binaryStorageService.deleteImageData(id);
+                    }
                 }
             }
+            // For placeholder images (status !== 'complete'), skip database operations
 
         } catch (error) {
             // Requirements: 5.3 - Error handling for partial operation failures

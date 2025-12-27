@@ -91,7 +91,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
 
     const {
-        addImage,
+        addPlaceholderImage,
         updateImage,
         deleteImage,
     } = useImageStore();
@@ -268,8 +268,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
             createdAt: new Date(),
         };
 
-        // Add placeholder to gallery immediately
-        addImage(placeholderImage);
+        // Add placeholder to gallery immediately (UI-only, no database write)
+        addPlaceholderImage(placeholderImage);
 
         // Track active request
         setActiveRequests(prev => prev + 1);
