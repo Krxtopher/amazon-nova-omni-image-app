@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Plus, Edit, Trash2, Check } from 'lucide-react';
+import { Sparkles, Plus, Edit, Trash2, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
     const [allPersonas, setAllPersonas] = useState<Persona[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [editingPersona, setEditingPersona] = useState<CustomPersona | null>(null);
+    const [viewingPersona, setViewingPersona] = useState<Persona | null>(null);
     const [name, setName] = useState('');
     const [personaDescription, setPersonaDescription] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -63,6 +64,11 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
         setSelectedIcon(persona.icon || 'Edit');
         setErrors({});
         setIsCreating(true);
+    };
+
+    const handleViewPersona = (persona: Persona, event: React.MouseEvent) => {
+        event.stopPropagation();
+        setViewingPersona(persona);
     };
 
     const handleDeletePersona = async (persona: CustomPersona, event: React.MouseEvent) => {
@@ -151,6 +157,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
     const handleCancel = () => {
         setIsCreating(false);
         setEditingPersona(null);
+        setViewingPersona(null);
         setName('');
         setPersonaDescription('');
         setSelectedIcon('Edit');
@@ -187,7 +194,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
 
     return (
         <div data-persona-tray className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
-            {!isCreating ? (
+            {!isCreating && !viewingPersona ? (
                 // Persona selection view
                 <div className="flex flex-wrap items-start justify-center gap-2 py-2">
                     {/* All personas (built-in and custom) */}
@@ -213,22 +220,28 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                                     {persona.name}
                                 </span>
 
-                                {/* Edit and delete buttons - only show for editable personas */}
+                                {/* Edit button - only show for editable personas */}
                                 {persona.isEditable && (
-                                    <div className="absolute -top-1 -right-1 flex gap-1 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity">
+                                    <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={(e) => handleEditPersona(persona as CustomPersona, e)}
-                                            className="p-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs"
+                                            className="p-1 bg-white hover:bg-gray-100 text-black rounded-full text-xs shadow-sm border border-gray-200"
                                             title="Edit persona"
                                         >
                                             <Edit className="h-3 w-3" />
                                         </button>
+                                    </div>
+                                )}
+
+                                {/* Info button - only show for non-editable personas */}
+                                {!persona.isEditable && (
+                                    <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity">
                                         <button
-                                            onClick={(e) => handleDeletePersona(persona as CustomPersona, e)}
-                                            className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs"
-                                            title="Delete persona"
+                                            onClick={(e) => handleViewPersona(persona, e)}
+                                            className="p-1 bg-white hover:bg-gray-100 text-black rounded-full text-xs shadow-sm border border-gray-200"
+                                            title="View persona details"
                                         >
-                                            <Trash2 className="h-3 w-3" />
+                                            <Info className="h-3 w-3" />
                                         </button>
                                     </div>
                                 )}
@@ -250,6 +263,59 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                             Add New
                         </span>
                     </button>
+                </div>
+            ) : viewingPersona ? (
+                // Read-only persona viewing panel
+                <div className="space-y-4 py-4">
+                    {/* Description and Name fields side by side */}
+                    <div className="flex gap-4">
+                        {/* Enhancement Instructions field - 75% width */}
+                        <div className="flex-1 space-y-2">
+                            {/* System Prompt - only show if it exists */}
+                            {viewingPersona.systemPrompt && (
+                                <>
+                                    <Label className="text-white/50 font-medium special-gothic-label">
+                                        Enhancement Instructions
+                                    </Label>
+                                    <div className="p-3 bg-white/5 border border-white/20 rounded-md text-sm text-white/80 max-h-48 overflow-y-auto">
+                                        <pre className="whitespace-pre-wrap font-sans">
+                                            {viewingPersona.systemPrompt}
+                                        </pre>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Name and Icon fields - 25% width */}
+                        <div className="w-1/4 space-y-2">
+                            <Label className="text-white/50 font-medium special-gothic-label">
+                                Name & Icon
+                            </Label>
+                            <div className="space-y-2">
+                                <div className="p-3 bg-white/5 border border-white/20 rounded-md text-sm text-white/80">
+                                    {viewingPersona.name}
+                                </div>
+                                {/* Icon preview */}
+                                <div className="flex items-center justify-center p-3 border border-white/20 rounded-md bg-white/5">
+                                    {(() => {
+                                        const PreviewIcon = loadIcon(viewingPersona.icon);
+                                        return <PreviewIcon className="h-6 w-6 text-white/70" />;
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Close button */}
+                    <div className="flex justify-end pt-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancel}
+                        >
+                            Close
+                        </Button>
+                    </div>
                 </div>
             ) : (
                 // Inline persona creation/editing form
