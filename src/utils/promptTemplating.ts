@@ -19,9 +19,13 @@ export interface ProcessPromptOptions {
  * Template syntax:
  *   - Groups: {optionA|optionB|optionC}
  *   - Optional weights: {cat:2|dog:1|mouse}
+ *   - Single option with probability: {red:0.25} (25% chance of "red", 75% chance of empty string)
+ *   - Multiple options with probabilities: {red:0.25|blue:0.25} (25% red, 25% blue, 50% empty)
  *
  * Example:
  *   Create {a|b:2|c:1} on a {chair|sidewalk}
+ *   Create a {red:0.25} ball
+ *   Create a {red:0.25|blue:0.25} ball
  */
 export function processPromptTemplate(
     template: string,
@@ -35,16 +39,12 @@ export function processPromptTemplate(
     // Find and replace all groups from left to right
     const groupRegex = /\{([^{}]+)\}/g;
 
-    console.log("Processing prompt template")
-
     let groupCount = 0
     result = result.replace(groupRegex, (_, content) => {
         groupCount += 1
         console.log("Found group: ", content)
         return evaluateGroup(content, rng, strictWeights);
     });
-
-    console.log(`Found ${groupCount} groups`)
 
     return result;
 }
@@ -67,17 +67,25 @@ function evaluateGroup(
         parseWeightedOption(option, strictWeights)
     );
 
-    // If total weight <= 0 (e.g. all 0), fall back to uniform choice
     const total = choices.reduce((sum, c) => sum + c.weight, 0);
+
+    // If total weight <= 0 (e.g. all 0), fall back to uniform choice
     if (total <= 0) {
         const idx = Math.floor(rng() * choices.length);
         return choices[Math.min(idx, choices.length - 1)].text;
     }
 
-    let r = rng() * total;
+    // If total weight < 1, there's a chance of returning empty string
+    const r = rng();
+    if (r >= total) {
+        return "";
+    }
+
+    // Select from weighted choices
+    let accumulator = 0;
     for (const c of choices) {
-        r -= c.weight;
-        if (r < 0) return c.text;
+        accumulator += c.weight;
+        if (r < accumulator) return c.text;
     }
 
     // Floating point safety net

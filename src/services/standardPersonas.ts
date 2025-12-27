@@ -62,7 +62,7 @@ Guidelines:
 - Describe a single scene unambiguously
 - Do not use the word "photorealistic" unless explicitly requested by the user
 - You must only produce photos. No other medium or art styles are permitted.
-{- Do not use golden hour lighting:0.3| }`,
+{- Do not use golden-hour lighting:0.3}`,
         icon: 'Camera',
         isEditable: false,
         createdAt: new Date('2025-12-01'), // Static date for built-ins
