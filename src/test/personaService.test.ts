@@ -50,10 +50,10 @@ describe('PersonaService', () => {
             );
 
             expect(persona.name).toBe('Test Persona');
-            expect(persona.description).toBe('A test persona');
-            expect(persona.systemPrompt).toContain('You are a creative image creator');
-            expect(persona.systemPrompt).toContain('a test persona with unique characteristics');
-            expect(persona.systemPrompt).toContain('Create an image...');
+            expect(persona.shortDescription).toBe('A test persona');
+            expect(persona.personaDescription).toContain('You are a creative image creator');
+            expect(persona.personaDescription).toContain('a test persona with unique characteristics');
+            expect(persona.personaDescription).toContain('Create an image...');
             expect(persona.id).toMatch(/^custom-/);
             expect(sqliteService.setSetting).toHaveBeenCalled();
         });
@@ -162,8 +162,8 @@ Take inspiration from the user's prompt and create your own unique vision. Be su
             });
 
             expect(updated?.name).toBe('Updated Test');
-            expect(updated?.systemPrompt).toContain('You are a creative image creator');
-            expect(updated?.systemPrompt).toContain('a new artistic style');
+            expect(updated?.personaDescription).toContain('You are a creative image creator');
+            expect(updated?.personaDescription).toContain('a new artistic style');
         });
     });
 });

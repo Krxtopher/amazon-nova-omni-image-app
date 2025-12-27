@@ -60,7 +60,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
         event.stopPropagation();
         setEditingPersona(persona);
         setName(persona.name);
-        setPersonaDescription(personaService.extractPersonaDescription(persona.systemPrompt));
+        setPersonaDescription(persona.personaDescription);
         setSelectedIcon(persona.icon || 'Edit');
         setErrors({});
         setIsCreating(true);
@@ -210,8 +210,8 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                                     : 'border border-transparent hover:border-border'
                                     }`}
                                 onClick={() => handlePersonaSelect(persona.id)}
-                                title={persona.description}
-                                aria-label={`Select persona ${persona.name}: ${persona.description}`}
+                                title={persona.shortDescription}
+                                aria-label={`Select persona ${persona.name}: ${persona.shortDescription}`}
                             >
                                 <div className="flex items-center justify-center h-8">
                                     <PersonaIcon className="h-5 w-5" />
@@ -272,14 +272,14 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                         {/* Enhancement Instructions field - 75% width */}
                         <div className="flex-1 space-y-2">
                             {/* System Prompt - only show if it exists */}
-                            {viewingPersona.systemPrompt && (
+                            {viewingPersona.personaDescription && (
                                 <>
                                     <Label className="text-white/50 font-medium special-gothic-label">
                                         Enhancement Instructions
                                     </Label>
                                     <div className="p-3 bg-white/5 border border-white/20 rounded-md text-sm text-white/80 max-h-48 overflow-y-auto">
                                         <pre className="whitespace-pre-wrap font-sans">
-                                            {viewingPersona.systemPrompt}
+                                            {viewingPersona.personaDescription}
                                         </pre>
                                     </div>
                                 </>

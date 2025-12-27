@@ -6,8 +6,8 @@ import type { STANDARD_PERSONAS } from '../services/standardPersonas';
 export interface Persona {
     id: string;
     name: string;
-    description: string;
-    systemPrompt: string | null; // null for built-in personas handled by BedrockImageService
+    shortDescription: string;
+    personaDescription: string | null; // null for built-in personas handled by BedrockImageService
     icon: string; // Lucide React icon name
     isEditable: boolean; // true for custom personas, false for built-in
     createdAt: Date;
@@ -19,7 +19,7 @@ export interface Persona {
  */
 export interface CustomPersona extends Persona {
     isEditable: true;
-    systemPrompt: string; // Custom personas always have system prompts
+    personaDescription: string; // Custom personas always have system prompts
 }
 
 /**

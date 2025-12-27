@@ -30,7 +30,7 @@ const getPersonaDisplayData = async (personaId: PromptEnhancement) => {
 
     return {
         label: persona.name,
-        description: persona.description,
+        description: persona.shortDescription,
         icon: loadIcon(persona.icon)
     };
 };

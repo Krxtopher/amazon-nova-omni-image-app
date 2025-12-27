@@ -24,11 +24,11 @@ describe('Unified Persona Interface', () => {
 
                 // Only 'off' persona should have null systemPrompt
                 if (persona.id === 'off') {
-                    expect(persona.systemPrompt).toBeNull();
+                    expect(persona.personaDescription).toBeNull();
                 } else {
                     // 'standard' and 'creative' should have actual system prompts
-                    expect(persona.systemPrompt).toBeTruthy();
-                    expect(typeof persona.systemPrompt).toBe('string');
+                    expect(persona.personaDescription).toBeTruthy();
+                    expect(typeof persona.personaDescription).toBe('string');
                 }
             });
         });
@@ -54,15 +54,15 @@ describe('Unified Persona Interface', () => {
             const offPersona = personaService.builtInPersonas.find(p => p.id === 'off');
 
             // Standard persona should have its system prompt
-            expect(standardPersona?.systemPrompt).toBeTruthy();
-            expect(standardPersona?.systemPrompt).toContain('professional photographer persona');
+            expect(standardPersona?.personaDescription).toBeTruthy();
+            expect(standardPersona?.personaDescription).toContain('professional photographer persona');
 
             // Creative persona should have its system prompt
-            expect(creativePersona?.systemPrompt).toBeTruthy();
-            expect(creativePersona?.systemPrompt).toContain('artistic persona');
+            expect(creativePersona?.personaDescription).toBeTruthy();
+            expect(creativePersona?.personaDescription).toContain('artistic persona');
 
             // Off persona should have null system prompt
-            expect(offPersona?.systemPrompt).toBeNull();
+            expect(offPersona?.personaDescription).toBeNull();
         });
     });
 
@@ -96,7 +96,7 @@ describe('Unified Persona Interface', () => {
             const customPersona = allPersonas.find(p => p.id === 'custom-123') as CustomPersona;
             expect(customPersona).toBeDefined();
             expect(customPersona.isEditable).toBe(true);
-            expect(customPersona.systemPrompt).toBe('Test prompt');
+            expect(customPersona.personaDescription).toBe('Test prompt');
         });
     });
 
@@ -130,7 +130,7 @@ describe('Unified Persona Interface', () => {
             expect(persona).toBeDefined();
             expect(persona.id).toBe('custom-123');
             expect(persona.isEditable).toBe(true);
-            expect(persona.systemPrompt).toBe('Test prompt');
+            expect(persona.personaDescription).toBe('Test prompt');
         });
 
         it('should return null for non-existent persona', async () => {
@@ -148,8 +148,8 @@ describe('Unified Persona Interface', () => {
             const customPersona: CustomPersona = {
                 id: 'test',
                 name: 'Test',
-                description: 'Test desc',
-                systemPrompt: 'Test prompt', // Required for CustomPersona
+                shortDescription: 'Test desc',
+                personaDescription: 'Test prompt', // Required for CustomPersona
                 icon: 'Edit',
                 isEditable: true, // Must be true for CustomPersona
                 createdAt: new Date(),

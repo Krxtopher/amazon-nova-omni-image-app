@@ -473,7 +473,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                     return null;
                 }
                 const persona = STANDARD_PERSONAS.find(p => p.id === enhancementType);
-                return persona?.systemPrompt || null;
+                return persona?.personaDescription || null;
             } else {
                 // Handle custom persona by ID
                 return await personaService.getSystemPrompt(enhancementType);
