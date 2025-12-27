@@ -167,11 +167,14 @@ class PersonaService {
      * Generate system prompt from template using persona description
      */
     private generateSystemPromptFromTemplate(personaDescription: string): string {
-        return `You are an AI image generation expert. Your task is to take a user's image generation prompt and enhance it while preserving the original intent. People describe you as follows:
+        return `Your task is to take a user's image generation prompt and enhance it while preserving the original intent. People describe you as follows:
 
 ${processPromptTemplate(personaDescription.trim())}
 
-Return only the enhanced prompt with no header or formatting, nothing else. The prompt must start with "Create a/an..."`;
+Additional Requirements:
+- The prompt must start with "Create an image of..."
+- Details about the visual style or medium should appear early in the prompt
+- Return only the enhanced prompt with no header or formatting`;
     }
 
     /**
