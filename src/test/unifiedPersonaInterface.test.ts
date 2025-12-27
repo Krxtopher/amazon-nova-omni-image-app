@@ -39,8 +39,8 @@ describe('Unified Persona Interface', () => {
             expect(offPersona).toMatchObject({
                 id: 'off',
                 name: 'Off',
-                description: 'Use your prompt as-is without a persona',
-                systemPrompt: null,
+                shortDescription: 'Use your prompt as-is without a persona',
+                personaDescription: null,
                 icon: 'X',
                 isEditable: false,
                 createdAt: expect.any(Date),
@@ -48,20 +48,25 @@ describe('Unified Persona Interface', () => {
             });
         });
 
-        it('should have system prompts stored directly in persona objects', () => {
+        it('should have persona descriptions stored directly in persona objects', () => {
             const standardPersona = personaService.builtInPersonas.find(p => p.id === 'standard');
             const creativePersona = personaService.builtInPersonas.find(p => p.id === 'creative');
+            const photographerPersona = personaService.builtInPersonas.find(p => p.id === 'photographer');
             const offPersona = personaService.builtInPersonas.find(p => p.id === 'off');
 
-            // Standard persona should have its system prompt
+            // Standard persona should have its persona description
             expect(standardPersona?.personaDescription).toBeTruthy();
-            expect(standardPersona?.personaDescription).toContain('professional photographer persona');
+            expect(standardPersona?.personaDescription).toContain('You improve user prompts');
 
-            // Creative persona should have its system prompt
+            // Creative persona should have its persona description
             expect(creativePersona?.personaDescription).toBeTruthy();
             expect(creativePersona?.personaDescription).toContain('artistic persona');
 
-            // Off persona should have null system prompt
+            // Photographer persona should have its persona description
+            expect(photographerPersona?.personaDescription).toBeTruthy();
+            expect(photographerPersona?.personaDescription).toContain('professional photographer persona');
+
+            // Off persona should have null persona description
             expect(offPersona?.personaDescription).toBeNull();
         });
     });
@@ -71,8 +76,8 @@ describe('Unified Persona Interface', () => {
             const mockCustomPersonas = [{
                 id: 'custom-123',
                 name: 'Test Artist',
-                description: 'Test description',
-                systemPrompt: 'Test prompt',
+                shortDescription: 'Test description',
+                personaDescription: 'Test prompt',
                 icon: 'Palette',
                 createdAt: new Date(),
                 updatedAt: new Date()
@@ -83,11 +88,11 @@ describe('Unified Persona Interface', () => {
 
             const allPersonas = await personaService.getAllPersonas();
 
-            // Should have 3 built-in + 1 custom = 4 total
-            expect(allPersonas).toHaveLength(4);
+            // Should have 4 built-in + 1 custom = 5 total
+            expect(allPersonas).toHaveLength(5);
 
             // Check built-in personas are included
-            const builtInIds = ['off', 'standard', 'creative'];
+            const builtInIds = ['off', 'standard', 'creative', 'photographer'];
             builtInIds.forEach(id => {
                 expect(allPersonas.find(p => p.id === id)).toBeDefined();
             });
@@ -115,8 +120,8 @@ describe('Unified Persona Interface', () => {
             const mockCustomPersonas = [{
                 id: 'custom-123',
                 name: 'Test Artist',
-                description: 'Test description',
-                systemPrompt: 'Test prompt',
+                shortDescription: 'Test description',
+                personaDescription: 'Test prompt',
                 icon: 'Palette',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()

@@ -24,16 +24,17 @@ describe('PersonaService', () => {
             expect(personaService.isBuiltInPersona('custom-123')).toBe(false);
         });
 
-        it('should return null system prompt for built-in personas', async () => {
+        it('should return generated system prompt for built-in personas', async () => {
             const systemPrompt = await personaService.getSystemPrompt('standard');
-            expect(systemPrompt).toBeNull();
+            expect(systemPrompt).toContain('You are an AI image generation expert');
+            expect(systemPrompt).toContain('Create a/an...');
         });
 
         it('should return correct info for built-in personas', async () => {
             const info = await personaService.getPersonaInfo('standard');
             expect(info).toEqual({
-                label: 'Standard',
-                description: 'Professional photographer persona with technical expertise'
+                label: 'General Enhancement',
+                description: 'Offers basic prompt enhancement'
             });
         });
     });
@@ -51,9 +52,7 @@ describe('PersonaService', () => {
 
             expect(persona.name).toBe('Test Persona');
             expect(persona.shortDescription).toBe('A test persona');
-            expect(persona.personaDescription).toContain('You are a creative image creator');
-            expect(persona.personaDescription).toContain('a test persona with unique characteristics');
-            expect(persona.personaDescription).toContain('Create an image...');
+            expect(persona.personaDescription).toBe('a test persona with unique characteristics');
             expect(persona.id).toMatch(/^custom-/);
             expect(sqliteService.setSetting).toHaveBeenCalled();
         });
@@ -62,8 +61,9 @@ describe('PersonaService', () => {
             const mockPersonas = [{
                 id: 'custom-123',
                 name: 'Test',
-                description: 'Test persona',
-                systemPrompt: 'You are a test',
+                shortDescription: 'Test persona',
+                personaDescription: 'Test description',
+                icon: 'Edit',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }];
@@ -79,8 +79,8 @@ describe('PersonaService', () => {
             const mockPersonas = [{
                 id: 'custom-123',
                 name: 'Test',
-                description: 'Test persona',
-                systemPrompt: 'You are a test persona',
+                shortDescription: 'Test persona',
+                personaDescription: 'You are a test persona',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }];
@@ -88,7 +88,8 @@ describe('PersonaService', () => {
             vi.mocked(sqliteService.getSetting).mockResolvedValue(JSON.stringify(mockPersonas));
 
             const systemPrompt = await personaService.getSystemPrompt('custom-123');
-            expect(systemPrompt).toBe('You are a test persona');
+            expect(systemPrompt).toContain('You are an AI image generation expert');
+            expect(systemPrompt).toContain('You are a test persona');
         });
 
         it('should delete a custom persona', async () => {
@@ -96,16 +97,18 @@ describe('PersonaService', () => {
                 {
                     id: 'custom-123',
                     name: 'Test 1',
-                    description: 'Test persona 1',
-                    systemPrompt: 'You are test 1',
+                    shortDescription: 'Test persona 1',
+                    personaDescription: 'You are test 1',
+                    icon: 'Edit',
                     createdAt: new Date(),
                     updatedAt: new Date()
                 },
                 {
                     id: 'custom-456',
                     name: 'Test 2',
-                    description: 'Test persona 2',
-                    systemPrompt: 'You are test 2',
+                    shortDescription: 'Test persona 2',
+                    personaDescription: 'You are test 2',
+                    icon: 'Edit',
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }
@@ -122,48 +125,6 @@ describe('PersonaService', () => {
             const savedPersonas = JSON.parse(savedCall[1] as string);
             expect(savedPersonas).toHaveLength(1);
             expect(savedPersonas[0].id).toBe('custom-456');
-        });
-    });
-
-    describe('Template methods', () => {
-        it('should extract persona description from template-based system prompt', () => {
-            const systemPrompt = `You are a creative image creator with a unique artistic style. Your task is to take a user's image generation prompt and enhance it while preserving the original intent. People describe you as follows:
-
-a whimsical fantasy artist who loves magical creatures and enchanted forests
-
-Take inspiration from the user's prompt and create your own unique vision. Be sure to include a description of your unique style in the prompt. Return only the enhanced prompt, nothing else. The prompt must start with "Create an image..."`;
-
-            const extracted = personaService.extractPersonaDescription(systemPrompt);
-            expect(extracted).toBe('a whimsical fantasy artist who loves magical creatures and enchanted forests');
-        });
-
-        it('should return full prompt for non-template system prompts', () => {
-            const systemPrompt = 'You are a custom persona with special instructions';
-            const extracted = personaService.extractPersonaDescription(systemPrompt);
-            expect(extracted).toBe(systemPrompt);
-        });
-
-        it('should update persona with new description', async () => {
-            const mockPersonas = [{
-                id: 'custom-123',
-                name: 'Test',
-                description: 'Test persona',
-                systemPrompt: 'Old system prompt',
-                createdAt: new Date(),
-                updatedAt: new Date()
-            }];
-
-            vi.mocked(sqliteService.getSetting).mockResolvedValue(JSON.stringify(mockPersonas));
-            vi.mocked(sqliteService.setSetting).mockResolvedValue();
-
-            const updated = await personaService.updateCustomPersona('custom-123', {
-                name: 'Updated Test',
-                personaDescription: 'a new artistic style'
-            });
-
-            expect(updated?.name).toBe('Updated Test');
-            expect(updated?.personaDescription).toContain('You are a creative image creator');
-            expect(updated?.personaDescription).toContain('a new artistic style');
         });
     });
 });

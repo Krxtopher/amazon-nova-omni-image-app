@@ -76,14 +76,14 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
      * FIXED: Now supports concurrent requests by creating separate contexts
      * 
      * @param originalPrompt - The original user prompt to enhance
-     * @param enhancementType - The type of enhancement to apply
+     * @param personaId - The type of enhancement to apply
      * @param onToken - Callback for each streaming token received
      * @param onComplete - Callback when enhancement is complete
      * @param onError - Callback for error handling
      */
     async enhancePromptStreaming(
         originalPrompt: string,
-        enhancementType: PromptEnhancement,
+        personaId: PromptEnhancement,
         onToken: (token: StreamingToken) => void,
         onComplete: (finalText: string) => void,
         onError: (error: string) => void
@@ -123,7 +123,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
 
         try {
             // Return original prompt if enhancement is off
-            if (enhancementType === 'off') {
+            if (personaId === 'off') {
                 // Simulate streaming for consistency by revealing original prompt word by word
                 this.simulateStreamingForOriginalPrompt(originalPrompt, onToken, wrappedOnComplete);
                 return;
@@ -149,7 +149,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
                     await this.attemptStreamingEnhancement(
                         requestContext,
                         originalPrompt,
-                        enhancementType,
+                        personaId,
                         onToken,
                         wrappedOnComplete,
                         wrappedOnError,
@@ -226,7 +226,7 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
     private async attemptStreamingEnhancement(
         requestContext: StreamingRequestContext,
         originalPrompt: string,
-        enhancementType: PromptEnhancement,
+        personaId: PromptEnhancement,
         onToken: (token: StreamingToken) => void,
         onComplete: (finalText: string) => void,
         _onError: (error: string) => void, // Handled at higher level in enhancePromptStreaming
@@ -244,9 +244,9 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
 
         try {
             // Get system prompt based on enhancement type
-            let systemPrompt = await this.getSystemPromptForEnhancement(enhancementType);
+            let systemPrompt = await personaService.getSystemPrompt(personaId);
             if (!systemPrompt) {
-                throw new Error('Unable to get system prompt for enhancement type');
+                throw new Error('Unable to get system prompt for persona');
             }
 
             // Process any template variables in the system prompt
@@ -457,41 +457,6 @@ export class StreamingPromptEnhancementService implements StreamingPromptEnhance
         // Clean up all request contexts
         for (const requestId of this.activeRequests.keys()) {
             this.cleanupRequest(requestId);
-        }
-    }
-
-    /**
-     * Gets the appropriate system prompt for the enhancement type
-     * @param enhancementType - The enhancement type
-     * @returns Promise resolving to system prompt or null if not available
-     */
-    private async getSystemPromptForEnhancement(enhancementType: PromptEnhancement): Promise<string | null> {
-        try {
-            // Check if it's a built-in persona
-            if (personaService.isBuiltInPersona(enhancementType)) {
-                if (enhancementType === 'off') {
-                    return null;
-                }
-                const persona = STANDARD_PERSONAS.find(p => p.id === enhancementType);
-                return persona?.personaDescription || null;
-            } else {
-                // Handle custom persona by ID
-                return await personaService.getSystemPrompt(enhancementType);
-            }
-        } catch (error) {
-            // Print full exception to console for debugging
-            console.error('Bedrock System Prompt Exception:', {
-                error,
-                stack: error instanceof Error ? error.stack : undefined,
-                message: error instanceof Error ? error.message : String(error),
-                timestamp: new Date().toISOString(),
-                service: 'StreamingPromptEnhancementService',
-                method: 'getSystemPromptForEnhancement',
-                enhancementType
-            });
-
-            // Return null if we can't get system prompt
-            return null;
         }
     }
 
