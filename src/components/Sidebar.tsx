@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { Switch } from '@/components/ui/switch';
@@ -11,7 +11,6 @@ import {
     Settings,
     HelpCircle,
     Palette,
-    X,
     Trash2,
     Loader2,
     Columns3,
@@ -99,11 +98,7 @@ function SettingsDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     if (!isOpen) return null;
 
     return (
-        <div className="w-80 h-full py-8 bg-[#3C345A] border-r border-border flex flex-col"
-            style={{
-                boxShadow: '0 12px 65px rgba(0, 0, 0, 0.15)'
-            }}
-        >
+        <div className="w-60 h-full py-8 bg-[#3C345A] border-r border-border flex flex-col">
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-12">
                 {/* Grid Layout Section */}
@@ -296,6 +291,28 @@ function SettingsDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 export function Sidebar({ className = '' }: SidebarProps) {
     const [activeButton, setActiveButton] = useState<string | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const sidebarRef = useRef<HTMLDivElement>(null);
+
+    // Handle click outside to deselect active buttons and close drawers
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+                // Clicked outside the sidebar
+                if (activeButton || isSettingsOpen) {
+                    setActiveButton(null);
+                    setIsSettingsOpen(false);
+                }
+            }
+        };
+
+        // Add event listener to document
+        document.addEventListener('mousedown', handleClickOutside);
+
+        // Cleanup event listener on unmount
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [activeButton, isSettingsOpen]);
 
     const bottomButtons = [
         {
@@ -344,7 +361,11 @@ export function Sidebar({ className = '' }: SidebarProps) {
     };
 
     return (
-        <div className={`fixed left-0 top-0 h-full flex flex-row z-200 ${className}`}>
+        <div ref={sidebarRef} className={`fixed left-0 top-0 h-full flex flex-row z-200 ${className}`}
+            style={{
+                boxShadow: isSettingsOpen ? '0 0 25px rgba(0, 0, 0, 0.25)' : 'none'
+            }}
+        >
             {/* Button Area */}
             <aside
                 className="bg-background border-r border-border flex flex-col items-center py-4 px-2"
