@@ -28,6 +28,7 @@ Guidelines for enhancement:
 - Do not use the word "rendered"
 - Maintain the original tone and mood
 - Don't change the fundamental meaning or subject
+- Adjust the level of detail to what is most appropriate for the requested style
 - Limit your prompt to about 150 words or fewer`,
         icon: 'Sparkles',
         isEditable: false,
