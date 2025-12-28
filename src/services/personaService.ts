@@ -77,7 +77,7 @@ class PersonaService {
             name: name.trim(),
             shortDescription: description?.trim() || 'Custom persona',
             personaDescription: personaDescription,
-            icon: icon || 'Edit', // Default to Edit icon if none provided
+            icon: icon || 'Palette', // Default to Palette icon if none provided
             isEditable: true,
             createdAt: new Date(),
             updatedAt: new Date()

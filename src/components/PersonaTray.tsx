@@ -52,7 +52,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
         setEditingPersona(null);
         setName('');
         setPersonaDescription('');
-        setSelectedIcon('Edit');
+        setSelectedIcon('Palette'); // Default to Palette icon
         setErrors({});
         setIsCreating(true);
     };
@@ -178,18 +178,15 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
             setIsGeneratingName(true);
             setErrors({ ...errors, name: undefined }); // Clear any existing name errors
 
-            // Generate both name and icon simultaneously
-            const [generatedName, generatedIcon] = await Promise.all([
-                bedrockService.generatePersonaName(personaDescription.trim()),
-                bedrockService.generatePersonaIcon(personaDescription.trim())
-            ]);
+            // Generate only the name, always use Palette icon
+            const generatedName = await bedrockService.generatePersonaName(personaDescription.trim());
 
             setName(generatedName);
-            setSelectedIcon(generatedIcon);
+            setSelectedIcon('Palette'); // Always use Palette icon
         } catch (error) {
             setErrors({
                 ...errors,
-                name: 'Failed to generate name and icon. Please try again or enter them manually.'
+                name: 'Failed to generate name. Please try again or enter it manually.'
             });
         } finally {
             setIsGeneratingName(false);
@@ -364,8 +361,8 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
                                         onClick={handleGenerateName}
                                         disabled={isGeneratingName || !personaDescription.trim()}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Generate name and icon from description"
-                                        aria-label="Generate name and icon from description"
+                                        title="Generate name from description"
+                                        aria-label="Generate name from description"
                                     >
                                         <Sparkles
                                             className={`h-4 w-4 text-purple-400 ${isGeneratingName ? 'animate-pulse' : ''}`}
