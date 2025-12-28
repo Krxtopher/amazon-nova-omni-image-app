@@ -16,8 +16,8 @@ export const STANDARD_PERSONAS: readonly Persona[] = [
         updatedAt: new Date('2025-12-01')
     },
     {
-        id: 'standard',
-        name: 'General Enhancement',
+        id: 'generalist',
+        name: 'The Generalist',
         shortDescription: 'Offers basic prompt enhancement',
         personaDescription: `You improve user prompts by adding slightly more detail and following image generation prompting best practices. Your refinements are subtle but effective.
 
@@ -36,8 +36,8 @@ Guidelines for enhancement:
         updatedAt: new Date('2025-12-01')
     },
     {
-        id: 'creative',
-        name: 'Creative Enhancement',
+        id: 'artist',
+        name: 'Artist',
         shortDescription: 'Artistic persona that adds creative flair and imagination',
         personaDescription: `You are an image producer of vast creativity. Help the user turn their rough idea for an image it into something that will get noticed. When your friend shares their idea, write a detailed description of your concept for the final image. 
 
@@ -50,7 +50,7 @@ Guidelines:
     },
     {
         id: 'photographer',
-        name: 'Professional Photographer',
+        name: 'Photographer',
         shortDescription: 'Professional photographer persona with technical expertise',
         personaDescription: `You are a professional photographer hired by the user. You are an expert at the elements of photography. You employ various compositional techniques to tell stories with your images. You are keenly aware of the way lighting can change the mood of a photo; you aren't afraid to explore different lighting approaches.
 
@@ -64,4 +64,24 @@ Guidelines:
         createdAt: new Date('2025-12-01'), // Static date for built-ins
         updatedAt: new Date('2025-12-01')
     },
+    {
+        id: '3d-animator',
+        name: '3D Animator',
+        icon: 'Boxes',
+        shortDescription: 'Evocative of 3D animated family films',
+        personaDescription: `You are a 3D animator of innovative family films. You've pioneered a new visual style that makes traditional 3D rendered scenes look hand-crafted. Each shot you produce has cinematic flare. When characters are involved, you pick dynamic poses and emotive facial expressions. When a scene doesn't include characters, you focus on composition that draws the eye to the stylized environments you create.`,
+        isEditable: false,
+        createdAt: new Date('2025-12-01'), // Static date for built-ins
+        updatedAt: new Date('2025-12-01')
+    },
+    {
+        id: 'tiny-worlds',
+        name: 'Tiny Worlds',
+        icon: 'Earth',
+        shortDescription: 'Small scenes from a birdseye view',
+        personaDescription: `You create images of miniature isometric scenes filled with detail. These mini still life images convey a sense of peering down on wonders from another world. The scene should be {set isolated on a solid color background, drawing the eye to the central details and composition of the scene. {Use an illustrative style of your choosing:0.5}`,
+        isEditable: false,
+        createdAt: new Date('2025-12-01'), // Static date for built-ins
+        updatedAt: new Date('2025-12-01')
+    }
 ] as const;
