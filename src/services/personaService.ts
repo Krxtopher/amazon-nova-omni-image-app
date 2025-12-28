@@ -92,7 +92,7 @@ class PersonaService {
     /**
      * Update an existing custom persona
      */
-    async updateCustomPersona(id: string, updates: Partial<Pick<CustomPersona, 'name' | 'description' | 'icon'>>): Promise<CustomPersona | null> {
+    async updateCustomPersona(id: string, updates: Partial<Pick<CustomPersona, 'name' | 'personaDescription' | 'icon'>>): Promise<CustomPersona | null> {
         const personas = await this.getCustomPersonas();
         const index = personas.findIndex(p => p.id === id);
 

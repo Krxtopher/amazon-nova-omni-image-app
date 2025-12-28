@@ -3,7 +3,7 @@ import { Sparkles, Plus, Edit, Trash2, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PromptInputTextArea } from '@/components/ui/prompt-input-textarea';
+import { AutoExpandingTextArea } from '@/components/ui/auto-expanding-textarea';
 import { personaService } from '@/services/personaService';
 import { useBedrockService } from '@/contexts/BedrockServiceContext';
 import { loadIcon } from '@/utils/iconLoader';
@@ -139,10 +139,8 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
             // Reload the list
             await loadAllPersonas();
 
-            // If this was a new persona, select it
-            if (!editingPersona) {
-                onPersonaChange(persona.id);
-            }
+            // Select the persona (both for new and updated personas)
+            onPersonaChange(persona.id);
 
             // Exit editing mode
             setIsCreating(false);
@@ -193,7 +191,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
     };
 
     return (
-        <div data-persona-tray className="px-2 pb-3 border-t border-border/30 mt-2 max-h-[40vh] overflow-y-auto">
+        <div data-persona-tray className="px-2 pb-3 border-t border-border/30 mt-2 overflow-hidden">
             {!isCreating && !viewingPersona ? (
                 // Persona selection view
                 <div className="flex flex-wrap items-start justify-center gap-2 py-2">
@@ -327,13 +325,14 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                             <Label htmlFor="persona-description" className="text-white/50 font-medium special-gothic-label">
                                 Persona Description
                             </Label>
-                            <PromptInputTextArea
+                            <AutoExpandingTextArea
                                 id="persona-description"
                                 value={personaDescription}
                                 onChange={(e) => setPersonaDescription(e.target.value)}
                                 placeholder="Describe the persona's style and characteristics..."
                                 className={`w-full p-3 text-sm bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none placeholder:text-neutral-200/60 placeholder:italic rounded-md ${errors.personaDescription ? 'border border-red-500' : 'border border-white/20'}`}
-                                style={{ minHeight: '100px' }}
+                                minHeight={100}
+                                maxHeight={200}
                             />
                             {errors.personaDescription && (
                                 <p className="text-sm text-red-500">{errors.personaDescription}</p>
