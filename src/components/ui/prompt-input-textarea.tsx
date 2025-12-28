@@ -1,18 +1,18 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-interface AutoExpandingTextareaProps extends React.ComponentProps<"textarea"> {
+interface PromptInputTextAreaProps extends React.ComponentProps<"textarea"> {
     maxHeight?: number;
     forceExpanded?: boolean;
 }
 
-interface AutoExpandingTextareaRef extends HTMLTextAreaElement {
+interface PromptInputTextAreaRef extends HTMLTextAreaElement {
     collapseTextarea: () => void;
 }
 
-const AutoExpandingTextarea = React.forwardRef<
-    AutoExpandingTextareaRef,
-    AutoExpandingTextareaProps
+const PromptInputTextArea = React.forwardRef<
+    PromptInputTextAreaRef,
+    PromptInputTextAreaProps
 >(({ className, maxHeight, forceExpanded, ...props }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
     const [calculatedMaxHeight, setCalculatedMaxHeight] = React.useState<number | undefined>(maxHeight);
@@ -261,6 +261,6 @@ const AutoExpandingTextarea = React.forwardRef<
     )
 })
 
-AutoExpandingTextarea.displayName = "AutoExpandingTextarea"
+PromptInputTextArea.displayName = "PromptInputTextArea"
 
-export { AutoExpandingTextarea }
+export { PromptInputTextArea }

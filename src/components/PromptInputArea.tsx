@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { startTransition } from 'react';
-import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
+import { PromptInputTextArea } from '@/components/ui/prompt-input-textarea';
 import { Button } from '@/components/ui/button';
 import { useImageStore } from '@/stores/imageStore';
 import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
@@ -663,7 +663,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                 )}
 
                                 {/* Text Input */}
-                                <AutoExpandingTextarea
+                                <PromptInputTextArea
                                     ref={textareaRef}
                                     id="prompt-input"
                                     placeholder={editSource ? "How would you like to edit this image?" : "What do you want to create?"}

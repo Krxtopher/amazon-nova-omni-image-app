@@ -3,7 +3,7 @@ import { Sparkles, Plus, Edit, Trash2, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
+import { PromptInputTextArea } from '@/components/ui/prompt-input-textarea';
 import { personaService } from '@/services/personaService';
 import { useBedrockService } from '@/contexts/BedrockServiceContext';
 import { loadIcon } from '@/utils/iconLoader';
@@ -327,7 +327,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
                             <Label htmlFor="persona-description" className="text-white/50 font-medium special-gothic-label">
                                 Persona Description
                             </Label>
-                            <AutoExpandingTextarea
+                            <PromptInputTextArea
                                 id="persona-description"
                                 value={personaDescription}
                                 onChange={(e) => setPersonaDescription(e.target.value)}
