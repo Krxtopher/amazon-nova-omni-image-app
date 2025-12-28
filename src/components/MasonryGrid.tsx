@@ -52,13 +52,17 @@ function VMasonryGrid({
   renderer,
   gap = 4,
   mobileBreakpoint = 768,
-  maxColumnWidth = 430,
+  maxColumnWidth = 450,
   ...props
 }: VMasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [itemsLayout, setItemsLayout] = useState<ItemBounds[]>([]);
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [windowDimensions, setWindowDimensions] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0
+  });
 
   // Function to calculate column count based on container width
   const getColumnCount = useMemo(() => (containerWidth: number): number => {
@@ -67,11 +71,15 @@ function VMasonryGrid({
       return 1;
     }
 
+    // Get the height of the browser window from state
+    const windowHeight = windowDimensions.height;
+    const adjustedMaxWidth = Math.min(maxColumnWidth, windowHeight / 2 - 2 * gap);
+
     // For larger screens, calculate columns based on maxColumnWidth
     // Formula: (containerWidth - gap) / (maxColumnWidth + gap)
     // Minimum of 1 column
-    return Math.max(1, Math.floor((containerWidth - gap) / (maxColumnWidth + gap)) + 1);
-  }, [mobileBreakpoint, maxColumnWidth, gap]);
+    return Math.max(1, Math.floor((containerWidth - gap) / (adjustedMaxWidth + gap)) + 1);
+  }, [mobileBreakpoint, maxColumnWidth, gap, windowDimensions.height]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -89,6 +97,23 @@ function VMasonryGrid({
     updateWidth();
 
     return () => resizeObserver.disconnect();
+  }, []);
+
+  // Track window dimensions for column count calculation
+  useEffect(() => {
+    const updateWindowDimensions = () => {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', updateWindowDimensions);
+
+    // Initial dimensions
+    updateWindowDimensions();
+
+    return () => window.removeEventListener('resize', updateWindowDimensions);
   }, []);
 
   useLayoutEffect(() => {
