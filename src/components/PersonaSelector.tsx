@@ -11,6 +11,7 @@ interface PersonaSelectorProps {
     disabled?: boolean;
     isExpanded?: boolean;
     onExpandedChange?: (expanded: boolean) => void;
+    refreshTrigger?: number; // Add refresh trigger prop
 }
 
 /**
@@ -40,7 +41,8 @@ export function PersonaSelector({
     onPersonaChange: _onPersonaChange,
     disabled,
     isExpanded = false,
-    onExpandedChange
+    onExpandedChange,
+    refreshTrigger
 }: PersonaSelectorProps) {
     const [currentPersonaData, setCurrentPersonaData] = useState({
         label: 'Off',
@@ -55,7 +57,7 @@ export function PersonaSelector({
             setCurrentPersonaData(data);
         };
         loadPersonaData();
-    }, [selectedPersona]);
+    }, [selectedPersona, refreshTrigger]); // Add refreshTrigger to dependencies
 
     const handleToggle = () => {
         if (!disabled && onExpandedChange) {

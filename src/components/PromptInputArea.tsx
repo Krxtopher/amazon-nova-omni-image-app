@@ -82,6 +82,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const [showTextResponseModal, setShowTextResponseModal] = useState(false);
     const [textResponsePrompt, setTextResponsePrompt] = useState('');
     const [textareaExpanded, setTextareaExpanded] = useState(false);
+    const [personaRefreshTrigger, setPersonaRefreshTrigger] = useState(0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputBarRef = useRef<HTMLDivElement>(null);
@@ -719,6 +720,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                         selectedPersona={selectedPromptEnhancement}
                                         onPersonaChange={setPromptEnhancement}
                                         isExpanded={promptEnhancementExpanded}
+                                        refreshTrigger={personaRefreshTrigger}
                                         onExpandedChange={(expanded) => {
                                             setPromptEnhancementExpanded(expanded);
                                             // Close aspect ratio drawer when persona drawer opens
@@ -786,6 +788,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                             selectedPersona={selectedPromptEnhancement}
                             onPersonaChange={setPromptEnhancement}
                             onClose={() => setPromptEnhancementExpanded(false)}
+                            onPersonaUpdated={() => setPersonaRefreshTrigger(prev => prev + 1)}
                         />
                     )}
                 </div>

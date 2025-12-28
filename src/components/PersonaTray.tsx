@@ -13,9 +13,10 @@ interface PersonaTrayProps {
     selectedPersona: PromptEnhancement;
     onPersonaChange: (persona: PromptEnhancement) => void;
     onClose: () => void;
+    onPersonaUpdated?: () => void; // Add callback for when persona is updated
 }
 
-export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: PersonaTrayProps) {
+export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPersonaUpdated }: PersonaTrayProps) {
     const bedrockService = useBedrockService();
     const [allPersonas, setAllPersonas] = useState<Persona[]>([]);
     const [isCreating, setIsCreating] = useState(false);
@@ -138,6 +139,11 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose }: Perso
 
             // Reload the list
             await loadAllPersonas();
+
+            // Notify parent that persona was updated (for PersonaSelector refresh)
+            if (onPersonaUpdated) {
+                onPersonaUpdated();
+            }
 
             // Select the persona (both for new and updated personas)
             onPersonaChange(persona.id);
