@@ -39,10 +39,7 @@ export function processPromptTemplate(
     // Find and replace all groups from left to right
     const groupRegex = /\{([^{}]+)\}/g;
 
-    let groupCount = 0
     result = result.replace(groupRegex, (_, content) => {
-        groupCount += 1
-        console.log("Found group: ", content)
         return evaluateGroup(content, rng, strictWeights);
     });
 
@@ -77,15 +74,18 @@ function evaluateGroup(
 
     // If total weight < 1, there's a chance of returning empty string
     const r = rng();
-    if (r >= total) {
+    if (total < 1 && r >= total) {
         return "";
     }
+
+    // Scale random value to total weight range
+    const scaledR = r * total;
 
     // Select from weighted choices
     let accumulator = 0;
     for (const c of choices) {
         accumulator += c.weight;
-        if (r < accumulator) return c.text;
+        if (scaledR < accumulator) return c.text;
     }
 
     // Floating point safety net
