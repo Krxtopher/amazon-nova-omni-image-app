@@ -353,6 +353,8 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 // Handle the response based on type
                 if (response.type === 'text') {
+                    console.warn('Model returned text response instead of image:', response.text);
+
                     // Remove placeholder image
                     deleteImage(placeholderId);
 
