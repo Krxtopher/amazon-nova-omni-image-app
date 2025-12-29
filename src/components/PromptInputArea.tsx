@@ -7,6 +7,7 @@ import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
 
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import { StreamingPromptEnhancementService } from '@/services/StreamingPromptEnhancementService';
+import { PromptEnhancementService } from '@/services/PromptEnhancementService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
@@ -88,6 +89,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     const inputBarRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<any>(null);
     const streamingServiceRef = useRef<StreamingPromptEnhancementService | null>(null);
+    const nonStreamingServiceRef = useRef<PromptEnhancementService | null>(null);
+
+    // Configuration for which service to use (can be made configurable via env var or UI)
+    const useStreamingEnhancement = import.meta.env.VITE_USE_STREAMING_ENHANCEMENT !== 'false';
 
 
 
@@ -106,9 +111,9 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
     const { editSource, setEditSource, clearEditSource } = useEditSourceStore();
 
-    // Initialize streaming service
+    // Initialize streaming and non-streaming services
     useEffect(() => {
-        const initializeStreamingService = async () => {
+        const initializeServices = async () => {
             try {
                 // Get AWS credentials from environment
                 const region = import.meta.env.VITE_AWS_REGION || 'us-east-1';
@@ -116,20 +121,29 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 const secretAccessKey = import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '';
 
                 if (accessKeyId && secretAccessKey) {
+                    const credentials = {
+                        accessKeyId,
+                        secretAccessKey
+                    };
+
+                    // Initialize streaming service
                     streamingServiceRef.current = new StreamingPromptEnhancementService({
                         region,
-                        credentials: {
-                            accessKeyId,
-                            secretAccessKey
-                        }
+                        credentials
+                    });
+
+                    // Initialize non-streaming service
+                    nonStreamingServiceRef.current = new PromptEnhancementService({
+                        region,
+                        credentials
                     });
                 }
             } catch (error) {
-                console.warn('Failed to initialize streaming service:', error);
+                console.warn('Failed to initialize enhancement services:', error);
             }
         };
 
-        initializeStreamingService();
+        initializeServices();
 
         return () => {
             // Cleanup streaming service on unmount
@@ -283,31 +297,40 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                 // Step 1: Enhance the prompt if persona is enabled
                 let enhancedPrompt = prompt;
-                if (selectedPromptEnhancement !== 'off' && streamingServiceRef.current) {
+                if (selectedPromptEnhancement !== 'off') {
                     try {
-                        // Use streaming enhancement with promise-based wrapper
-                        enhancedPrompt = await new Promise<string>((resolve) => {
-                            streamingServiceRef.current!.enhancePromptStreaming(
+                        if (useStreamingEnhancement && streamingServiceRef.current) {
+                            // Use streaming enhancement with promise-based wrapper
+                            enhancedPrompt = await new Promise<string>((resolve) => {
+                                streamingServiceRef.current!.enhancePromptStreaming(
+                                    prompt,
+                                    selectedPromptEnhancement,
+                                    () => {
+                                        // Accumulate tokens but don't update UI here since we're in generation flow
+                                    },
+                                    (finalText: string) => {
+                                        resolve(finalText);
+                                    },
+                                    (error: string) => {
+                                        console.warn('Streaming enhancement failed, using original prompt:', error);
+                                        resolve(prompt); // Fallback to original prompt
+                                    }
+                                );
+                            });
+                        } else if (nonStreamingServiceRef.current) {
+                            // Use non-streaming enhancement
+                            enhancedPrompt = await nonStreamingServiceRef.current.enhancePrompt(
                                 prompt,
-                                selectedPromptEnhancement,
-                                () => {
-                                    // Accumulate tokens but don't update UI here since we're in generation flow
-                                },
-                                (finalText: string) => {
-                                    resolve(finalText);
-                                },
-                                (error: string) => {
-                                    console.warn('Streaming enhancement failed, using original prompt:', error);
-                                    resolve(prompt); // Fallback to original prompt
-                                }
+                                selectedPromptEnhancement
                             );
-                        });
+                        }
 
                         // Store the enhanced prompt
                         updateImage(placeholderId, {
                             enhancedPrompt: enhancedPrompt
                         });
                     } catch (error) {
+                        console.warn('Prompt enhancement failed, using original prompt:', error);
                         enhancedPrompt = prompt;
                     }
                 }
