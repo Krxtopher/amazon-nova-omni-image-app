@@ -2,7 +2,6 @@ import { BedrockRuntimeClient, ConverseStreamCommand } from '@aws-sdk/client-bed
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { PromptEnhancement, StreamingPromptEnhancer, StreamingToken } from '../types';
 import { personaService } from './personaService';
-import { STANDARD_PERSONAS } from './standardPersonas';
 import { TokenAccumulator } from '../utils/TokenAccumulator';
 import { StreamingErrorHandler, type StreamingError } from '../utils/StreamingErrorHandler';
 import { processPromptTemplate } from '@/utils/promptTemplating';

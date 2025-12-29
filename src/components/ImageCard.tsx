@@ -119,21 +119,86 @@ export const ImageCard = memo(function ImageCard({
 
         // Show error state
         if (item.status === 'error' || imageError) {
+            // Check if this is an unexpected stop reason error with debug data
+            const hasDebugData = item.error?.includes('Unexpected stop reason') && item.converseParams;
+
             return (
                 <div className="absolute inset-0 flex flex-col bg-destructive/10">
                     <div className="flex justify-between items-start p-3 shrink-0">
                         <div className="text-sm text-destructive font-medium">
                             {item.error || 'Failed to load image'}
                         </div>
-                        <Button
-                            size="icon"
-                            variant="destructive"
-                            onClick={() => onDelete(item.id)}
-                            className="h-8 w-8 shadow-sm"
-                            aria-label="Delete error message"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                            {hasDebugData && (
+                                <Button
+                                    size="icon"
+                                    variant="secondary"
+                                    onClick={() => {
+                                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                                        const baseFilename = `bedrock-debug-${item.id}-${timestamp}`;
+
+                                        // Download request JSON
+                                        if (item.converseParams) {
+                                            const requestData = JSON.stringify(item.converseParams, null, 2);
+                                            const requestBlob = new Blob([requestData], { type: 'application/json' });
+                                            const requestUrl = URL.createObjectURL(requestBlob);
+                                            const requestLink = document.createElement('a');
+                                            requestLink.href = requestUrl;
+                                            requestLink.download = `${baseFilename}-request.json`;
+                                            document.body.appendChild(requestLink);
+                                            requestLink.click();
+                                            document.body.removeChild(requestLink);
+                                            URL.revokeObjectURL(requestUrl);
+                                        }
+
+                                        // Download response JSON if available
+                                        if (item.fullResponse) {
+                                            const responseData = JSON.stringify(item.fullResponse, null, 2);
+                                            const responseBlob = new Blob([responseData], { type: 'application/json' });
+                                            const responseUrl = URL.createObjectURL(responseBlob);
+                                            const responseLink = document.createElement('a');
+                                            responseLink.href = responseUrl;
+                                            responseLink.download = `${baseFilename}-response.json`;
+                                            document.body.appendChild(responseLink);
+                                            responseLink.click();
+                                            document.body.removeChild(responseLink);
+                                            URL.revokeObjectURL(responseUrl);
+                                        } else {
+                                            // Fallback: Create a response file with available error information
+                                            const responseData = {
+                                                error: item.error,
+                                                timestamp: item.createdAt,
+                                                status: item.status,
+                                                note: "Full Bedrock API response not available - only stored during generation"
+                                            };
+                                            const responseJson = JSON.stringify(responseData, null, 2);
+                                            const responseBlob = new Blob([responseJson], { type: 'application/json' });
+                                            const responseUrl = URL.createObjectURL(responseBlob);
+                                            const responseLink = document.createElement('a');
+                                            responseLink.href = responseUrl;
+                                            responseLink.download = `${baseFilename}-response.json`;
+                                            document.body.appendChild(responseLink);
+                                            responseLink.click();
+                                            document.body.removeChild(responseLink);
+                                            URL.revokeObjectURL(responseUrl);
+                                        }
+                                    }}
+                                    className="h-8 w-8 shadow-sm"
+                                    aria-label="Download debug files"
+                                >
+                                    <Download className="h-4 w-4" />
+                                </Button>
+                            )}
+                            <Button
+                                size="icon"
+                                variant="destructive"
+                                onClick={() => onDelete(item.id)}
+                                className="h-8 w-8 shadow-sm"
+                                aria-label="Delete error message"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                     {item.prompt && (
                         <div className="flex-1 px-3 pb-3 min-h-0">
@@ -324,6 +389,7 @@ export const ImageCard = memo(function ImageCard({
         prevProps.item.enhancedPrompt === nextProps.item.enhancedPrompt &&
         prevProps.item.converseParams === nextProps.item.converseParams &&
         prevProps.item.promptEnhanceParams === nextProps.item.promptEnhanceParams &&
+        prevProps.item.fullResponse === nextProps.item.fullResponse &&
         prevProps.displayWidth === nextProps.displayWidth &&
         prevProps.displayHeight === nextProps.displayHeight &&
         prevProps.isVisible === nextProps.isVisible &&

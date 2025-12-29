@@ -376,6 +376,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                         status: 'error',
                         error: response.error,
                         converseParams: response.converseParams,
+                        fullResponse: response.fullResponse, // Include full response for debugging
                     });
 
                     // Clear validation error

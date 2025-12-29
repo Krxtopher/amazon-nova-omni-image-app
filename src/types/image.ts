@@ -59,6 +59,7 @@ export interface ImageMetadata {
     promptEnhanceParams?: ConverseRequestParams; // API request parameters for prompt enhancement
     hasBinaryData?: boolean; // Tracks if binary data exists in IndexedDB
     binaryDataSize?: number; // Size of binary data in bytes
+    fullResponse?: import('@aws-sdk/client-bedrock-runtime').ConverseCommandOutput; // Full Bedrock response for debugging (error cases only)
 }
 
 /**

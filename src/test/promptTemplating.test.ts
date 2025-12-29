@@ -107,7 +107,7 @@ describe('processPromptTemplate', () => {
 
             // With 9 options and uniform distribution, each should appear roughly 111 times (1000/9)
             // Allow for reasonable variance (between 50 and 200 occurrences)
-            counts.forEach((count, style) => {
+            counts.forEach((count) => {
                 expect(count).toBeGreaterThan(50)
                 expect(count).toBeLessThan(200)
             })

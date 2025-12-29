@@ -139,6 +139,10 @@ class SQLiteService {
                 this.db.run('ALTER TABLE image_metadata ADD COLUMN promptEnhanceParams TEXT');
             }
 
+            if (!columns.includes('fullResponse')) {
+                this.db.run('ALTER TABLE image_metadata ADD COLUMN fullResponse TEXT');
+            }
+
             // If image_data table exists, migrate data and drop it
             const tables = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='image_data'");
             if (tables.length > 0) {
@@ -259,8 +263,8 @@ class SQLiteService {
 
             // Insert metadata only - binary data is handled by BinaryStorageService
             this.db.run(
-                `INSERT INTO image_metadata (id, prompt, enhancedPrompt, status, aspectRatio, width, height, createdAt, error, converseParams, promptEnhanceParams, hasBinaryData, binaryDataSize)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO image_metadata (id, prompt, enhancedPrompt, status, aspectRatio, width, height, createdAt, error, converseParams, promptEnhanceParams, hasBinaryData, binaryDataSize, fullResponse)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     image.id,
                     image.prompt,
@@ -275,6 +279,7 @@ class SQLiteService {
                     image.promptEnhanceParams ? JSON.stringify(image.promptEnhanceParams) : null,
                     image.url ? 1 : 0, // hasBinaryData (convert boolean to number)
                     image.url ? image.url.length : 0, // binaryDataSize (approximate)
+                    image.fullResponse ? JSON.stringify(image.fullResponse) : null,
                 ]
             );
 
@@ -371,6 +376,10 @@ class SQLiteService {
         if (updates.binaryDataSize !== undefined) {
             setClauses.push('binaryDataSize = ?');
             values.push(updates.binaryDataSize);
+        }
+        if (updates.fullResponse !== undefined) {
+            setClauses.push('fullResponse = ?');
+            values.push(updates.fullResponse ? JSON.stringify(updates.fullResponse) : null);
         }
 
         if (setClauses.length > 0) {
@@ -472,6 +481,7 @@ class SQLiteService {
                     promptEnhanceParams: image.promptEnhanceParams ? JSON.parse(image.promptEnhanceParams) : undefined,
                     hasBinaryData: Boolean(image.hasBinaryData),
                     binaryDataSize: image.binaryDataSize || 0,
+                    fullResponse: image.fullResponse ? JSON.parse(image.fullResponse) : undefined,
                 });
             }
 
@@ -521,6 +531,7 @@ class SQLiteService {
                 promptEnhanceParams: image.promptEnhanceParams ? JSON.parse(image.promptEnhanceParams) : undefined,
                 hasBinaryData: Boolean(image.hasBinaryData),
                 binaryDataSize: image.binaryDataSize || 0,
+                fullResponse: image.fullResponse ? JSON.parse(image.fullResponse) : undefined,
             });
         }
 
@@ -594,6 +605,7 @@ class SQLiteService {
                 promptEnhanceParams: image.promptEnhanceParams ? JSON.parse(image.promptEnhanceParams) : undefined,
                 hasBinaryData: Boolean(image.hasBinaryData),
                 binaryDataSize: image.binaryDataSize || 0,
+                fullResponse: image.fullResponse ? JSON.parse(image.fullResponse) : undefined,
             });
         }
 
