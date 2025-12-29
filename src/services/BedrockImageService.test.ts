@@ -184,6 +184,8 @@ describe('BedrockImageService', () => {
                 expect(result.converseParams.messages).toHaveLength(1);
                 expect(result.converseParams.messages[0].content).toHaveLength(1);
                 expect(result.converseParams.messages[0].content[0].text).toBe('A beautiful sunset over mountains');
+                expect(result.fullResponse).toBeDefined();
+                expect(result.fullResponse.output?.message?.content).toBeDefined();
             }
         });
 
@@ -274,6 +276,8 @@ describe('BedrockImageService', () => {
                 expect(result.converseParams.messages).toHaveLength(1);
                 expect(result.converseParams.messages[0].content).toHaveLength(1);
                 expect(result.converseParams.messages[0].content[0].text).toBe('Test prompt');
+                expect(result.fullResponse).toBeDefined();
+                expect(result.fullResponse.output?.message?.content).toBeDefined();
             }
         });
 
@@ -316,6 +320,8 @@ describe('BedrockImageService', () => {
                 expect(result.converseParams.messages).toHaveLength(1);
                 expect(result.converseParams.messages[0].content).toHaveLength(1);
                 expect(result.converseParams.messages[0].content[0].text).toBe('Test prompt');
+                expect(result.fullResponse).toBeDefined();
+                expect(result.fullResponse?.stopReason).toBe('content_filtered');
             }
         });
 

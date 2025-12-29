@@ -570,6 +570,7 @@ export class BedrockImageService {
                     type: 'error',
                     error: `Unexpected stop reason: ${response.stopReason}`,
                     converseParams,
+                    fullResponse: response,
                 };
             }
 
@@ -589,6 +590,7 @@ export class BedrockImageService {
                     type: 'text',
                     text: textContent.text,
                     converseParams,
+                    fullResponse: response,
                 };
             }
 
@@ -613,6 +615,7 @@ export class BedrockImageService {
                 type: 'image',
                 imageDataUrl: `data:image/${format};base64,${base64}`,
                 converseParams,
+                fullResponse: response,
             };
         } catch (error) {
             // Print full exception to console for debugging

@@ -354,6 +354,10 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 // Handle the response based on type
                 if (response.type === 'text') {
                     console.warn('Model returned text response instead of image:', response.text);
+                    console.log(new Date().toISOString());
+                    console.log(response.converseParams)
+                    // Print the current date and time.
+                    console.log(response.fullResponse)
 
                     // Remove placeholder image
                     deleteImage(placeholderId);

@@ -85,6 +85,7 @@ describe('PromptInputArea - Submit Handler', () => {
                 type: 'image',
                 imageDataUrl: 'data:image/png;base64,mockImageData',
                 converseParams: {},
+                fullResponse: { output: { message: { content: [] } } },
             }),
         } as unknown as BedrockImageService;
     });
@@ -263,6 +264,8 @@ describe('PromptInputArea - Submit Handler', () => {
         mockBedrockService.generateContent = vi.fn().mockResolvedValue({
             type: 'text',
             text: 'This is a text response from the model',
+            converseParams: {},
+            fullResponse: { output: { message: { content: [{ text: 'This is a text response from the model' }] } } },
         });
 
         render(
@@ -301,6 +304,7 @@ describe('PromptInputArea - Submit Handler', () => {
                 modelId: 'us.amazon.nova-2-omni-v1:0',
                 messages: [{ role: 'user', content: [{ text: 'Test prompt' }] }],
             },
+            fullResponse: { stopReason: 'content_filtered', output: { message: { content: [] } } },
         });
 
         render(
@@ -344,6 +348,7 @@ describe('PromptInputArea - Submit Handler', () => {
             type: 'image',
             imageDataUrl: mockImageDataUrl,
             converseParams: {},
+            fullResponse: { output: { message: { content: [] } } },
         });
 
         // Override the default Image mock to simulate loading an image with 16:9 dimensions

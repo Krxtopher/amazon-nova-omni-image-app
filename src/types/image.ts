@@ -15,9 +15,9 @@ import type { PromptEnhancement } from './persona';
  * Generation response types
  */
 export type GenerationResponse =
-    | { type: 'image'; imageDataUrl: string; converseParams: ConverseRequestParams }
-    | { type: 'text'; text: string; converseParams: ConverseRequestParams }
-    | { type: 'error'; error: string; converseParams: ConverseRequestParams };
+    | { type: 'image'; imageDataUrl: string; converseParams: ConverseRequestParams; fullResponse: import('@aws-sdk/client-bedrock-runtime').ConverseCommandOutput }
+    | { type: 'text'; text: string; converseParams: ConverseRequestParams; fullResponse: import('@aws-sdk/client-bedrock-runtime').ConverseCommandOutput }
+    | { type: 'error'; error: string; converseParams: ConverseRequestParams; fullResponse?: import('@aws-sdk/client-bedrock-runtime').ConverseCommandOutput };
 
 /**
  * Converse API request parameters for image generation
