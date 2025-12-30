@@ -142,7 +142,7 @@ class PersonaService {
         const persona = await this.getPersona(personaId);
         if (!persona || persona.personaDescription == null) {
             // Use a generic system prompt.
-            return 'Act as an image generation tool. Interpret any message the user provides as a request for an image as output.'
+            return 'Interpret all user messages as image generation requests. Never ask for clarification. Ambiguous requests are allowed.'
         }
 
         return this.generateSystemPromptFromTemplate(persona.personaDescription)

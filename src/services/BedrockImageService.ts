@@ -10,7 +10,6 @@ import type { AspectRatio, GenerationRequest, GenerationResponse, AppError, Conv
 export interface BedrockServiceConfig {
     region: string;
     credentials: AwsCredentialIdentity;
-    systemPrompt?: string;
 }
 
 /**
@@ -37,7 +36,6 @@ export const ASPECT_RATIO_DIMENSIONS: Record<Exclude<AspectRatio, 'random'>, { w
 export class BedrockImageService {
     private client: BedrockRuntimeClient;
     private readonly modelId = 'us.amazon.nova-2-omni-v1:0';
-    private readonly systemPrompt?: string;
 
     /**
      * Creates a new BedrockImageService instance
@@ -48,7 +46,6 @@ export class BedrockImageService {
             region: config.region,
             credentials: config.credentials,
         });
-        this.systemPrompt = config.systemPrompt;
     }
 
     /**
@@ -464,7 +461,6 @@ export class BedrockImageService {
             // Build the message content array
             // Using any[] to work with AWS SDK's complex ContentBlock union types
             const messageContent: any[] = [];
-            let sourceImageBase64: string | undefined;
 
             // If there's an edit source, include the input image
             if (request.editSource) {
@@ -472,9 +468,6 @@ export class BedrockImageService {
 
                 // Determine image format from the URL or file type
                 const format = await this.detectImageFormat(request.editSource.url, imageBytes);
-
-                // Convert to base64 for storage in converseParams
-                sourceImageBase64 = this.uint8ArrayToBase64(imageBytes);
 
                 messageContent.push({
                     image: {
@@ -500,14 +493,12 @@ export class BedrockImageService {
                 ],
             };
 
-            // Add system prompt if configured
-            if (this.systemPrompt) {
-                commandParams.system = [
-                    {
-                        text: this.systemPrompt
-                    }
-                ];
-            }
+            const isEditRequest = request.editSource != null
+            commandParams.system = [
+                {
+                    text: getSystemPrompt(isEditRequest)
+                }
+            ];
 
             const command = new ConverseCommand(commandParams);
 
@@ -523,7 +514,7 @@ export class BedrockImageService {
                                     image: {
                                         format: item.image.format,
                                         source: {
-                                            _base64: sourceImageBase64
+                                            // Omitting image data intentionally
                                         }
                                     }
                                 };
@@ -534,14 +525,9 @@ export class BedrockImageService {
                 ],
             };
 
+
             // Add system prompt if configured
-            if (this.systemPrompt) {
-                converseParams.system = [
-                    {
-                        text: this.systemPrompt
-                    }
-                ];
-            }
+            converseParams.system = commandParams.system
 
             // Call the Bedrock API directly
             const response = await this.client.send(command);
@@ -759,5 +745,13 @@ export class BedrockImageService {
             retryable: false,
             originalError: error,
         };
+    }
+}
+
+function getSystemPrompt(isEditRequest: boolean = false) {
+    if (!isEditRequest) {
+        return `Interpret all user messages as image generation requests. Never ask for clarification. Ambiguous requests are allowed.`
+    } else {
+        return `Interpret all user messages as image editing requests. Never ask for clarification. Ambiguous requests are allowed.`
     }
 }

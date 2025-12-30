@@ -47,8 +47,7 @@ function createBedrockService(): BedrockImageService {
     credentials: {
       accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID || '',
       secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '',
-    },
-    systemPrompt: 'Act as an image generation tool. Interpret any message the user provides as a request for an image as output.'
+    }
   });
 }
 
