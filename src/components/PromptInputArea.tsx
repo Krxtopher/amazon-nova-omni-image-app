@@ -8,6 +8,7 @@ import { useUIStore, useEditSourceStore } from '@/stores/uiStore';
 import { BedrockImageService, ASPECT_RATIO_DIMENSIONS } from '@/services/BedrockImageService';
 import { StreamingPromptEnhancementService } from '@/services/StreamingPromptEnhancementService';
 import { PromptEnhancementService } from '@/services/PromptEnhancementService';
+import { personaService } from '@/services/personaService';
 import type { AspectRatio, EditSource, GeneratedImage } from '@/types';
 import { X, Plus, Send, Dice5 } from 'lucide-react';
 import { AspectRatioSelector } from './AspectRatioSelector';
@@ -295,9 +296,25 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 // Update status to generating when execution starts
                 updateImage(placeholderId, { status: 'generating' });
 
-                // Step 1: Enhance the prompt if persona is enabled
+                // Step 1: Check if we should skip enhancement and use custom system prompt
+                // Skip enhancement when: persona is selected (not 'off') AND edit source is present
                 let enhancedPrompt = prompt;
-                if (selectedPromptEnhancement !== 'off') {
+                let customSystemPrompt: string | undefined;
+
+                const shouldSkipEnhancement = selectedPromptEnhancement !== 'off' && currentEditSource;
+
+                if (shouldSkipEnhancement) {
+                    // Get persona description for custom system prompt
+                    try {
+                        const persona = await personaService.getPersona(selectedPromptEnhancement);
+                        if (persona && persona.personaDescription) {
+                            customSystemPrompt = `Interpret the user's message as an edit request. The output style should match the style represented by this persona:\n${persona.personaDescription}`;
+                        }
+                    } catch (error) {
+                        console.warn('Failed to get persona description, falling back to default system prompt:', error);
+                    }
+                } else if (selectedPromptEnhancement !== 'off') {
+                    // Step 1: Enhance the prompt if persona is enabled and we're not skipping
                     try {
                         if (useStreamingEnhancement && streamingServiceRef.current) {
                             // Use streaming enhancement with promise-based wrapper
@@ -349,6 +366,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                     aspectRatio: currentEditSource ? undefined : aspectRatioToUse,
                     editSource: currentEditSource || undefined,
                     promptEnhancement: selectedPromptEnhancement,
+                    customSystemPrompt: customSystemPrompt,
                 });
 
                 // Handle the response based on type

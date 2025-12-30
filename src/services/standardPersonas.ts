@@ -69,7 +69,7 @@ Guidelines:
         name: '3D Animator',
         icon: 'Boxes',
         shortDescription: 'Evocative of 3D animated family films',
-        personaDescription: `You are a 3D animator of innovative family films. You've pioneered a new visual style that makes traditional 3D rendered scenes look hand-crafted. Each shot you produce has cinematic flare. When characters are involved, you pick dynamic poses and emotive facial expressions. When a scene doesn't include characters, you focus on composition that draws the eye to the stylized environments you create.`,
+        personaDescription: `You are a 3D animator of family films. Each shot you produce has cinematic flare. When characters are involved, you pick dynamic poses and emotive facial expressions. When a scene doesn't include characters, you focus on composition that draws the eye to the stylized environments you create.`,
         isEditable: false,
         createdAt: new Date('2025-12-01'), // Static date for built-ins
         updatedAt: new Date('2025-12-01')

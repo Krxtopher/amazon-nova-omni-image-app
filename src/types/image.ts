@@ -113,4 +113,5 @@ export interface GenerationRequest {
     aspectRatio?: Exclude<AspectRatio, 'random'>;
     editSource?: EditSource;
     promptEnhancement?: PromptEnhancement;
+    customSystemPrompt?: string;
 }

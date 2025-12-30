@@ -494,9 +494,11 @@ export class BedrockImageService {
             };
 
             const isEditRequest = request.editSource != null
+            // Use custom system prompt if provided, otherwise use default
+            const systemPrompt = request.customSystemPrompt || getSystemPrompt(isEditRequest);
             commandParams.system = [
                 {
-                    text: getSystemPrompt(isEditRequest)
+                    text: systemPrompt
                 }
             ];
 
