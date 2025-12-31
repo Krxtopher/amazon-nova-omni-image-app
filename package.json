@@ -10,9 +10,15 @@
     "preview": "vite preview",
     "test": "vitest --run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "amplify:sandbox": "npx ampx sandbox",
+    "amplify:deploy": "npx ampx pipeline-deploy --branch main",
+    "amplify:generate": "npx ampx generate outputs --app-id <app-id> --branch main --out-dir src/"
   },
   "dependencies": {
+    "@aws-amplify/backend": "^1.19.0",
+    "@aws-amplify/backend-cli": "^1.8.1",
+    "@aws-amplify/ui-react": "^6.13.2",
     "@aws-sdk/client-bedrock-runtime": "^3.946.0",
     "@aws-sdk/credential-providers": "^3.946.0",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -22,6 +28,7 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
+    "aws-amplify": "^6.15.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html2canvas": "^1.4.1",
