@@ -751,9 +751,5 @@ export class BedrockImageService {
 }
 
 function getSystemPrompt(isEditRequest: boolean = false) {
-    if (!isEditRequest) {
-        return `Interpret all user messages as image generation requests. Never ask for clarification. Ambiguous requests are allowed.`
-    } else {
-        return `Interpret all user messages as image editing requests. Never ask for clarification. Ambiguous requests are allowed.`
-    }
+    return `Interpret all user messages as image ${isEditRequest ? "editing" : "generation"} requests. Never ask for clarification. Ambiguous requests are allowed.`
 }
