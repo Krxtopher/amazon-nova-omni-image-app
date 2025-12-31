@@ -73,10 +73,14 @@ export function PersonaSelector({
             size="sm"
             disabled={disabled}
             onClick={handleToggle}
-            className={`h-8 px-3 gap-2 text-base font-medium hover:bg-accent/50 transition-colors ${isExpanded ? 'bg-accent/50' : ''
+            className={`h-8 px-3 gap-2 text-base font-medium transition-colors ${disabled
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-accent/50'
+                } ${isExpanded ? 'bg-accent/50' : ''}`}
+            aria-label={`Current persona: ${currentPersonaData.label}. ${disabled
+                    ? 'Disabled when editing an image'
+                    : `Click to ${isExpanded ? 'close' : 'open'} options`
                 }`}
-            aria-label={`Current persona: ${currentPersonaData.label}. Click to ${isExpanded ? 'close' : 'open'
-                } options`}
             aria-expanded={isExpanded}
         >
             {/* Icon representation */}

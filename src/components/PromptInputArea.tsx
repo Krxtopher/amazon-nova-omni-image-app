@@ -212,6 +212,13 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
         }
     }, [aspectRatioExpanded, promptEnhancementExpanded, textareaExpanded]);
 
+    // Close persona tray when edit source is selected
+    useEffect(() => {
+        if (editSource && promptEnhancementExpanded) {
+            setPromptEnhancementExpanded(false);
+        }
+    }, [editSource, promptEnhancementExpanded]);
+
     /**
      * Validate prompt is non-empty and not just whitespace
      * Requirements: 1.2
@@ -297,21 +304,24 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                 updateImage(placeholderId, { status: 'generating' });
 
                 // Step 1: Check if we should skip enhancement and use custom system prompt
-                // Skip enhancement when: persona is selected (not 'off') AND edit source is present
+                // Skip enhancement when: edit source is present (regardless of persona selection)
                 let enhancedPrompt = prompt;
                 let customSystemPrompt: string | undefined;
 
-                const shouldSkipEnhancement = selectedPromptEnhancement !== 'off' && currentEditSource;
+                const shouldSkipEnhancement = !!currentEditSource;
 
                 if (shouldSkipEnhancement) {
-                    // Get persona description for custom system prompt
-                    try {
-                        const persona = await personaService.getPersona(selectedPromptEnhancement);
-                        if (persona && persona.personaDescription) {
-                            customSystemPrompt = `Interpret the user's message as an edit request. The output style should match the style represented by this persona:\n${persona.personaDescription}`;
+                    // When editing an image, skip prompt enhancement entirely
+                    // If a persona is selected (not 'off'), use it for custom system prompt
+                    if (selectedPromptEnhancement !== 'off') {
+                        try {
+                            const persona = await personaService.getPersona(selectedPromptEnhancement);
+                            if (persona && persona.personaDescription) {
+                                customSystemPrompt = `Interpret the user's message as an edit request. The output style should match the style represented by this persona:\n${persona.personaDescription}`;
+                            }
+                        } catch (error) {
+                            console.warn('Failed to get persona description, falling back to default system prompt:', error);
                         }
-                    } catch (error) {
-                        console.warn('Failed to get persona description, falling back to default system prompt:', error);
                     }
                 } else if (selectedPromptEnhancement !== 'off') {
                     // Step 1: Enhance the prompt if persona is enabled and we're not skipping
@@ -767,6 +777,7 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
                                     <PersonaSelector
                                         selectedPersona={selectedPromptEnhancement}
                                         onPersonaChange={setPromptEnhancement}
+                                        disabled={!!editSource}
                                         isExpanded={promptEnhancementExpanded}
                                         refreshTrigger={personaRefreshTrigger}
                                         onExpandedChange={(expanded) => {
