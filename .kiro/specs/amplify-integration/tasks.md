@@ -131,40 +131,40 @@ This implementation plan transforms the existing client-side image generation ap
     - **Property 16: Persona deletion consistency**
     - **Validates: Requirements 5.3, 5.4**
 
-- [ ] 7. Implement metadata tracking and management
-  - [ ] 7.1 Add image metadata storage on generation
+- [x] 7. Implement metadata tracking and management
+  - [x] 7.1 Add image metadata storage on generation
     - Store complete metadata (prompt, parameters, S3 key) when images are created
     - Link metadata to authenticated user automatically
     - _Requirements: 3.1, 3.3_
 
-  - [ ] 7.2 Implement image deletion with cleanup
+  - [x] 7.2 Implement image deletion with cleanup
     - Delete both S3 objects and DynamoDB metadata when users delete images
     - Ensure complete cleanup across all storage systems
     - _Requirements: 3.4, 4.4_
 
-  - [ ] 7.3 Write property tests for deletion consistency
+  - [x] 7.3 Write property tests for deletion consistency
     - **Property 9: Metadata deletion consistency**
     - **Property 12: S3 deletion consistency**
     - **Validates: Requirements 3.4, 4.4**
 
-  - [ ] 7.4 Update gallery to load from cloud storage
+  - [x] 7.4 Update gallery to load from cloud storage
     - Modify GalleryGrid to load images from user's S3 folder via metadata queries
     - Implement proper pagination and loading states
     - _Requirements: 3.2, 4.3_
 
-- [ ] 8. Configure domain restrictions and deployment
-  - [ ] 8.1 Implement configurable email domain restrictions
+- [x] 8. Configure domain restrictions and deployment
+  - [x] 8.1 Implement configurable email domain restrictions
     - Create configuration system for allowed email domains
     - Make "@amazon.com" restriction easily configurable for other organizations
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [ ] 8.2 Write property tests for domain configuration
+  - [x] 8.2 Write property tests for domain configuration
     - **Property 3: Domain configuration enforcement**
     - **Property 4: Multi-domain support**
     - **Property 17: Configuration change propagation**
     - **Validates: Requirements 1.5, 7.1, 7.2, 7.3**
 
-  - [ ] 8.3 Set up Amplify hosting and CI/CD
+  - [x] 8.3 Set up Amplify hosting and CI/CD
     - Configure Amplify hosting for the React application
     - Set up automatic deployment from main branch
     - Configure environment variables and build settings

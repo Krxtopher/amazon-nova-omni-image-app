@@ -1,16 +1,14 @@
 import type { PreSignUpTriggerHandler } from 'aws-lambda';
+import { validateEmailDomain, getDomainValidationErrorMessage } from '../../config/domain-restrictions';
 
 export const handler: PreSignUpTriggerHandler = async (event) => {
     const { email } = event.request.userAttributes;
-    const allowedDomains = process.env.ALLOWED_DOMAINS?.split(',') || ['@amazon.com'];
 
-    // Check if email ends with any of the allowed domains
-    const isValidDomain = allowedDomains.some(domain =>
-        email.toLowerCase().endsWith(domain.toLowerCase())
-    );
+    // Validate email domain using the configurable system
+    const isValidDomain = validateEmailDomain(email);
 
     if (!isValidDomain) {
-        throw new Error(`Registration is restricted to users with email addresses from: ${allowedDomains.join(', ')}`);
+        throw new Error(getDomainValidationErrorMessage());
     }
 
     // If validation passes, return the event unchanged

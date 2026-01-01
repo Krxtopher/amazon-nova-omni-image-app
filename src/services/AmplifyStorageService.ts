@@ -176,7 +176,7 @@ export class AmplifyS3StorageService implements AmplifyStorageService {
      * In Amplify Storage, user isolation is handled by the access patterns defined in the backend
      * This is an additional client-side check for security
      */
-    private isUserAuthorizedForKey(s3Key: string, userId: string): boolean {
+    private isUserAuthorizedForKey(s3Key: string, _userId: string): boolean {
         // With Amplify Storage access patterns using {entity_id}, 
         // the key should be in the format: images/{user_id}/filename
         // However, Amplify automatically handles the user_id part, so we just check the prefix

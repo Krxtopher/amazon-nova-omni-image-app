@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { GeneratedImage, GeneratedText, GalleryItem } from '../types';
-import { sqliteService } from '../services/sqliteService';
 import { amplifyStorageService } from '../services/AmplifyStorageService';
+import { amplifyDataService } from '../services/AmplifyDataService';
 import { storageLogger } from '../utils/StorageLogger';
 
 /**
@@ -47,10 +47,10 @@ interface ImageStoreActions {
 export type ImageStore = ImageStoreState & ImageStoreActions;
 
 /**
- * Image store using Zustand with SQLite persistence
+ * Image store using Zustand with Amplify Data Service persistence
  * Manages the state for generated images
  * UI state (aspect ratio, layout mode, etc.) and edit source moved to separate uiStore for better performance
- * Requirements: 3.1 - Persist images to SQLite database via IndexedDB
+ * Requirements: 3.1 - Persist image metadata to Amplify Data Service (DynamoDB)
  */
 export const useImageStore = create<ImageStore>()((set) => ({
     // Initial state
@@ -67,37 +67,37 @@ export const useImageStore = create<ImageStore>()((set) => ({
     // Actions
 
     /**
-     * Initialize the store by loading data from SQLite
+     * Initialize the store by loading data from Amplify Data Service
      */
     initialize: async () => {
-        const overallTimer = storageLogger.startOperation('initialize', 'sqlite');
+        const overallTimer = storageLogger.startOperation('initialize', 'amplify-data');
         const startTime = performance.now();
 
         try {
             set({ isLoading: true });
 
-            // Step 1: Initialize SQLite database
-            const sqliteInitTimer = storageLogger.startOperation('sqliteInit', 'sqlite');
-            await sqliteService.init();
-            sqliteInitTimer.success();
-
-            // Step 2: Get total count for pagination
-            const countTimer = storageLogger.startOperation('getTotalCount', 'sqlite');
-            const totalCount = await sqliteService.getCompleteImageMetadataCount();
-            countTimer.success(undefined, { totalCount });
-
-            // Step 3: Load initial batch of image metadata
-            const metadataTimer = storageLogger.startOperation('loadInitialMetadata', 'sqlite');
-            const initialBatchSize = 6; // Reduced from 20 to prevent cascade loading
-
-            const imageMetadata = await sqliteService.getCompleteImageMetadataPaginated(0, initialBatchSize);
-
+            // Step 1: Load image metadata from Amplify Data Service
+            const metadataTimer = storageLogger.startOperation('loadImageMetadata', 'amplify-data');
+            const imageMetadata = await amplifyDataService.listImageMetadata();
             metadataTimer.success(undefined, {
-                recordCount: imageMetadata.length,
-                batchSize: initialBatchSize
+                recordCount: imageMetadata.length
             });
 
-            // Step 4: Load text items from localStorage
+            // Step 2: Convert Amplify metadata to GeneratedImage format
+            const images: GeneratedImage[] = imageMetadata.map(metadata => ({
+                id: metadata.id,
+                url: '', // URLs will be loaded on demand
+                prompt: metadata.prompt,
+                enhancedPrompt: metadata.enhancedPrompt || undefined,
+                aspectRatio: (metadata.aspectRatio || '1:1') as any,
+                width: 1024, // Default dimensions, will be updated when image loads
+                height: 1024,
+                status: 'complete' as const,
+                createdAt: new Date(metadata.createdAt),
+                s3Key: metadata.s3Key, // Store S3 key for later retrieval
+            }));
+
+            // Step 3: Load text items from localStorage (unchanged)
             const textItemsTimer = storageLogger.startOperation('loadTextItems', 'localStorage');
             const textItemsJson = localStorage.getItem('textItems');
             const textItems: GeneratedText[] = textItemsJson ?
@@ -107,22 +107,22 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 })) : [];
             textItemsTimer.success(textItemsJson?.length, { textItemCount: textItems.length });
 
-            // Step 5: Update store state
-            const loadedCount = imageMetadata.length;
-            const hasMore = imageMetadata.length < totalCount;
+            // Step 4: Update store state
+            const totalCount = images.length;
+            const loadedCount = images.length;
 
             set({
-                images: imageMetadata,
+                images: images.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()), // Sort by newest first
                 textItems,
                 totalImageCount: totalCount,
-                hasMoreImages: hasMore,
+                hasMoreImages: false, // All loaded from Amplify Data
                 loadedImageCount: loadedCount,
                 isLoading: false
             });
 
             const totalDuration = performance.now() - startTime;
             overallTimer.success(undefined, {
-                imageCount: imageMetadata.length,
+                imageCount: images.length,
                 textItemCount: textItems.length,
                 totalCount,
                 totalDuration
@@ -134,16 +134,30 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Load image metadata from the database
+     * Load image metadata from Amplify Data Service
      */
     loadImages: async () => {
         try {
-            const imageMetadata = await sqliteService.getAllImageMetadata();
-            const totalCount = await sqliteService.getCompleteImageMetadataCount();
+            const imageMetadata = await amplifyDataService.listImageMetadata();
+
+            // Convert to GeneratedImage format
+            const images: GeneratedImage[] = imageMetadata.map(metadata => ({
+                id: metadata.id,
+                url: '', // URLs will be loaded on demand
+                prompt: metadata.prompt,
+                enhancedPrompt: metadata.enhancedPrompt || undefined,
+                aspectRatio: (metadata.aspectRatio || '1:1') as any,
+                width: 1024, // Default dimensions
+                height: 1024,
+                status: 'complete' as const,
+                createdAt: new Date(metadata.createdAt),
+                s3Key: metadata.s3Key,
+            }));
+
             set({
-                images: imageMetadata.filter(img => img.status === 'complete'), // Filter to complete only
-                totalImageCount: totalCount,
-                hasMoreImages: false // All loaded
+                images: images.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+                totalImageCount: images.length,
+                hasMoreImages: false // All loaded from Amplify Data
             });
         } catch (error) {
             // Silently handle load errors
@@ -152,6 +166,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
 
     /**
      * Load more image metadata progressively
+     * Note: With Amplify Data Service, we load all images at once, so this is mainly for compatibility
      */
     loadMoreImages: async () => {
         const state = useImageStore.getState();
@@ -161,63 +176,11 @@ export const useImageStore = create<ImageStore>()((set) => ({
             return;
         }
 
-        const overallTimer = storageLogger.startOperation('loadMoreImages', 'sqlite');
-        const startTime = performance.now();
-
-        try {
-            set({ isLoadingMore: true });
-
-            const currentOffset = state.images.length;
-            const batchSize = 10; // Standard batch size
-
-            const queryStart = performance.now();
-            const moreImageMetadata = await sqliteService.getCompleteImageMetadataPaginated(currentOffset, batchSize);
-            const queryDuration = performance.now() - queryStart;
-
-            if (moreImageMetadata.length > 0) {
-                const stateUpdateStart = performance.now();
-
-                set((state) => {
-                    const newLoadedCount = state.loadedImageCount + moreImageMetadata.length;
-                    const hasMore = moreImageMetadata.length === batchSize;
-
-                    return {
-                        images: [...state.images, ...moreImageMetadata],
-                        hasMoreImages: hasMore,
-                        loadedImageCount: newLoadedCount,
-                        isLoadingMore: false
-                    };
-                });
-
-                const stateUpdateDuration = performance.now() - stateUpdateStart;
-                const totalDuration = performance.now() - startTime;
-                const newState = useImageStore.getState();
-
-                overallTimer.success(undefined, {
-                    loadedCount: moreImageMetadata.length,
-                    newTotal: newState.loadedImageCount,
-                    hasMore: newState.hasMoreImages,
-                    totalDuration,
-                    queryDuration,
-                    stateUpdateDuration
-                });
-            } else {
-                const totalDuration = performance.now() - startTime;
-                set({
-                    hasMoreImages: false,
-                    isLoadingMore: false
-                });
-
-                overallTimer.success(undefined, {
-                    loadedCount: 0,
-                    hasMore: false,
-                    totalDuration
-                });
-            }
-        } catch (error) {
-            overallTimer.error(error instanceof Error ? error : new Error(String(error)));
-            set({ isLoadingMore: false });
-        }
+        // Since we load all images from Amplify Data at once, just mark as no more images
+        set({
+            hasMoreImages: false,
+            isLoadingMore: false
+        });
     },
 
     /**
@@ -274,11 +237,11 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Add a new image to the gallery with database persistence
      * Used only when image generation completes successfully
      * UI update is immediate, database persistence happens asynchronously
-     * Coordinates storage between SQLite (metadata) and S3 (image files)
-     * Requirements: 2.1, 3.3, 1.1, 1.2, 5.2, 4.1, 4.2
+     * Coordinates storage between Amplify Data (metadata) and S3 (image files)
+     * Requirements: 2.1, 3.3, 1.1, 1.2, 5.2, 4.1, 4.2, 3.1
      */
     addImage: async (image: GeneratedImage) => {
-        const timer = storageLogger.startOperation('addImage', 'sqlite', { imageId: image.id });
+        const timer = storageLogger.startOperation('addImage', 'amplify-data', { imageId: image.id });
 
         // Update UI immediately for responsive feel (Requirements: 1.1 - 50ms UI update)
         set((state) => {
@@ -304,11 +267,11 @@ export const useImageStore = create<ImageStore>()((set) => ({
             }
         });
 
-        // Coordinate storage between SQLite (metadata) and S3 (image files)
+        // Coordinate storage between Amplify Data (metadata) and S3 (image files)
         // Requirements: 5.2 - Route operations to appropriate storage mechanisms
-        try {
-            let s3Key: string | undefined;
+        let s3Key: string | undefined;
 
+        try {
             // Upload image to S3 if URL is provided
             if (image.url) {
                 // Generate unique filename
@@ -318,13 +281,13 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 s3Key = await amplifyStorageService.uploadImageFromDataUrl(image.url, fileName);
             }
 
-            // Store metadata in SQLite (with S3 key instead of binary data)
-            await sqliteService.addImage({
-                ...image,
-                url: undefined, // No binary data in SQLite
-                s3Key, // Store S3 key for later retrieval
-                hasBinaryData: Boolean(s3Key),
-                binaryDataSize: image.url ? image.url.length : 0
+            // Store metadata in Amplify Data Service (Requirements: 3.1, 3.3)
+            await amplifyDataService.createImageMetadata({
+                prompt: image.prompt,
+                enhancedPrompt: image.enhancedPrompt || undefined,
+                aspectRatio: image.aspectRatio,
+                s3Key: s3Key || '', // S3 key is required in the schema
+                s3Url: undefined, // Will be generated on demand
             });
 
             timer.success(image.url?.length, { hasBinaryData: Boolean(s3Key), s3Key });
@@ -342,8 +305,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
             // Attempt cleanup of any partially stored data
             try {
                 await Promise.allSettled([
-                    sqliteService.deleteImage(image.id),
-                    // If S3 upload succeeded but SQLite failed, clean up S3
+                    // If S3 upload succeeded but Amplify Data failed, clean up S3
                     ...(s3Key ? [amplifyStorageService.deleteImage(s3Key)] : [])
                 ]);
             } catch (cleanupError) {
@@ -380,7 +342,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Update an existing image by ID
      * Used to update status, URL, or error information
      * UI update is immediate, database persistence happens asynchronously
-     * Coordinates updates between SQLite (metadata) and S3 (image files)
+     * Coordinates updates between Amplify Data (metadata) and S3 (image files)
      * Special handling: When status becomes 'complete', triggers database write for placeholders
      * Requirements: 1.4, 1.5, 4.4, 5.2, 5.3
      */
@@ -445,7 +407,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
         }
 
         // For non-completion updates or already-complete images, handle normally
-        // Coordinate updates between SQLite (metadata) and S3 (image files)
+        // Coordinate updates between Amplify Data (metadata) and S3 (image files)
         // Requirements: 5.2 - Route operations to appropriate storage mechanisms
         try {
             // Only update database if the image is already complete (has been written to database)
@@ -470,22 +432,20 @@ export const useImageStore = create<ImageStore>()((set) => ({
                     }
                 }
 
-                // Update metadata in SQLite
-                const sqliteUpdates: any = { ...metadataUpdates };
+                // Update metadata in Amplify Data Service
+                const amplifyUpdates: any = {};
 
-                // Add S3 key and binary data tracking fields if URL is being updated
+                // Add fields that can be updated
+                if (metadataUpdates.prompt !== undefined) amplifyUpdates.prompt = metadataUpdates.prompt;
+                if (metadataUpdates.enhancedPrompt !== undefined) amplifyUpdates.enhancedPrompt = metadataUpdates.enhancedPrompt;
+                if (metadataUpdates.aspectRatio !== undefined) amplifyUpdates.aspectRatio = metadataUpdates.aspectRatio;
+
+                // Add S3 key if URL is being updated
                 if ('url' in updates) {
                     if (newS3Key) {
-                        sqliteUpdates.s3Key = newS3Key;
-                        sqliteUpdates.hasBinaryData = true;
-                        sqliteUpdates.binaryDataSize = url ? url.length : 0;
+                        amplifyUpdates.s3Key = newS3Key;
                     } else if (!url) {
-                        // URL is being cleared
-                        sqliteUpdates.s3Key = null;
-                        sqliteUpdates.hasBinaryData = false;
-                        sqliteUpdates.binaryDataSize = 0;
-
-                        // Delete from S3 if there was an existing S3 key
+                        // URL is being cleared - delete from S3 if there was an existing S3 key
                         if (currentImage.s3Key) {
                             try {
                                 await amplifyStorageService.deleteImage(currentImage.s3Key);
@@ -493,12 +453,16 @@ export const useImageStore = create<ImageStore>()((set) => ({
                                 console.warn('Failed to delete S3 image:', deleteError);
                             }
                         }
+                        amplifyUpdates.s3Key = '';
                     }
                 }
 
-                // Only call SQLite if there are updates to make
-                if (Object.keys(sqliteUpdates).length > 0) {
-                    await sqliteService.updateImage(id, sqliteUpdates);
+                // Only call Amplify Data Service if there are updates to make
+                if (Object.keys(amplifyUpdates).length > 0) {
+                    await amplifyDataService.updateImageMetadata({
+                        id: currentImage.id,
+                        ...amplifyUpdates
+                    });
                 }
             }
             // For placeholder images (status !== 'complete'), skip database operations
@@ -514,8 +478,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
     /**
      * Delete an image from the gallery by ID
      * UI update is immediate, database persistence happens asynchronously
-     * Coordinates cleanup between SQLite (metadata) and S3 (image files)
-     * Requirements: 4.2, 4.4, 5.2, 5.3
+     * Coordinates cleanup between Amplify Data (metadata) and S3 (image files)
+     * Requirements: 4.2, 4.4, 5.2, 5.3, 3.4
      */
     deleteImage: async (id: string) => {
         // Get current image to find S3 key before deletion
@@ -533,12 +497,15 @@ export const useImageStore = create<ImageStore>()((set) => ({
             };
         });
 
-        // Coordinate cleanup between SQLite (metadata) and S3 (image files)
-        // Requirements: 4.4, 5.2 - Ensure cleanup of both storage mechanisms for deletions
+        // Coordinate cleanup between Amplify Data (metadata) and S3 (image files)
+        // Requirements: 4.4, 5.2, 3.4 - Ensure cleanup of both storage mechanisms for deletions
         try {
-            const cleanupPromises = [
-                sqliteService.deleteImage(id)
-            ];
+            const cleanupPromises = [];
+
+            // Delete metadata from Amplify Data Service if the image was persisted
+            if (imageToDelete?.status === 'complete') {
+                cleanupPromises.push(amplifyDataService.deleteImageMetadata(imageToDelete.id));
+            }
 
             // Add S3 deletion if there's an S3 key
             if (imageToDelete?.s3Key) {
@@ -551,9 +518,11 @@ export const useImageStore = create<ImageStore>()((set) => ({
             // For deletions, we don't rollback UI changes since the user intended to delete
             // But we should attempt cleanup of any remaining data
             try {
-                const retryPromises = [
-                    sqliteService.deleteImage(id)
-                ];
+                const retryPromises = [];
+
+                if (imageToDelete?.status === 'complete') {
+                    retryPromises.push(amplifyDataService.deleteImageMetadata(imageToDelete.id));
+                }
 
                 if (imageToDelete?.s3Key) {
                     retryPromises.push(amplifyStorageService.deleteImage(imageToDelete.s3Key));

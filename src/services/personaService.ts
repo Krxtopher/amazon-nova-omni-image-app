@@ -120,7 +120,10 @@ class PersonaService {
                 amplifyUpdates.icon = updates.icon;
             }
 
-            const updatedPersonaData = await amplifyDataService.updatePersonaData(id, amplifyUpdates);
+            const updatedPersonaData = await amplifyDataService.updatePersonaData({
+                id,
+                ...amplifyUpdates
+            });
 
             if (!updatedPersonaData) {
                 return null;
@@ -148,8 +151,8 @@ class PersonaService {
      */
     async deleteCustomPersona(id: string): Promise<boolean> {
         try {
-            const success = await amplifyDataService.deletePersonaData(id);
-            return success;
+            await amplifyDataService.deletePersonaData(id);
+            return true;
         } catch (error) {
             console.error('Failed to delete custom persona:', error);
             return false;

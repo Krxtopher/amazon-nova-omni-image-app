@@ -13,7 +13,11 @@
     "test:ui": "vitest --ui",
     "amplify:sandbox": "npx ampx sandbox",
     "amplify:deploy": "npx ampx pipeline-deploy --branch main",
-    "amplify:generate": "npx ampx generate outputs --app-id <app-id> --branch main --out-dir src/"
+    "amplify:generate": "npx ampx generate outputs --app-id <app-id> --branch main --out-dir src/",
+    "deploy:setup": "chmod +x scripts/setup-amplify-hosting.sh && ./scripts/setup-amplify-hosting.sh",
+    "deploy:status": "aws amplify list-jobs --app-id $(cat .amplify-app-id 2>/dev/null || echo 'APP_ID_NOT_SET') --branch-name main",
+    "deploy:logs": "aws amplify get-job --app-id $(cat .amplify-app-id 2>/dev/null || echo 'APP_ID_NOT_SET') --branch-name main --job-id",
+    "config:domains": "node scripts/configure-domains.js"
   },
   "dependencies": {
     "@aws-amplify/backend": "^1.19.0",

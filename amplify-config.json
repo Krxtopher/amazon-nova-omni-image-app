@@ -1,0 +1,111 @@
+{
+    "deployment": {
+        "platform": "AWS Amplify",
+        "buildSpec": "amplify.yml",
+        "nodeVersion": "18",
+        "buildTimeout": "15 minutes",
+        "artifacts": {
+            "baseDirectory": "dist",
+            "files": [
+                "**/*"
+            ]
+        },
+        "cache": {
+            "paths": [
+                ".npm/**/*",
+                "node_modules/**/*",
+                "amplify/node_modules/**/*"
+            ]
+        }
+    },
+    "environment": {
+        "required": [
+            {
+                "name": "DOMAIN_RESTRICTIONS_ENABLED",
+                "description": "Enable or disable email domain restrictions",
+                "type": "boolean",
+                "default": "true",
+                "example": "true"
+            },
+            {
+                "name": "ALLOWED_DOMAINS",
+                "description": "Comma-separated list of allowed email domains",
+                "type": "string",
+                "default": "@amazon.com",
+                "example": "@company.com,@partner.com"
+            }
+        ],
+        "optional": [
+            {
+                "name": "DOMAIN_RESTRICTION_ERROR_MESSAGE",
+                "description": "Custom error message for domain validation failures",
+                "type": "string",
+                "default": "Registration is restricted to users with approved email domains.",
+                "example": "Registration is limited to company employees."
+            },
+            {
+                "name": "NODE_ENV",
+                "description": "Node.js environment",
+                "type": "string",
+                "default": "production",
+                "example": "production"
+            },
+            {
+                "name": "VITE_APP_REGION",
+                "description": "AWS region for the application",
+                "type": "string",
+                "default": "us-east-1",
+                "example": "us-east-1"
+            }
+        ]
+    },
+    "features": {
+        "authentication": {
+            "provider": "AWS Cognito",
+            "emailVerification": true,
+            "domainRestrictions": true,
+            "configurable": true
+        },
+        "storage": {
+            "images": "AWS S3",
+            "metadata": "AWS DynamoDB",
+            "userIsolation": true
+        },
+        "api": {
+            "imageGeneration": "AWS Lambda + Bedrock",
+            "promptEnhancement": "AWS Lambda + Bedrock",
+            "authentication": "JWT tokens"
+        },
+        "hosting": {
+            "platform": "AWS Amplify",
+            "ssl": true,
+            "cicd": true,
+            "customDomain": "supported"
+        }
+    },
+    "security": {
+        "authentication": "required",
+        "dataIsolation": "user-scoped",
+        "apiSecurity": "JWT validation",
+        "storageAccess": "user-specific folders",
+        "domainRestrictions": "configurable"
+    },
+    "monitoring": {
+        "buildLogs": "AWS Amplify Console",
+        "applicationLogs": "AWS CloudWatch",
+        "lambdaLogs": "AWS CloudWatch",
+        "metrics": "AWS CloudWatch"
+    },
+    "scripts": {
+        "setup": "npm run deploy:setup",
+        "status": "npm run deploy:status",
+        "configureDomains": "npm run config:domains",
+        "sandbox": "npm run amplify:sandbox",
+        "deploy": "npm run amplify:deploy"
+    },
+    "documentation": {
+        "deployment": "DEPLOYMENT_GUIDE.md",
+        "domainConfiguration": "DOMAIN_CONFIGURATION.md",
+        "amplifySetup": "AMPLIFY_SETUP.md"
+    }
+}
