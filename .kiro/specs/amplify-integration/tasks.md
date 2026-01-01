@@ -36,26 +36,26 @@ This implementation plan transforms the existing client-side image generation ap
     - Test successful login and logout flows
     - _Requirements: 1.1, 1.4, 1.6_
 
-- [ ] 3. Set up data models and database
-  - [ ] 3.1 Define DynamoDB schema for ImageMetadata and PersonaData
+- [x] 3. Set up data models and database
+  - [x] 3.1 Define DynamoDB schema for ImageMetadata and PersonaData
     - Create Amplify data models with user isolation (owner-based authorization)
     - Configure proper field types and validation rules
     - _Requirements: 3.1, 3.3, 5.1_
 
-  - [ ] 3.2 Write property test for user-scoped metadata storage
+  - [x] 3.2 Write property test for user-scoped metadata storage
     - **Property 7: User-scoped metadata storage**
     - **Validates: Requirements 3.1, 3.2, 3.5**
 
-  - [ ] 3.3 Write property test for metadata completeness
+  - [x] 3.3 Write property test for metadata completeness
     - **Property 8: Metadata completeness**
     - **Validates: Requirements 3.3**
 
-  - [ ] 3.4 Implement data access layer
+  - [x] 3.4 Implement data access layer
     - Create TypeScript interfaces and API client functions
     - Implement CRUD operations for ImageMetadata and PersonaData
     - _Requirements: 3.2, 5.2, 5.3_
 
-  - [ ] 3.5 Write property tests for data isolation
+  - [x] 3.5 Write property tests for data isolation
     - **Property 14: User-scoped persona storage**
     - **Validates: Requirements 5.1, 5.5**
 

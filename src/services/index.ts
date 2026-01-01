@@ -11,4 +11,13 @@ export type { ServiceConfig } from './PromptEnhancementService';
 export { sqliteService } from './sqliteService';
 export { binaryStorageService } from './BinaryStorageService';
 export type { BinaryStorageService } from './BinaryStorageService';
+export { AmplifyDataService, amplifyDataService } from './AmplifyDataService';
+export type {
+    ImageMetadata as AmplifyImageMetadata,
+    PersonaData as AmplifyPersonaData,
+    CreateImageMetadataInput,
+    CreatePersonaDataInput,
+    UpdateImageMetadataInput,
+    UpdatePersonaDataInput
+} from './AmplifyDataService';
 
