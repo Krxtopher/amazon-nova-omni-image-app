@@ -20,4 +20,6 @@ export type {
     UpdateImageMetadataInput,
     UpdatePersonaDataInput
 } from './AmplifyDataService';
+export { AmplifyS3StorageService, amplifyStorageService } from './AmplifyStorageService';
+export type { AmplifyStorageService } from './AmplifyStorageService';
 

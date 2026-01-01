@@ -59,26 +59,26 @@ This implementation plan transforms the existing client-side image generation ap
     - **Property 14: User-scoped persona storage**
     - **Validates: Requirements 5.1, 5.5**
 
-- [ ] 4. Configure S3 storage with user isolation
-  - [ ] 4.1 Set up Amplify Storage with user-based folder structure
+- [x] 4. Configure S3 storage with user isolation
+  - [x] 4.1 Set up Amplify Storage with user-based folder structure
     - Configure S3 bucket with proper access controls
     - Implement user-specific folder organization (images/{user_id}/*)
     - _Requirements: 4.1, 4.2, 4.5_
 
-  - [ ] 4.2 Write property test for user-segmented S3 storage
+  - [x] 4.2 Write property test for user-segmented S3 storage
     - **Property 10: User-segmented S3 storage**
     - **Validates: Requirements 4.1, 4.2**
 
-  - [ ] 4.3 Implement secure image upload and access
+  - [x] 4.3 Implement secure image upload and access
     - Create functions for uploading images to user-specific S3 folders
     - Implement secure URL generation with time-limited access
     - _Requirements: 4.3_
 
-  - [ ] 4.4 Write property test for secure URL generation
+  - [x] 4.4 Write property test for secure URL generation
     - **Property 11: Secure URL generation**
     - **Validates: Requirements 4.3**
 
-  - [ ] 4.5 Write property test for S3 access control isolation
+  - [x] 4.5 Write property test for S3 access control isolation
     - **Property 13: S3 access control isolation**
     - **Validates: Requirements 4.5**
 
