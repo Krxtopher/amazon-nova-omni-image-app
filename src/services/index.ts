@@ -3,7 +3,7 @@
  */
 
 export { BedrockImageService } from './BedrockImageService';
-export type { BedrockServiceConfig } from './BedrockImageService';
+export { amplifyLambdaService, AmplifyLambdaService } from './AmplifyLambdaService';
 export { StreamingPromptEnhancementService } from './StreamingPromptEnhancementService';
 export type { StreamingServiceConfig } from './StreamingPromptEnhancementService';
 export { PromptEnhancementService } from './PromptEnhancementService';

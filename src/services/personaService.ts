@@ -1,13 +1,13 @@
-import { sqliteService } from './sqliteService';
 import type { CustomPersona, BuiltInPersona, Persona } from '../types';
 import { STANDARD_PERSONAS } from './standardPersonas';
-import { processPromptTemplate } from '../utils/promptTemplating'
+import { processPromptTemplate } from '../utils/promptTemplating';
+import { amplifyDataService } from './AmplifyDataService';
 
 /**
  * Service for managing all personas (built-in and custom) with a unified interface
+ * Now uses Amplify Data (DynamoDB) for cloud storage with user isolation
  */
 class PersonaService {
-    private readonly PERSONAS_KEY = 'customPersonas';
 
     /**
      * Built-in persona definitions from centralized source
@@ -39,21 +39,26 @@ class PersonaService {
     }
 
     /**
-     * Get all custom personas
+     * Get all custom personas from Amplify Data (DynamoDB)
+     * Requirements: 5.1, 5.2 - User-scoped persona storage
      */
     async getCustomPersonas(): Promise<CustomPersona[]> {
         try {
-            const personas = await sqliteService.getSetting(this.PERSONAS_KEY);
-            const rawPersonas = personas ? JSON.parse(personas as string) : [];
+            const personaDataList = await amplifyDataService.listPersonaData();
 
-            // Ensure all custom personas have isEditable: true and proper typing
-            return rawPersonas.map((p: any): CustomPersona => ({
-                ...p,
+            // Convert AmplifyPersonaData to CustomPersona format
+            return personaDataList.map((personaData): CustomPersona => ({
+                id: personaData.id,
+                name: personaData.name,
+                shortDescription: personaData.description || 'Custom persona',
+                personaDescription: personaData.promptTemplate,
+                icon: personaData.icon || 'Palette',
                 isEditable: true,
-                createdAt: new Date(p.createdAt),
-                updatedAt: new Date(p.updatedAt)
+                createdAt: new Date(personaData.createdAt),
+                updatedAt: new Date(personaData.updatedAt)
             }));
         } catch (error) {
+            console.error('Failed to load custom personas from cloud:', error);
             return [];
         }
     }
@@ -67,65 +72,88 @@ class PersonaService {
     }
 
     /**
-     * Create a new custom persona using the template
+     * Create a new custom persona using Amplify Data (DynamoDB)
+     * Requirements: 5.1 - User-scoped persona creation
      */
     async createCustomPersona(name: string, personaDescription: string, description?: string, icon?: string): Promise<CustomPersona> {
-        const personas = await this.getCustomPersonas();
+        try {
+            const personaData = await amplifyDataService.createPersonaData({
+                name: name.trim(),
+                description: description?.trim() || 'Custom persona',
+                icon: icon || 'Palette',
+                promptTemplate: personaDescription,
+                isDefault: false
+            });
 
-        const newPersona: CustomPersona = {
-            id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-            name: name.trim(),
-            shortDescription: description?.trim() || 'Custom persona',
-            personaDescription: personaDescription,
-            icon: icon || 'Palette', // Default to Palette icon if none provided
-            isEditable: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
-
-        personas.push(newPersona);
-        await this.savePersonas(personas);
-
-        return newPersona;
+            // Convert to CustomPersona format
+            return {
+                id: personaData.id,
+                name: personaData.name,
+                shortDescription: personaData.description || 'Custom persona',
+                personaDescription: personaData.promptTemplate,
+                icon: personaData.icon || 'Palette',
+                isEditable: true,
+                createdAt: new Date(personaData.createdAt),
+                updatedAt: new Date(personaData.updatedAt)
+            };
+        } catch (error) {
+            throw new Error(`Failed to create custom persona: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     /**
-     * Update an existing custom persona
+     * Update an existing custom persona using Amplify Data (DynamoDB)
+     * Requirements: 5.3 - Persona modification consistency
      */
     async updateCustomPersona(id: string, updates: Partial<Pick<CustomPersona, 'name' | 'personaDescription' | 'icon'>>): Promise<CustomPersona | null> {
-        const personas = await this.getCustomPersonas();
-        const index = personas.findIndex(p => p.id === id);
+        try {
+            // Prepare updates for Amplify Data format
+            const amplifyUpdates: any = {};
 
-        if (index === -1) {
-            return null;
+            if (updates.name !== undefined) {
+                amplifyUpdates.name = updates.name;
+            }
+            if (updates.personaDescription !== undefined) {
+                amplifyUpdates.promptTemplate = updates.personaDescription;
+            }
+            if (updates.icon !== undefined) {
+                amplifyUpdates.icon = updates.icon;
+            }
+
+            const updatedPersonaData = await amplifyDataService.updatePersonaData(id, amplifyUpdates);
+
+            if (!updatedPersonaData) {
+                return null;
+            }
+
+            // Convert back to CustomPersona format
+            return {
+                id: updatedPersonaData.id,
+                name: updatedPersonaData.name,
+                shortDescription: updatedPersonaData.description || 'Custom persona',
+                personaDescription: updatedPersonaData.promptTemplate,
+                icon: updatedPersonaData.icon || 'Palette',
+                isEditable: true,
+                createdAt: new Date(updatedPersonaData.createdAt),
+                updatedAt: new Date(updatedPersonaData.updatedAt)
+            };
+        } catch (error) {
+            throw new Error(`Failed to update custom persona: ${error instanceof Error ? error.message : String(error)}`);
         }
-
-        const updatedPersona: CustomPersona = {
-            ...personas[index],
-            ...updates,
-            isEditable: true, // Ensure this remains true
-            updatedAt: new Date()
-        };
-
-        personas[index] = updatedPersona;
-        await this.savePersonas(personas);
-
-        return updatedPersona;
     }
 
     /**
-     * Delete a custom persona
+     * Delete a custom persona using Amplify Data (DynamoDB)
+     * Requirements: 5.4 - Persona deletion consistency
      */
     async deleteCustomPersona(id: string): Promise<boolean> {
-        const personas = await this.getCustomPersonas();
-        const filteredPersonas = personas.filter(p => p.id !== id);
-
-        if (filteredPersonas.length === personas.length) {
-            return false; // Persona not found
+        try {
+            const success = await amplifyDataService.deletePersonaData(id);
+            return success;
+        } catch (error) {
+            console.error('Failed to delete custom persona:', error);
+            return false;
         }
-
-        await this.savePersonas(filteredPersonas);
-        return true;
     }
 
     /**
@@ -177,12 +205,6 @@ Additional Requirements:
 - Return only the enhanced prompt with no header or formatting`;
     }
 
-    /**
-     * Save personas to storage
-     */
-    private async savePersonas(personas: CustomPersona[]): Promise<void> {
-        await sqliteService.setSetting(this.PERSONAS_KEY, JSON.stringify(personas));
-    }
 }
 
 export const personaService = new PersonaService();

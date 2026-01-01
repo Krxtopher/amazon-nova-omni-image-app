@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { GeneratedImage, GeneratedText, GalleryItem } from '../types';
 import { sqliteService } from '../services/sqliteService';
-import { binaryStorageService } from '../services/BinaryStorageService';
+import { amplifyStorageService } from '../services/AmplifyStorageService';
 import { storageLogger } from '../utils/StorageLogger';
 
 /**
@@ -221,27 +221,31 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Load image data on demand from IndexedDB
-     * Requirements: 4.2 - On-demand binary loading
+     * Load image data on demand from Amplify S3 storage
+     * Returns a secure, time-limited URL for the image
+     * Requirements: 4.2 - On-demand secure URL generation, 4.3 - Time-limited access
      */
     loadImageData: async (id: string): Promise<string | null> => {
-        // Loading image data
-        const overallTimer = storageLogger.startOperation('loadImageData', 'indexeddb', { imageId: id });
+        const overallTimer = storageLogger.startOperation('loadImageData', 's3', { imageId: id });
         const startTime = performance.now();
 
         try {
-            const imageData = await binaryStorageService.getImageData(id);
-            const totalDuration = performance.now() - startTime;
+            // Get image metadata to find S3 key
+            const currentState = useImageStore.getState();
+            const image = currentState.images.find(img => img.id === id);
 
-            if (imageData) {
-                // Image data retrieved successfully
-                overallTimer.success(imageData.length, { totalDuration });
-                return imageData;
-            } else {
-                // No image data found
-                overallTimer.success(0, { found: false, totalDuration });
+            if (!image || !image.s3Key) {
+                // No S3 key found for this image
+                overallTimer.success(0, { found: false, totalDuration: performance.now() - startTime });
                 return null;
             }
+
+            // Generate secure URL from S3
+            const secureUrl = await amplifyStorageService.getSecureImageUrl(image.s3Key, 60); // 60 minute expiration
+            const totalDuration = performance.now() - startTime;
+
+            overallTimer.success(secureUrl.length, { totalDuration, s3Key: image.s3Key });
+            return secureUrl;
         } catch (error) {
             overallTimer.error(error instanceof Error ? error : new Error(String(error)));
             return null;
@@ -270,8 +274,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Add a new image to the gallery with database persistence
      * Used only when image generation completes successfully
      * UI update is immediate, database persistence happens asynchronously
-     * Coordinates storage between SQLite (metadata) and IndexedDB (binary data)
-     * Requirements: 2.1, 3.3, 1.1, 1.2, 5.2
+     * Coordinates storage between SQLite (metadata) and S3 (image files)
+     * Requirements: 2.1, 3.3, 1.1, 1.2, 5.2, 4.1, 4.2
      */
     addImage: async (image: GeneratedImage) => {
         const timer = storageLogger.startOperation('addImage', 'sqlite', { imageId: image.id });
@@ -300,26 +304,30 @@ export const useImageStore = create<ImageStore>()((set) => ({
             }
         });
 
-        // Coordinate storage between SQLite (metadata) and IndexedDB (binary data)
+        // Coordinate storage between SQLite (metadata) and S3 (image files)
         // Requirements: 5.2 - Route operations to appropriate storage mechanisms
         try {
-            // Split the image data for coordinated storage
-            const { url, ...metadata } = image;
+            let s3Key: string | undefined;
 
-            // Store metadata in SQLite (without binary data)
-            await sqliteService.addImage({
-                ...metadata,
-                url: undefined, // No binary data in SQLite
-                hasBinaryData: Boolean(url),
-                binaryDataSize: url ? url.length : 0
-            });
+            // Upload image to S3 if URL is provided
+            if (image.url) {
+                // Generate unique filename
+                const fileName = amplifyStorageService.generateFileName('png');
 
-            // Store binary data in IndexedDB if present
-            if (url) {
-                await binaryStorageService.storeImageDataWithQuotaManagement(image.id, url);
+                // Upload to S3 and get the S3 key
+                s3Key = await amplifyStorageService.uploadImageFromDataUrl(image.url, fileName);
             }
 
-            timer.success(url?.length, { hasBinaryData: Boolean(url) });
+            // Store metadata in SQLite (with S3 key instead of binary data)
+            await sqliteService.addImage({
+                ...image,
+                url: undefined, // No binary data in SQLite
+                s3Key, // Store S3 key for later retrieval
+                hasBinaryData: Boolean(s3Key),
+                binaryDataSize: image.url ? image.url.length : 0
+            });
+
+            timer.success(image.url?.length, { hasBinaryData: Boolean(s3Key), s3Key });
         } catch (error) {
             timer.error(error instanceof Error ? error : new Error(String(error)));
 
@@ -335,7 +343,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
             try {
                 await Promise.allSettled([
                     sqliteService.deleteImage(image.id),
-                    binaryStorageService.deleteImageData(image.id)
+                    // If S3 upload succeeded but SQLite failed, clean up S3
+                    ...(s3Key ? [amplifyStorageService.deleteImage(s3Key)] : [])
                 ]);
             } catch (cleanupError) {
                 // Silently handle cleanup errors
@@ -371,7 +380,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
      * Update an existing image by ID
      * Used to update status, URL, or error information
      * UI update is immediate, database persistence happens asynchronously
-     * Coordinates updates between SQLite (metadata) and IndexedDB (binary data)
+     * Coordinates updates between SQLite (metadata) and S3 (image files)
      * Special handling: When status becomes 'complete', triggers database write for placeholders
      * Requirements: 1.4, 1.5, 4.4, 5.2, 5.3
      */
@@ -436,36 +445,60 @@ export const useImageStore = create<ImageStore>()((set) => ({
         }
 
         // For non-completion updates or already-complete images, handle normally
-        // Coordinate updates between SQLite (metadata) and IndexedDB (binary data)
+        // Coordinate updates between SQLite (metadata) and S3 (image files)
         // Requirements: 5.2 - Route operations to appropriate storage mechanisms
         try {
             // Only update database if the image is already complete (has been written to database)
             if (currentImage?.status === 'complete') {
                 const { url, ...metadataUpdates } = updates;
+                let newS3Key: string | undefined;
 
-                // Update metadata in SQLite (without binary data)
+                // Handle URL updates by uploading to S3
+                if ('url' in updates && url) {
+                    // Generate unique filename and upload to S3
+                    const fileName = amplifyStorageService.generateFileName('png');
+                    newS3Key = await amplifyStorageService.uploadImageFromDataUrl(url, fileName);
+
+                    // Delete old S3 object if it exists
+                    if (currentImage.s3Key) {
+                        try {
+                            await amplifyStorageService.deleteImage(currentImage.s3Key);
+                        } catch (deleteError) {
+                            // Log but don't fail the update if old image deletion fails
+                            console.warn('Failed to delete old S3 image:', deleteError);
+                        }
+                    }
+                }
+
+                // Update metadata in SQLite
                 const sqliteUpdates: any = { ...metadataUpdates };
 
-                // Add binary data tracking fields if URL is being updated
+                // Add S3 key and binary data tracking fields if URL is being updated
                 if ('url' in updates) {
-                    sqliteUpdates.hasBinaryData = Boolean(url);
-                    sqliteUpdates.binaryDataSize = url ? url.length : 0;
+                    if (newS3Key) {
+                        sqliteUpdates.s3Key = newS3Key;
+                        sqliteUpdates.hasBinaryData = true;
+                        sqliteUpdates.binaryDataSize = url ? url.length : 0;
+                    } else if (!url) {
+                        // URL is being cleared
+                        sqliteUpdates.s3Key = null;
+                        sqliteUpdates.hasBinaryData = false;
+                        sqliteUpdates.binaryDataSize = 0;
+
+                        // Delete from S3 if there was an existing S3 key
+                        if (currentImage.s3Key) {
+                            try {
+                                await amplifyStorageService.deleteImage(currentImage.s3Key);
+                            } catch (deleteError) {
+                                console.warn('Failed to delete S3 image:', deleteError);
+                            }
+                        }
+                    }
                 }
 
                 // Only call SQLite if there are updates to make
                 if (Object.keys(sqliteUpdates).length > 0) {
                     await sqliteService.updateImage(id, sqliteUpdates);
-                }
-
-                // Update binary data in IndexedDB if URL is being updated
-                if ('url' in updates) {
-                    if (url) {
-                        // Store new binary data
-                        await binaryStorageService.storeImageDataWithQuotaManagement(id, url);
-                    } else {
-                        // Remove binary data if URL is being set to null/undefined
-                        await binaryStorageService.deleteImageData(id);
-                    }
                 }
             }
             // For placeholder images (status !== 'complete'), skip database operations
@@ -481,10 +514,14 @@ export const useImageStore = create<ImageStore>()((set) => ({
     /**
      * Delete an image from the gallery by ID
      * UI update is immediate, database persistence happens asynchronously
-     * Coordinates cleanup between SQLite (metadata) and IndexedDB (binary data)
+     * Coordinates cleanup between SQLite (metadata) and S3 (image files)
      * Requirements: 4.2, 4.4, 5.2, 5.3
      */
     deleteImage: async (id: string) => {
+        // Get current image to find S3 key before deletion
+        const currentState = useImageStore.getState();
+        const imageToDelete = currentState.images.find(img => img.id === id);
+
         // Update UI immediately for responsive feel
         set((state) => {
             const filteredImages = state.images.filter((img) => img.id !== id);
@@ -496,22 +533,33 @@ export const useImageStore = create<ImageStore>()((set) => ({
             };
         });
 
-        // Coordinate cleanup between SQLite (metadata) and IndexedDB (binary data)
+        // Coordinate cleanup between SQLite (metadata) and S3 (image files)
         // Requirements: 4.4, 5.2 - Ensure cleanup of both storage mechanisms for deletions
         try {
-            await Promise.allSettled([
-                sqliteService.deleteImage(id),
-                binaryStorageService.deleteImageData(id)
-            ]);
+            const cleanupPromises = [
+                sqliteService.deleteImage(id)
+            ];
+
+            // Add S3 deletion if there's an S3 key
+            if (imageToDelete?.s3Key) {
+                cleanupPromises.push(amplifyStorageService.deleteImage(imageToDelete.s3Key));
+            }
+
+            await Promise.allSettled(cleanupPromises);
         } catch (error) {
             // Requirements: 5.3 - Error handling for partial operation failures
             // For deletions, we don't rollback UI changes since the user intended to delete
             // But we should attempt cleanup of any remaining data
             try {
-                await Promise.allSettled([
-                    sqliteService.deleteImage(id),
-                    binaryStorageService.deleteImageData(id)
-                ]);
+                const retryPromises = [
+                    sqliteService.deleteImage(id)
+                ];
+
+                if (imageToDelete?.s3Key) {
+                    retryPromises.push(amplifyStorageService.deleteImage(imageToDelete.s3Key));
+                }
+
+                await Promise.allSettled(retryPromises);
             } catch (retryError) {
                 // Silently handle retry errors
             }

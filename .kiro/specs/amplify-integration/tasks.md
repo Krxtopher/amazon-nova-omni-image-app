@@ -110,23 +110,23 @@ This implementation plan transforms the existing client-side image generation ap
     - Test that unauthenticated requests are properly rejected
     - _Requirements: 2.5_
 
-- [ ] 6. Update existing services to use Amplify backend
-  - [ ] 6.1 Modify BedrockImageService to use Lambda APIs
+- [x] 6. Update existing services to use Amplify backend
+  - [x] 6.1 Modify BedrockImageService to use Lambda APIs
     - Replace direct Bedrock calls with Lambda function invocations
     - Update error handling for new API structure
     - _Requirements: 2.1, 2.4_
 
-  - [ ] 6.2 Update image storage to use Amplify S3
+  - [x] 6.2 Update image storage to use Amplify S3
     - Modify image upload/download logic to use Amplify Storage APIs
     - Implement proper user-scoped file organization
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 6.3 Update persona management to use cloud storage
+  - [x] 6.3 Update persona management to use cloud storage
     - Modify PersonaService to save/load from DynamoDB via Amplify Data
     - Migrate existing persona logic to cloud-based storage
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 6.4 Write property tests for persona management
+  - [x] 6.4 Write property tests for persona management
     - **Property 15: Persona update consistency**
     - **Property 16: Persona deletion consistency**
     - **Validates: Requirements 5.3, 5.4**

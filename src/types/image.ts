@@ -57,8 +57,9 @@ export interface ImageMetadata {
     error?: string;
     converseParams?: ConverseRequestParams; // Original API request parameters for image generation
     promptEnhanceParams?: ConverseRequestParams; // API request parameters for prompt enhancement
-    hasBinaryData?: boolean; // Tracks if binary data exists in IndexedDB
+    hasBinaryData?: boolean; // Tracks if binary data exists in storage
     binaryDataSize?: number; // Size of binary data in bytes
+    s3Key?: string; // S3 key for Amplify Storage (replaces IndexedDB storage)
     fullResponse?: import('@aws-sdk/client-bedrock-runtime').ConverseCommandOutput; // Full Bedrock response for debugging (error cases only)
 }
 
