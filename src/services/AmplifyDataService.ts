@@ -1,8 +1,15 @@
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 
-// Generate the Amplify Data client
-const client = generateClient<Schema>();
+// Lazy client generation to avoid calling before Amplify is configured
+let client: ReturnType<typeof generateClient<Schema>> | null = null;
+
+function getClient() {
+    if (!client) {
+        client = generateClient<Schema>();
+    }
+    return client;
+}
 
 /**
  * ImageMetadata interface matching the Amplify schema
@@ -88,7 +95,7 @@ export class AmplifyDataService {
      */
     async createImageMetadata(input: CreateImageMetadataInput): Promise<ImageMetadata> {
         try {
-            const result = await client.models.ImageMetadata.create({
+            const result = await getClient().models.ImageMetadata.create({
                 userId: '', // This will be automatically set by Amplify owner authorization
                 prompt: input.prompt,
                 enhancedPrompt: input.enhancedPrompt || null,
@@ -116,7 +123,7 @@ export class AmplifyDataService {
      */
     async getImageMetadata(id: string): Promise<ImageMetadata | null> {
         try {
-            const result = await client.models.ImageMetadata.get({ id });
+            const result = await getClient().models.ImageMetadata.get({ id });
             return result.data as ImageMetadata | null;
         } catch (error) {
             console.error('Error getting image metadata:', error);
@@ -130,7 +137,7 @@ export class AmplifyDataService {
      */
     async listImageMetadata(): Promise<ImageMetadata[]> {
         try {
-            const result = await client.models.ImageMetadata.list();
+            const result = await getClient().models.ImageMetadata.list();
             return (result.data || []) as ImageMetadata[];
         } catch (error) {
             console.error('Error listing image metadata:', error);
@@ -156,7 +163,7 @@ export class AmplifyDataService {
             if (input.s3Key !== undefined) updateData.s3Key = input.s3Key;
             if (input.s3Url !== undefined) updateData.s3Url = input.s3Url;
 
-            const result = await client.models.ImageMetadata.update(updateData);
+            const result = await getClient().models.ImageMetadata.update(updateData);
 
             if (!result.data) {
                 throw new Error('Failed to update image metadata');
@@ -175,7 +182,7 @@ export class AmplifyDataService {
      */
     async deleteImageMetadata(id: string): Promise<void> {
         try {
-            const result = await client.models.ImageMetadata.delete({ id });
+            const result = await getClient().models.ImageMetadata.delete({ id });
 
             if (!result.data) {
                 throw new Error('Failed to delete image metadata');
@@ -194,7 +201,7 @@ export class AmplifyDataService {
      */
     async createPersonaData(input: CreatePersonaDataInput): Promise<PersonaData> {
         try {
-            const result = await client.models.PersonaData.create({
+            const result = await getClient().models.PersonaData.create({
                 userId: '', // This will be automatically set by Amplify owner authorization
                 name: input.name,
                 description: input.description || null,
@@ -222,7 +229,7 @@ export class AmplifyDataService {
      */
     async getPersonaData(id: string): Promise<PersonaData | null> {
         try {
-            const result = await client.models.PersonaData.get({ id });
+            const result = await getClient().models.PersonaData.get({ id });
             return result.data as PersonaData | null;
         } catch (error) {
             console.error('Error getting persona data:', error);
@@ -236,7 +243,7 @@ export class AmplifyDataService {
      */
     async listPersonaData(): Promise<PersonaData[]> {
         try {
-            const result = await client.models.PersonaData.list();
+            const result = await getClient().models.PersonaData.list();
             return (result.data || []) as PersonaData[];
         } catch (error) {
             console.error('Error listing persona data:', error);
@@ -262,7 +269,7 @@ export class AmplifyDataService {
             if (input.promptTemplate !== undefined) updateData.promptTemplate = input.promptTemplate;
             if (input.isDefault !== undefined) updateData.isDefault = input.isDefault;
 
-            const result = await client.models.PersonaData.update(updateData);
+            const result = await getClient().models.PersonaData.update(updateData);
 
             if (!result.data) {
                 throw new Error('Failed to update persona data');
@@ -281,7 +288,7 @@ export class AmplifyDataService {
      */
     async deletePersonaData(id: string): Promise<void> {
         try {
-            const result = await client.models.PersonaData.delete({ id });
+            const result = await getClient().models.PersonaData.delete({ id });
 
             if (!result.data) {
                 throw new Error('Failed to delete persona data');

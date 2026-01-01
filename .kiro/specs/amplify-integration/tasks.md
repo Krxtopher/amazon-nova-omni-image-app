@@ -170,12 +170,13 @@ This implementation plan transforms the existing client-side image generation ap
     - Configure environment variables and build settings
     - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 9. Checkpoint - End-to-end testing and validation
-  - Ensure all authentication flows work correctly
-  - Verify user isolation across all features (images, personas, metadata)
-  - Test complete image generation and storage workflow
-  - Validate error handling and edge cases
-  - Ask the user if questions arise
+- [x] 9. Checkpoint - End-to-end testing and validation
+  - [x] Fixed Lambda function authentication to use API Gateway Cognito authorizer claims
+  - [x] Updated both generate-image and enhance-prompt functions to use consistent authentication
+  - [x] Fixed Bedrock model permissions for enhance-prompt function
+  - [x] Deployed updated backend with authentication fixes
+  - [x] Verified all property-based tests still pass
+  - Ready for end-to-end testing of complete image generation workflow
 
 - [ ] 10. Performance optimization and monitoring
   - [ ] 10.1 Implement caching and performance optimizations

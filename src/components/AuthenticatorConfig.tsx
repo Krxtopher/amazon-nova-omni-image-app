@@ -1,6 +1,4 @@
-import { Theme } from '@aws-amplify/ui-react';
-
-export const authenticatorTheme: Theme = {
+export const authenticatorTheme = {
     name: 'image-generator-theme',
     tokens: {
         colors: {

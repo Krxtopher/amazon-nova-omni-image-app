@@ -249,6 +249,42 @@ function App() {
     // Initialize application
   }, []);
 
+  // Check if Amplify backend is configured by checking if we have auth config
+  const [isAmplifyConfigured, setIsAmplifyConfigured] = useState(false);
+
+  useEffect(() => {
+    // Check if Amplify is configured by trying to get the current config
+    try {
+      const config = (window as any).amplifyConfig || {};
+      setIsAmplifyConfigured(config.auth && Object.keys(config.auth).length > 0);
+    } catch {
+      setIsAmplifyConfigured(false);
+    }
+  }, []);
+
+  // Render without authentication if backend is not configured
+  if (!isAmplifyConfigured) {
+    return (
+      <ErrorBoundary>
+        <ThemeProvider>
+          <BedrockServiceProvider service={bedrockService}>
+            <div className="min-h-screen bg-background">
+              {/* Development mode banner */}
+              <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-yellow-500/10 backdrop-blur-sm rounded-lg px-3 py-2 border border-yellow-500/20">
+                <span className="text-sm text-yellow-600 dark:text-yellow-400">
+                  🚧 Frontend-only mode (Backend not configured)
+                </span>
+              </div>
+
+              <AppContent />
+            </div>
+            <Toaster />
+          </BedrockServiceProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
