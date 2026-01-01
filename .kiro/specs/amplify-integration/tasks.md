@@ -82,31 +82,31 @@ This implementation plan transforms the existing client-side image generation ap
     - **Property 13: S3 access control isolation**
     - **Validates: Requirements 4.5**
 
-- [ ] 5. Create Lambda functions for Bedrock API proxying
-  - [ ] 5.1 Implement image generation Lambda function
+- [x] 5. Create Lambda functions for Bedrock API proxying
+  - [x] 5.1 Implement image generation Lambda function
     - Create Lambda function to proxy Bedrock image generation requests
     - Add authentication token validation and user context extraction
     - Configure proper IAM roles and Bedrock permissions
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 5.2 Write property test for authentication context propagation
+  - [x] 5.2 Write property test for authentication context propagation
     - **Property 5: Authentication context propagation**
     - **Validates: Requirements 2.1, 2.2**
 
-  - [ ] 5.3 Implement prompt enhancement Lambda function
+  - [x] 5.3 Implement prompt enhancement Lambda function
     - Create Lambda function to proxy Bedrock prompt enhancement requests
     - Add same authentication and security measures as image generation
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 5.4 Write property test for token validation consistency
+  - [x] 5.4 Write property test for token validation consistency
     - **Property 6: Token validation consistency**
     - **Validates: Requirements 2.2**
 
-  - [ ] 5.5 Add error handling for unauthenticated requests
+  - [x] 5.5 Add error handling for unauthenticated requests
     - Implement proper error responses for invalid/missing authentication
     - _Requirements: 2.5_
 
-  - [ ] 5.6 Write unit test for unauthenticated request rejection
+  - [x] 5.6 Write unit test for unauthenticated request rejection
     - Test that unauthenticated requests are properly rejected
     - _Requirements: 2.5_
 

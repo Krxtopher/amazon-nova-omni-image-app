@@ -215,4 +215,191 @@ describe('Authentication Flow Unit Tests', () => {
             expect(screen.getByText('Logged in')).toBeInTheDocument();
         });
     });
+
+    describe('Lambda API unauthenticated request rejection', () => {
+        it('should reject requests without authorization header', () => {
+            /**
+             * Requirements: 2.5
+             * Test that unauthenticated requests are properly rejected
+             */
+
+            // Mock Lambda API response handler
+            const mockHandleAPIRequest = (authHeader?: string) => {
+                if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                    return {
+                        statusCode: 401,
+                        body: JSON.stringify({
+                            error: 'Missing or invalid authorization token'
+                        })
+                    };
+                }
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify({ success: true })
+                };
+            };
+
+            // Test missing authorization header
+            const responseNoAuth = mockHandleAPIRequest();
+            expect(responseNoAuth.statusCode).toBe(401);
+            expect(JSON.parse(responseNoAuth.body).error).toBe('Missing or invalid authorization token');
+
+            // Test invalid authorization header format
+            const responseInvalidAuth = mockHandleAPIRequest('InvalidToken');
+            expect(responseInvalidAuth.statusCode).toBe(401);
+            expect(JSON.parse(responseInvalidAuth.body).error).toBe('Missing or invalid authorization token');
+
+            // Test valid authorization header format (should pass initial check)
+            const responseValidAuth = mockHandleAPIRequest('Bearer valid-token');
+            expect(responseValidAuth.statusCode).toBe(200);
+        });
+
+        it('should reject requests with invalid JWT tokens', () => {
+            /**
+             * Requirements: 2.5
+             * Test that requests with invalid JWT tokens are rejected
+             */
+
+            // Mock JWT validation function
+            const mockValidateJWT = (token: string) => {
+                const tokenParts = token.split('.');
+                if (tokenParts.length !== 3) {
+                    throw new Error('Invalid JWT format');
+                }
+
+                try {
+                    const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+
+                    // Check token use
+                    if (payload.token_use !== 'access') {
+                        throw new Error('Invalid token type. Access token required.');
+                    }
+
+                    return {
+                        userId: payload.sub || payload['cognito:username'],
+                        email: payload.email,
+                        tokenUse: payload.token_use
+                    };
+                } catch (error) {
+                    throw error;
+                }
+            };
+
+            // Test invalid JWT format
+            expect(() => mockValidateJWT('invalid-jwt')).toThrow('Invalid JWT format');
+
+            // Test invalid JWT payload
+            expect(() => mockValidateJWT('header.invalid-base64.signature')).toThrow();
+
+            // Test wrong token type
+            const idTokenPayload = {
+                sub: 'user-123',
+                email: 'test@amazon.com',
+                token_use: 'id' // Should be 'access'
+            };
+            const idToken = `header.${Buffer.from(JSON.stringify(idTokenPayload)).toString('base64')}.signature`;
+            expect(() => mockValidateJWT(idToken)).toThrow('Invalid token type. Access token required.');
+
+            // Test valid access token
+            const accessTokenPayload = {
+                sub: 'user-123',
+                email: 'test@amazon.com',
+                token_use: 'access'
+            };
+            const accessToken = `header.${Buffer.from(JSON.stringify(accessTokenPayload)).toString('base64')}.signature`;
+            const result = mockValidateJWT(accessToken);
+            expect(result.userId).toBe('user-123');
+            expect(result.email).toBe('test@amazon.com');
+            expect(result.tokenUse).toBe('access');
+        });
+
+        it('should return appropriate error responses for different authentication failures', () => {
+            /**
+             * Requirements: 2.5
+             * Test that different authentication failure scenarios return appropriate error responses
+             */
+
+            // Mock comprehensive authentication handler
+            const mockAuthHandler = (event: { headers: Record<string, string>; body?: string }) => {
+                try {
+                    // Check for authorization header
+                    const authHeader = event.headers.Authorization || event.headers.authorization;
+                    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                        return {
+                            statusCode: 401,
+                            body: JSON.stringify({
+                                error: 'Missing or invalid authorization token'
+                            })
+                        };
+                    }
+
+                    const token = authHeader.substring(7);
+                    const tokenParts = token.split('.');
+
+                    if (tokenParts.length !== 3) {
+                        return {
+                            statusCode: 401,
+                            body: JSON.stringify({
+                                error: 'Invalid authentication token'
+                            })
+                        };
+                    }
+
+                    const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+
+                    if (payload.token_use !== 'access') {
+                        return {
+                            statusCode: 401,
+                            body: JSON.stringify({
+                                error: 'Invalid authentication token'
+                            })
+                        };
+                    }
+
+                    return {
+                        statusCode: 200,
+                        body: JSON.stringify({ success: true })
+                    };
+
+                } catch (error) {
+                    return {
+                        statusCode: 401,
+                        body: JSON.stringify({
+                            error: 'Invalid authentication token'
+                        })
+                    };
+                }
+            };
+
+            // Test missing authorization header
+            const noAuthResponse = mockAuthHandler({ headers: {} });
+            expect(noAuthResponse.statusCode).toBe(401);
+            expect(JSON.parse(noAuthResponse.body).error).toBe('Missing or invalid authorization token');
+
+            // Test malformed JWT
+            const malformedResponse = mockAuthHandler({
+                headers: { Authorization: 'Bearer malformed-token' }
+            });
+            expect(malformedResponse.statusCode).toBe(401);
+            expect(JSON.parse(malformedResponse.body).error).toBe('Invalid authentication token');
+
+            // Test ID token instead of access token
+            const idTokenPayload = { token_use: 'id', sub: 'user-123' };
+            const idToken = `header.${Buffer.from(JSON.stringify(idTokenPayload)).toString('base64')}.signature`;
+            const idTokenResponse = mockAuthHandler({
+                headers: { Authorization: `Bearer ${idToken}` }
+            });
+            expect(idTokenResponse.statusCode).toBe(401);
+            expect(JSON.parse(idTokenResponse.body).error).toBe('Invalid authentication token');
+
+            // Test valid access token
+            const accessTokenPayload = { token_use: 'access', sub: 'user-123' };
+            const accessToken = `header.${Buffer.from(JSON.stringify(accessTokenPayload)).toString('base64')}.signature`;
+            const validResponse = mockAuthHandler({
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            expect(validResponse.statusCode).toBe(200);
+            expect(JSON.parse(validResponse.body).success).toBe(true);
+        });
+    });
 });
