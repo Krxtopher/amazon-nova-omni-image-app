@@ -1,4 +1,5 @@
 import { defineAuth } from '@aws-amplify/backend';
+import { emailDomainValidator } from '../functions/email-domain-validator/resource';
 
 /**
  * Define and configure the authentication resource
@@ -17,4 +18,7 @@ export const auth = defineAuth({
         },
     },
     accountRecovery: "EMAIL_ONLY",
+    triggers: {
+        preSignUp: emailDomainValidator,
+    },
 });

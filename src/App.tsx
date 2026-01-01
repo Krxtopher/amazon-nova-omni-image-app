@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Authenticator, ThemeProvider as AmplifyThemeProvider } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
+import { authenticatorTheme, authenticatorFormFields, authenticatorComponents } from '@/components/AuthenticatorConfig';
 import { PromptInputArea, GeneratingStatus, Sidebar } from '@/components';
 import { SimpleVirtualizedGallery } from '@/components/SimpleVirtualizedGallery';
 import { Lightbox } from '@/components/Lightbox';
@@ -237,7 +240,7 @@ function AppContent() {
 /**
  * Main App component
  * Sets up the application with all necessary providers and error boundaries
- * Requirements: 9.4, 9.5
+ * Requirements: 9.4, 9.5, 1.1, 1.4, 1.6
  */
 function App() {
   const bedrockService = createBedrockService();
@@ -249,10 +252,34 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <BedrockServiceProvider service={bedrockService}>
-          <AppContent />
-          <Toaster />
-        </BedrockServiceProvider>
+        <AmplifyThemeProvider theme={authenticatorTheme}>
+          <Authenticator
+            formFields={authenticatorFormFields}
+            components={authenticatorComponents}
+          >
+            {({ signOut, user }) => (
+              <BedrockServiceProvider service={bedrockService}>
+                <div className="min-h-screen bg-background">
+                  {/* User info and sign out button */}
+                  <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 border">
+                    <span className="text-sm text-muted-foreground">
+                      Welcome, {user?.signInDetails?.loginId}
+                    </span>
+                    <button
+                      onClick={signOut}
+                      className="text-sm text-destructive hover:text-destructive/80 transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+
+                  <AppContent />
+                </div>
+                <Toaster />
+              </BedrockServiceProvider>
+            )}
+          </Authenticator>
+        </AmplifyThemeProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

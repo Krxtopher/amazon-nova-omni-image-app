@@ -1,0 +1,101 @@
+import { Theme } from '@aws-amplify/ui-react';
+
+export const authenticatorTheme: Theme = {
+    name: 'image-generator-theme',
+    tokens: {
+        colors: {
+            brand: {
+                primary: {
+                    10: 'hsl(var(--primary))',
+                    80: 'hsl(var(--primary))',
+                    90: 'hsl(var(--primary))',
+                    100: 'hsl(var(--primary))',
+                },
+            },
+            background: {
+                primary: 'hsl(var(--background))',
+                secondary: 'hsl(var(--muted))',
+            },
+            font: {
+                primary: 'hsl(var(--foreground))',
+                secondary: 'hsl(var(--muted-foreground))',
+            },
+            border: {
+                primary: 'hsl(var(--border))',
+            },
+        },
+        components: {
+            authenticator: {
+                router: {
+                    boxShadow: 'none',
+                    borderWidth: '1px',
+                    borderColor: 'hsl(var(--border))',
+                    borderRadius: 'var(--radius)',
+                },
+            },
+            button: {
+                primary: {
+                    backgroundColor: 'hsl(var(--primary))',
+                    color: 'hsl(var(--primary-foreground))',
+                    _hover: {
+                        backgroundColor: 'hsl(var(--primary)/0.9)',
+                    },
+                },
+            },
+            fieldcontrol: {
+                borderColor: 'hsl(var(--border))',
+                _focus: {
+                    borderColor: 'hsl(var(--primary))',
+                },
+            },
+        },
+    },
+};
+
+export const authenticatorFormFields = {
+    signUp: {
+        email: {
+            order: 1,
+            placeholder: 'Enter your Amazon email address',
+            label: 'Email Address',
+            required: true,
+        },
+        password: {
+            order: 2,
+            placeholder: 'Enter your password',
+            label: 'Password',
+            required: true,
+        },
+        confirm_password: {
+            order: 3,
+            placeholder: 'Confirm your password',
+            label: 'Confirm Password',
+            required: true,
+        },
+    },
+};
+
+export const authenticatorComponents = {
+    Header() {
+        return (
+            <div className="text-center mb-6">
+                <h1 className="text-2xl font-bold text-foreground mb-2">
+                    Image Generator
+                </h1>
+                <p className="text-muted-foreground">
+                    Sign in with your Amazon email address
+                </p>
+            </div>
+        );
+    },
+
+    Footer() {
+        return (
+            <div className="text-center mt-6">
+                <p className="text-sm text-muted-foreground">
+                    Access is restricted to Amazon email addresses
+                </p>
+            </div>
+        );
+    },
+};
