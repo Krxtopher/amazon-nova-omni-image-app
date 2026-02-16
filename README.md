@@ -1,6 +1,6 @@
 # AI Image Generator
 
-An AI-powered image generation and editing application built with React, TypeScript, and Amazon Bedrock's Nova Canvas model. Features include prompt enhancement with streaming responses, persona-based generation, SQLite-based persistence, and advanced UI effects.
+An AI-powered image generation and editing application built with React, TypeScript, and Amazon Bedrock's Nova 2 Omni model. Features include prompt enhancement with streaming responses, persona-based generation, SQLite-based persistence, and advanced UI effects.
 
 ## Tech Stack
 
@@ -16,7 +16,7 @@ An AI-powered image generation and editing application built with React, TypeScr
 
 ## Key Features
 
-- Generate images from text prompts using Amazon Bedrock Nova Canvas
+- Generate images from text prompts using Amazon Bedrock Nova 2 Omni
 - Prompt enhancement with streaming responses using Nova models
 - Persona-based image generation with custom and standard personas
 - Edit existing images with new prompts
@@ -25,9 +25,7 @@ An AI-powered image generation and editing application built with React, TypeScr
 - Aspect ratio selection (1:1, 16:9, 9:16, 21:9, 9:21)
 - SQLite-based storage with binary data in IndexedDB
 - Request throttling with configurable rate limits
-- Real-time generation status and timer
 - Lightbox view for full-size images
-- Dark/light theme support
 - Magical loading effects with WebGL shaders
 
 ## Developer Setup
@@ -36,7 +34,7 @@ An AI-powered image generation and editing application built with React, TypeScr
 
 - Node.js 18+ and npm
 - AWS Account with access to Amazon Bedrock
-- AWS credentials with permissions to invoke Bedrock models (Nova Canvas, Nova models)
+- AWS credentials with permissions to invoke Bedrock models (Nova 2 Omni, Nova 2 Lite)
 
 ### Installation
 
@@ -55,7 +53,7 @@ cp .env.example .env
 VITE_AWS_REGION=us-east-1
 VITE_AWS_ACCESS_KEY_ID=your_access_key_here
 VITE_AWS_SECRET_ACCESS_KEY=your_secret_key_here
-VITE_USE_STREAMING_ENHANCEMENT=true
+VITE_USE_STREAMING_ENHANCEMENT=false
 ```
 
 **Security Note**: For production applications, use AWS Cognito Identity Pool or AWS Amplify instead of hardcoded credentials. See `src/App.tsx` for implementation guidance.
