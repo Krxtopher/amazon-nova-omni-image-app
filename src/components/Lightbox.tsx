@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { useImageStore } from '../stores/imageStore';
 import { useImageData } from '../hooks/useImageData';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { downloadImage } from '../utils/downloadImage';
 
 /**
  * Lightbox component for displaying images in fullscreen with details
@@ -93,7 +94,7 @@ export function Lightbox() {
         }
     }, [displayUrl, isLoadingImage]);
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         if (!displayUrl || !image) return;
 
         // Detect file extension from image format
@@ -108,13 +109,8 @@ export function Lightbox() {
 
         const baseFilename = `image-${image.id}`;
 
-        // Download the image
-        const imageLink = document.createElement('a');
-        imageLink.href = displayUrl;
-        imageLink.download = `${baseFilename}.${extension}`;
-        document.body.appendChild(imageLink);
-        imageLink.click();
-        document.body.removeChild(imageLink);
+        // Download the image as blob to avoid cross-origin issues with S3 presigned URLs
+        await downloadImage(displayUrl, `${baseFilename}.${extension}`);
 
         // Download the JSON file with Converse API parameters if available
         if (image.converseParams) {

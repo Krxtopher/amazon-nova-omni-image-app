@@ -14,6 +14,7 @@ import { DebugCounter } from '@/components/DebugCounter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { BedrockServiceProvider, useBedrockService } from '@/contexts/BedrockServiceContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { BedrockImageService } from '@/services/BedrockImageService';
 import { useImageStore } from '@/stores/imageStore';
 import { useEditSourceStore, useUIStore } from '@/stores/uiStore';
@@ -294,25 +295,14 @@ function App() {
             components={authenticatorComponents}
           >
             {({ signOut, user }) => (
+              <AuthProvider value={{ signOut, userEmail: user?.signInDetails?.loginId }}>
               <BedrockServiceProvider service={bedrockService}>
                 <div className="min-h-screen bg-background">
-                  {/* User info and sign out button */}
-                  <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 border">
-                    <span className="text-sm text-muted-foreground">
-                      Welcome, {user?.signInDetails?.loginId}
-                    </span>
-                    <button
-                      onClick={signOut}
-                      className="text-sm text-destructive hover:text-destructive/80 transition-colors"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-
                   <AppContent />
                 </div>
                 <Toaster />
               </BedrockServiceProvider>
+              </AuthProvider>
             )}
           </Authenticator>
         </AmplifyThemeProvider>

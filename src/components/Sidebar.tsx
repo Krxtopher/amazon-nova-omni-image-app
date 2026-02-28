@@ -9,16 +9,58 @@ import { useUIStore } from '@/stores/uiStore';
 import { toast } from 'sonner';
 import {
     Settings,
-    HelpCircle,
-    Palette,
     Trash2,
     Loader2,
     Columns3,
-    Rows3
+    Rows3,
+    UserCircle,
+    LogOut
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
     className?: string;
+}
+
+/**
+ * User Drawer Component
+ * Shows user info and logout button
+ */
+function UserDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+    const { signOut, userEmail } = useAuth();
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="w-60 h-full py-8 bg-[#3C345A] border-r border-border flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4 space-y-12">
+                {/* User Info Section */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-foreground special-gothic-label">
+                        Account
+                    </h3>
+                    {userEmail && (
+                        <p className="text-sm text-muted-foreground break-all">
+                            {userEmail}
+                        </p>
+                    )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            signOut?.();
+                            onClose();
+                        }}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 justify-start w-full"
+                        aria-label="Log out"
+                    >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -291,6 +333,7 @@ function SettingsDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 export function Sidebar({ className = '' }: SidebarProps) {
     const [activeButton, setActiveButton] = useState<string | null>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isUserOpen, setIsUserOpen] = useState(false);
     const sidebarRef = useRef<HTMLDivElement>(null);
 
     // Handle click outside to deselect active buttons and close drawers
@@ -298,9 +341,10 @@ export function Sidebar({ className = '' }: SidebarProps) {
         const handleClickOutside = (event: MouseEvent) => {
             if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
                 // Clicked outside the sidebar
-                if (activeButton || isSettingsOpen) {
+                if (activeButton || isSettingsOpen || isUserOpen) {
                     setActiveButton(null);
                     setIsSettingsOpen(false);
+                    setIsUserOpen(false);
                 }
             }
         };
@@ -312,15 +356,15 @@ export function Sidebar({ className = '' }: SidebarProps) {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [activeButton, isSettingsOpen]);
+    }, [activeButton, isSettingsOpen, isUserOpen]);
 
     const bottomButtons = [
         {
-            id: 'palette',
-            icon: Palette,
-            label: 'Colors',
+            id: 'user',
+            icon: UserCircle,
+            label: 'Account',
             action: () => {
-                // Future: Open color picker modal
+                setIsUserOpen(true);
             }
         },
         {
@@ -330,14 +374,6 @@ export function Sidebar({ className = '' }: SidebarProps) {
             action: () => {
                 setIsSettingsOpen(true);
             }
-        },
-        {
-            id: 'help',
-            icon: HelpCircle,
-            label: 'Help',
-            action: () => {
-                // Future: Open help modal or documentation
-            }
         }
     ];
 
@@ -345,14 +381,19 @@ export function Sidebar({ className = '' }: SidebarProps) {
         // Toggle behavior: if clicking the same button, deactivate it
         if (activeButton === buttonId) {
             setActiveButton(null);
-            // For settings, close the drawer when deactivating
             if (buttonId === 'settings') {
                 setIsSettingsOpen(false);
+            }
+            if (buttonId === 'user') {
+                setIsUserOpen(false);
             }
         } else {
             // Close any open drawers/modals before opening new one
             if (isSettingsOpen && buttonId !== 'settings') {
                 setIsSettingsOpen(false);
+            }
+            if (isUserOpen && buttonId !== 'user') {
+                setIsUserOpen(false);
             }
 
             setActiveButton(buttonId);
@@ -363,7 +404,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
     return (
         <div ref={sidebarRef} className={`fixed left-0 top-0 h-full flex flex-row z-200 ${className}`}
             style={{
-                boxShadow: isSettingsOpen ? '0 0 25px rgba(0, 0, 0, 0.25)' : 'none'
+                boxShadow: (isSettingsOpen || isUserOpen) ? '0 0 25px rgba(0, 0, 0, 0.25)' : 'none'
             }}
         >
             {/* Button Area */}
@@ -388,7 +429,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
                     {/* Bottom buttons - Colors, Settings, Help */}
                     {bottomButtons.map((button) => {
                         const Icon = button.icon;
-                        const isActive = activeButton === button.id || (button.id === 'settings' && isSettingsOpen);
+                        const isActive = activeButton === button.id || (button.id === 'settings' && isSettingsOpen) || (button.id === 'user' && isUserOpen);
 
                         return (
                             <Button
@@ -406,6 +447,15 @@ export function Sidebar({ className = '' }: SidebarProps) {
                     })}
                 </nav>
             </aside>
+
+            {/* User Drawer */}
+            <UserDrawer
+                isOpen={isUserOpen}
+                onClose={() => {
+                    setIsUserOpen(false);
+                    setActiveButton(null);
+                }}
+            />
 
             {/* Settings Drawer */}
             <SettingsDrawer

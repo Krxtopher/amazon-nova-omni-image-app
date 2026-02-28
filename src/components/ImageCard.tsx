@@ -7,6 +7,7 @@ import { Trash2, Edit2, Download, Copy, Check } from 'lucide-react';
 import { MagicalImagePlaceholder } from './MagicalImagePlaceholder';
 import { useImageData } from '../hooks/useImageData';
 import { useDynamicLineClamp } from '../hooks/useDynamicLineClamp';
+import { downloadImage } from '../utils/downloadImage';
 import WordRevealContainer from './WordRevealContainer';
 
 interface ImageMasonryItem extends GeneratedImage {
@@ -280,13 +281,8 @@ export const ImageCard = memo(function ImageCard({
                         variant="secondary"
                         onClick={async () => {
                             if (displayUrl) {
-                                // Download the image
-                                const imageLink = document.createElement('a');
-                                imageLink.href = displayUrl;
-                                imageLink.download = `${item.id}-image.png`;
-                                document.body.appendChild(imageLink);
-                                imageLink.click();
-                                document.body.removeChild(imageLink);
+                                // Download the image as blob to avoid cross-origin issues with S3 presigned URLs
+                                await downloadImage(displayUrl, `${item.id}-image.png`);
 
                                 // Download image generation parameters if available
                                 if (item.converseParams) {
