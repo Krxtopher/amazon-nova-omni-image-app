@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "us-east-1_IIQoWr2gJ",
+    "user_pool_id": "us-east-1_8P9ooqjBO",
     "aws_region": "us-east-1",
-    "user_pool_client_id": "3unepdioq01bpdq5l5iordq26j",
-    "identity_pool_id": "us-east-1:0b6c5e4a-13c8-4ce5-bbe7-d2c346e3c6aa",
+    "user_pool_client_id": "4tppk2ovu9829rb0rkm27ulo24",
+    "identity_pool_id": "us-east-1:c913513d-07c2-4a8d-ac1c-4d2158fe52ec",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -26,7 +26,7 @@
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://dpnvzyw3grhcvgfyeljobl7vc4.appsync-api.us-east-1.amazonaws.com/graphql",
+    "url": "https://4kyhdyq3hnasppyxvvb4ygjc54.appsync-api.us-east-1.amazonaws.com/graphql",
     "aws_region": "us-east-1",
     "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
     "authorization_types": [
@@ -258,11 +258,11 @@
   },
   "storage": {
     "aws_region": "us-east-1",
-    "bucket_name": "amplify-amazonnovaomniima-imagegeneratorstoragebuc-xmzirvxsepmh",
+    "bucket_name": "amplify-amazonnovaomniima-imagegeneratorstoragebuc-bqi1rsowuj2q",
     "buckets": [
       {
         "name": "imageGeneratorStorage",
-        "bucket_name": "amplify-amazonnovaomniima-imagegeneratorstoragebuc-xmzirvxsepmh",
+        "bucket_name": "amplify-amazonnovaomniima-imagegeneratorstoragebuc-bqi1rsowuj2q",
         "aws_region": "us-east-1",
         "paths": {
           "images/${cognito-identity.amazonaws.com:sub}/*": {
@@ -291,7 +291,7 @@
   "custom": {
     "API": {
       "imageGeneratorApi": {
-        "endpoint": "https://4xien4qm4d.execute-api.us-east-1.amazonaws.com/dev/",
+        "endpoint": "https://g9b6d64454.execute-api.us-east-1.amazonaws.com/dev/",
         "region": "us-east-1",
         "apiName": "imageGeneratorApi"
       }

@@ -3,6 +3,29 @@ import { post } from 'aws-amplify/api';
 import type { GenerationRequest, GenerationResponse, AspectRatio, AppError } from '../types';
 
 /**
+ * Response shape from the Lambda function.
+ * The Lambda writes images to S3 and returns a key instead of image data.
+ */
+interface LambdaImageResponse {
+    type: 'image';
+    s3Key: string;
+    imageId: string;
+    format: string;
+}
+
+interface LambdaTextResponse {
+    type: 'text';
+    text: string;
+}
+
+interface LambdaErrorResponse {
+    type: 'error';
+    error: string;
+}
+
+type LambdaResponse = LambdaImageResponse | LambdaTextResponse | LambdaErrorResponse;
+
+/**
  * Service for calling Amplify Lambda functions for image generation and prompt enhancement
  * Replaces direct Bedrock calls with authenticated Lambda API calls
  */
@@ -63,29 +86,53 @@ export class AmplifyLambdaService {
     }
 
     /**
-     * Generates content using the Lambda image generation function
-     * Replaces direct Bedrock calls with Lambda API calls
+     * Generates content using the Lambda image generation function.
+     * The Lambda writes images to S3 and returns an s3Key.
+     * We translate that into a GenerationResponse the rest of the app understands.
      */
     async generateContent(request: GenerationRequest): Promise<GenerationResponse> {
         try {
+            // Get the Cognito Identity Pool identity ID so the Lambda writes to the
+            // correct S3 path. Amplify Storage access rules resolve {entity_id} to
+            // this identity ID, NOT the User Pool sub.
+            let identityId: string | undefined;
+            try {
+                const session = await fetchAuthSession();
+                identityId = session.identityId;
+            } catch {
+                // If we can't get the identity, the Lambda will use a fallback path
+            }
+
             const payload = {
                 prompt: request.prompt,
                 aspectRatio: request.aspectRatio,
                 customSystemPrompt: request.customSystemPrompt,
+                identityId,
                 editSource: request.editSource ? {
                     url: request.editSource.url
                 } : undefined
             };
 
-            const response = await this.callLambdaFunction<GenerationResponse & { userContext?: any }>(
+            const response = await this.callLambdaFunction<LambdaResponse>(
                 'generate-image',
                 payload
             );
 
-            // Remove userContext from response as it's not part of GenerationResponse
-            const { userContext, ...generationResponse } = response;
-
-            return generationResponse;
+            // Translate Lambda response to GenerationResponse
+            if (response.type === 'image') {
+                // Lambda wrote the image to S3 — return the s3Key so the frontend
+                // can skip the upload step and just create the metadata record.
+                return {
+                    type: 'image',
+                    s3Key: response.s3Key,
+                    imageId: response.imageId,
+                    format: response.format,
+                } as any; // Extended GenerationResponse with s3Key
+            } else if (response.type === 'text') {
+                return { type: 'text', text: response.text } as any;
+            } else {
+                return { type: 'error', error: response.error } as any;
+            }
         } catch (error) {
             throw this.handleError(error);
         }

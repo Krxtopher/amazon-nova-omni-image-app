@@ -1,211 +1,128 @@
-import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 interface GenerationRequest {
     prompt: string;
     aspectRatio?: string;
     customSystemPrompt?: string;
+    identityId?: string;
     editSource?: {
         url: string;
     };
 }
 
-interface GenerationResponse {
-    type: 'image' | 'text' | 'error';
-    imageDataUrl?: string;
-    text?: string;
-    error?: string;
-}
+type GenerationResponse =
+    | { type: 'image'; s3Key: string; imageId: string; format: string }
+    | { type: 'text'; text: string }
+    | { type: 'error'; error: string };
+
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Methods': '*',
+    'Access-Control-Max-Age': '86400',
+};
+
+const BUCKET_NAME = process.env.STORAGE_BUCKET_NAME || '';
 
 /**
- * Lambda handler for Bedrock image generation requests
- * Validates authentication and proxies requests to Bedrock Nova 2 Omni model
+ * Lambda handler for Bedrock image generation.
+ * Generates an image via InvokeModel, writes it to S3, and returns the S3 key.
  */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    console.log('Generate Image Lambda - Request received:', {
+    console.log('[STEP 1] Handler invoked', {
         httpMethod: event.httpMethod,
         path: event.path,
-        headers: event.headers,
         timestamp: new Date().toISOString(),
-        corsFixed: true // Added to force redeploy
     });
 
-    // CORS headers for all responses
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Methods': '*',
-        'Access-Control-Allow-Credentials': 'true',
-        'Access-Control-Max-Age': '86400'
-    };
-
     try {
-        // Handle preflight OPTIONS request
         if (event.httpMethod === 'OPTIONS') {
-            return {
-                statusCode: 200,
-                headers: corsHeaders,
-                body: ''
-            };
+            return { statusCode: 200, headers: CORS_HEADERS, body: '' };
         }
 
-        // Validate HTTP method
         if (event.httpMethod !== 'POST') {
-            return {
-                statusCode: 405,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...corsHeaders
-                },
-                body: JSON.stringify({
-                    error: 'Method not allowed. Use POST.'
-                })
-            };
+            return respond(405, { type: 'error', error: 'Method not allowed. Use POST.' });
         }
 
-        // Extract user context if available (when using Cognito authorizer)
-        // For now, we're running without authentication for CORS testing
-        let userContext = {
-            userId: 'anonymous',
-            email: 'test@example.com',
-            tokenUse: 'access'
-        };
-
-        // If Cognito authorizer is enabled, extract user information from request context
-        if (event.requestContext.authorizer?.claims) {
-            const claims = event.requestContext.authorizer.claims;
-            userContext = {
-                userId: claims.sub || claims['cognito:username'],
-                email: claims.email,
-                tokenUse: claims.token_use
-            };
-
-            console.log('Generate Image Lambda - User context extracted:', {
-                userId: userContext.userId,
-                email: userContext.email,
-                tokenUse: userContext.tokenUse
-            });
-        } else {
-            console.log('Generate Image Lambda - Running without authentication (CORS testing mode)');
+        if (!event.body) {
+            return respond(400, { type: 'error', error: 'Request body is required' });
         }
 
-        // Parse request body
         let requestBody: GenerationRequest;
         try {
-            if (!event.body) {
-                throw new Error('Request body is required');
-            }
             requestBody = JSON.parse(event.body);
-        } catch (error) {
-            console.log('Generate Image Lambda - Invalid request body:', error);
-            return {
-                statusCode: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...corsHeaders
-                },
-                body: JSON.stringify({
-                    error: 'Invalid JSON in request body'
-                })
-            };
+        } catch {
+            return respond(400, { type: 'error', error: 'Invalid JSON in request body' });
         }
 
-        // Validate required fields
         if (!requestBody.prompt || typeof requestBody.prompt !== 'string') {
-            return {
-                statusCode: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...corsHeaders
-                },
-                body: JSON.stringify({
-                    error: 'Missing or invalid prompt field'
-                })
-            };
+            return respond(400, { type: 'error', error: 'Missing or invalid prompt field' });
         }
 
-        console.log('Generate Image Lambda - Processing request for user:', userContext.userId);
+        console.log('[STEP 2] Prompt validated, length:', requestBody.prompt.length);
 
-        // Initialize Bedrock client
-        const bedrockClient = new BedrockRuntimeClient({
-            region: process.env.BEDROCK_REGION || 'us-east-1'
-        });
-
-        // Build message content for Bedrock API
-        const messageContent: any[] = [];
-
-        // If there's an edit source, we would handle image encoding here
-        // For now, we'll focus on text-to-image generation
-        if (requestBody.editSource) {
-            // In a full implementation, you would fetch and encode the image
-            console.log('Generate Image Lambda - Edit source provided but not implemented in this version');
-        }
-
-        // Add the text prompt
-        messageContent.push({ text: requestBody.prompt });
-
-        // Build Converse API command
+        // Build InvokeModel request
+        const region = process.env.BEDROCK_REGION || 'us-east-1';
+        const bedrockClient = new BedrockRuntimeClient({ region });
         const modelId = 'us.amazon.nova-2-omni-v1:0';
+
         const systemPrompt = requestBody.customSystemPrompt ||
             'Interpret all user messages as image generation requests. Never ask for clarification. Ambiguous requests are allowed.';
 
-        const commandParams = {
+        const invokeBody = {
+            messages: [{ role: 'user', content: [{ text: requestBody.prompt }] }],
+            system: [{ text: systemPrompt }],
+        };
+
+        console.log('[STEP 3] Calling InvokeModel, model:', modelId);
+        const startTime = Date.now();
+
+        const command = new InvokeModelCommand({
             modelId,
-            messages: [
-                {
-                    role: 'user' as const,
-                    content: messageContent,
-                },
-            ],
-            system: [
-                {
-                    text: systemPrompt
-                }
-            ]
-        };
-
-        console.log('Generate Image Lambda - Calling Bedrock API');
-
-        // Call Bedrock API
-        const command = new ConverseCommand(commandParams);
-        const response = await bedrockClient.send(command);
-
-        console.log('Generate Image Lambda - Bedrock API response received');
-
-        // Parse response
-        const generationResponse = parseBedrockResponse(response);
-
-        // Return successful response
-        return {
-            statusCode: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders
-            },
-            body: JSON.stringify({
-                ...generationResponse,
-                userContext: {
-                    userId: userContext.userId,
-                    email: userContext.email
-                }
-            })
-        };
-
-    } catch (error) {
-        console.error('Generate Image Lambda - Error:', {
-            error,
-            stack: error instanceof Error ? error.stack : undefined,
-            message: error instanceof Error ? error.message : String(error),
-            timestamp: new Date().toISOString()
+            body: JSON.stringify(invokeBody),
+            contentType: 'application/json',
+            accept: 'application/json',
         });
 
-        // Handle different types of errors
+        const response = await bedrockClient.send(command);
+        console.log('[STEP 4] InvokeModel responded in', Date.now() - startTime, 'ms');
+
+        const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+        console.log('[STEP 5] Response parsed, stopReason:', responseBody.stopReason);
+
+        const result = parseModelResponse(responseBody);
+
+        // If the model returned text or error, return immediately (small payload)
+        if (result.type !== 'image') {
+            console.log('[STEP 6] Non-image result:', result.type);
+            return respond(200, result);
+        }
+
+        // Write image to S3
+        console.log('[STEP 6] Writing image to S3, bucket:', BUCKET_NAME);
+        const { s3Key, imageId } = await writeImageToS3(
+            result.base64Data,
+            result.format,
+            requestBody.identityId
+        );
+        console.log('[STEP 7] Image written to S3, key:', s3Key);
+
+        return respond(200, { type: 'image', s3Key, imageId, format: result.format });
+
+    } catch (error) {
+        console.error('[CATCH] Unhandled error:', {
+            name: error instanceof Error ? error.name : 'unknown',
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+        });
+
         let statusCode = 500;
         let errorMessage = 'Internal server error';
 
         if (error && typeof error === 'object' && 'name' in error) {
             const awsError = error as { name: string; message: string; $metadata?: { httpStatusCode?: number } };
-
             if (awsError.name === 'ThrottlingException' || awsError.$metadata?.httpStatusCode === 429) {
                 statusCode = 429;
                 errorMessage = 'Too many requests. Please wait and try again.';
@@ -218,87 +135,82 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             }
         }
 
-        return {
-            statusCode,
-            headers: {
-                'Content-Type': 'application/json',
-                ...corsHeaders
-            },
-            body: JSON.stringify({
-                error: errorMessage
-            })
-        };
+        return respond(statusCode, { type: 'error', error: errorMessage });
     }
 };
 
-/**
- * Parses Bedrock Converse API response to extract image or text content
- */
-function parseBedrockResponse(response: any): GenerationResponse {
+function respond(statusCode: number, body: object): APIGatewayProxyResult {
+    return {
+        statusCode,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+        body: JSON.stringify(body),
+    };
+}
+
+type ParsedResult =
+    | { type: 'image'; base64Data: string; format: string }
+    | { type: 'text'; text: string }
+    | { type: 'error'; error: string };
+
+function parseModelResponse(responseBody: any): ParsedResult {
     try {
-        // Check for unexpected stopReason values
-        if (response.stopReason && response.stopReason !== 'end_turn') {
-            return {
-                type: 'error',
-                error: `Unexpected stop reason: ${response.stopReason}`
-            };
+        if (responseBody.stopReason && responseBody.stopReason !== 'end_turn') {
+            return { type: 'error', error: `Unexpected stop reason: ${responseBody.stopReason}` };
         }
 
-        // Validate response structure
-        if (!response.output?.message?.content) {
-            throw new Error('Invalid response structure: missing content');
+        const content = responseBody.output?.message?.content;
+        if (!content) {
+            return { type: 'error', error: 'Invalid response structure: missing content' };
         }
 
-        // Check if the response contains text
-        const textContent = response.output.message.content.find(
-            (item: any) => item.text !== undefined
-        );
-
-        if (textContent?.text) {
-            return {
-                type: 'text',
-                text: textContent.text
-            };
+        const textBlock = content.find((item: any) => item.text !== undefined);
+        if (textBlock?.text) {
+            return { type: 'text', text: textBlock.text };
         }
 
-        // Find the image in the response content
-        const imageContent = response.output.message.content.find(
-            (item: any) => item.image !== undefined
-        );
-
-        if (!imageContent?.image?.source?.bytes) {
-            throw new Error('No image or text content found in response');
+        const imageBlock = content.find((item: any) => item.image !== undefined);
+        if (imageBlock?.image?.source?.bytes) {
+            const base64 = imageBlock.image.source.bytes;
+            const format = imageBlock.image.format || 'png';
+            return { type: 'image', base64Data: base64, format };
         }
 
-        // Extract image bytes and convert to base64
-        const imageBytes = imageContent.image.source.bytes;
-        const format = imageContent.image.format || 'png';
-
-        // Convert Uint8Array to base64
-        const base64 = uint8ArrayToBase64(imageBytes);
-
-        return {
-            type: 'image',
-            imageDataUrl: `data:image/${format};base64,${base64}`
-        };
-
+        return { type: 'error', error: 'No image or text content found in response' };
     } catch (error) {
         console.error('Parse response error:', error);
-        return {
-            type: 'error',
-            error: error instanceof Error ? error.message : 'Failed to parse response'
-        };
+        return { type: 'error', error: error instanceof Error ? error.message : 'Failed to parse response' };
     }
 }
 
-/**
- * Converts Uint8Array to base64 string
- */
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-    let binary = '';
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return Buffer.from(binary, 'binary').toString('base64');
+async function writeImageToS3(
+    base64Data: string,
+    format: string,
+    identityId?: string
+): Promise<{ s3Key: string; imageId: string }> {
+    const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+
+    const imageId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const extension = format === 'jpeg' ? 'jpg' : format;
+    const fileName = `image_${imageId}.${extension}`;
+
+    // Amplify Storage access rule: images/{entity_id}/*
+    // {entity_id} resolves to the Cognito Identity Pool identity ID.
+    // The frontend passes this as `identityId`.
+    const userFolder = identityId || 'lambda-generated';
+    const s3Key = `images/${userFolder}/${fileName}`;
+
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+
+    await s3Client.send(new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: s3Key,
+        Body: imageBuffer,
+        ContentType: `image/${format}`,
+        Metadata: {
+            generatedAt: new Date().toISOString(),
+            source: 'bedrock-nova',
+        },
+    }));
+
+    return { s3Key, imageId };
 }

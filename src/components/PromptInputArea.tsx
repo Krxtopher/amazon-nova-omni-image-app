@@ -412,18 +412,19 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
 
                     // Note: Keep edit source selected for additional requests
                 } else {
-                    // Model returned an image - check actual aspect ratio and update placeholder
-                    // Requirements: 1.4
-                    const actualDimensions = await getImageDimensions(response.imageDataUrl);
-                    const actualAspectRatio = calculateAspectRatio(actualDimensions.width, actualDimensions.height);
+                    // Model returned an image — Lambda already wrote it to S3.
+                    // We get back an s3Key instead of image data.
+                    const lambdaResponse = response as any;
+                    const s3Key = lambdaResponse.s3Key as string;
 
                     updateImage(placeholderId, {
-                        url: response.imageDataUrl,
+                        s3Key,
                         status: 'complete',
-                        aspectRatio: actualAspectRatio,
-                        width: actualDimensions.width,
-                        height: actualDimensions.height,
-                        converseParams: response.converseParams,
+                        // Keep the aspect ratio we requested since we don't have the
+                        // actual image bytes to measure dimensions from.
+                        aspectRatio: aspectRatioToUse,
+                        width: dimensions.width,
+                        height: dimensions.height,
                     });
 
                     // Show success notification

@@ -234,11 +234,10 @@ export const useImageStore = create<ImageStore>()((set) => ({
     },
 
     /**
-     * Add a new image to the gallery with database persistence
-     * Used only when image generation completes successfully
-     * UI update is immediate, database persistence happens asynchronously
-     * Coordinates storage between Amplify Data (metadata) and S3 (image files)
-     * Requirements: 2.1, 3.3, 1.1, 1.2, 5.2, 4.1, 4.2, 3.1
+     * Add a new image to the gallery with database persistence.
+     * The Lambda is responsible for writing images to S3 — this function
+     * only creates the DynamoDB metadata record pointing at the s3Key.
+     * Requirements: 2.1, 3.3, 1.1, 3.1
      */
     addImage: async (image: GeneratedImage) => {
         const timer = storageLogger.startOperation('addImage', 'amplify-data', { imageId: image.id });
@@ -255,10 +254,9 @@ export const useImageStore = create<ImageStore>()((set) => ({
 
                 return {
                     images: newImages,
-                    totalImageCount: state.totalImageCount + 1, // Now count it in database total
+                    totalImageCount: state.totalImageCount + 1,
                 };
             } else {
-                // Add new image (shouldn't happen with current flow, but handle gracefully)
                 return {
                     images: [image, ...state.images],
                     totalImageCount: state.totalImageCount + 1,
@@ -267,53 +265,28 @@ export const useImageStore = create<ImageStore>()((set) => ({
             }
         });
 
-        // Coordinate storage between Amplify Data (metadata) and S3 (image files)
-        // Requirements: 5.2 - Route operations to appropriate storage mechanisms
-        let s3Key: string | undefined;
-
         try {
-            // Upload image to S3 if URL is provided
-            if (image.url) {
-                // Generate unique filename
-                const fileName = amplifyStorageService.generateFileName('png');
-
-                // Upload to S3 and get the S3 key
-                s3Key = await amplifyStorageService.uploadImageFromDataUrl(image.url, fileName);
-            }
-
-            // Store metadata in Amplify Data Service (Requirements: 3.1, 3.3)
+            // Create metadata record in DynamoDB. The s3Key was set by the Lambda.
             await amplifyDataService.createImageMetadata({
                 prompt: image.prompt,
                 enhancedPrompt: image.enhancedPrompt || undefined,
                 aspectRatio: image.aspectRatio,
-                s3Key: s3Key || '', // S3 key is required in the schema
-                s3Url: undefined, // Will be generated on demand
+                s3Key: image.s3Key || '',
+                s3Url: undefined, // Generated on demand via getSecureImageUrl
             });
 
-            timer.success(image.url?.length, { hasBinaryData: Boolean(s3Key), s3Key });
+            timer.success(undefined, { s3Key: image.s3Key });
         } catch (error) {
             timer.error(error instanceof Error ? error : new Error(String(error)));
 
-            // Rollback: Remove from UI state if persistence failed
-            // Requirements: 5.2 - Atomic operations with rollback on partial failures
+            // Rollback UI state if metadata creation failed
             set((state) => ({
                 images: state.images.filter(img => img.id !== image.id),
                 totalImageCount: Math.max(0, state.totalImageCount - 1),
                 loadedImageCount: Math.max(0, state.loadedImageCount - 1),
             }));
 
-            // Attempt cleanup of any partially stored data
-            try {
-                await Promise.allSettled([
-                    // If S3 upload succeeded but Amplify Data failed, clean up S3
-                    ...(s3Key ? [amplifyStorageService.deleteImage(s3Key)] : [])
-                ]);
-            } catch (cleanupError) {
-                // Silently handle cleanup errors
-            }
-
-            // Re-throw error for caller to handle
-            throw new Error(`Failed to store image data: ${error instanceof Error ? error.message : String(error)}`);
+            throw new Error(`Failed to store image metadata: ${error instanceof Error ? error.message : String(error)}`);
         }
     },
 
@@ -406,58 +379,17 @@ export const useImageStore = create<ImageStore>()((set) => ({
             }
         }
 
-        // For non-completion updates or already-complete images, handle normally
-        // Coordinate updates between Amplify Data (metadata) and S3 (image files)
-        // Requirements: 5.2 - Route operations to appropriate storage mechanisms
+        // For non-completion updates or already-complete images, update metadata only.
+        // S3 writes are handled exclusively by the Lambda.
         try {
-            // Only update database if the image is already complete (has been written to database)
             if (currentImage?.status === 'complete') {
-                const { url, ...metadataUpdates } = updates;
-                let newS3Key: string | undefined;
-
-                // Handle URL updates by uploading to S3
-                if ('url' in updates && url) {
-                    // Generate unique filename and upload to S3
-                    const fileName = amplifyStorageService.generateFileName('png');
-                    newS3Key = await amplifyStorageService.uploadImageFromDataUrl(url, fileName);
-
-                    // Delete old S3 object if it exists
-                    if (currentImage.s3Key) {
-                        try {
-                            await amplifyStorageService.deleteImage(currentImage.s3Key);
-                        } catch (deleteError) {
-                            // Log but don't fail the update if old image deletion fails
-                            console.warn('Failed to delete old S3 image:', deleteError);
-                        }
-                    }
-                }
-
-                // Update metadata in Amplify Data Service
                 const amplifyUpdates: any = {};
 
-                // Add fields that can be updated
-                if (metadataUpdates.prompt !== undefined) amplifyUpdates.prompt = metadataUpdates.prompt;
-                if (metadataUpdates.enhancedPrompt !== undefined) amplifyUpdates.enhancedPrompt = metadataUpdates.enhancedPrompt;
-                if (metadataUpdates.aspectRatio !== undefined) amplifyUpdates.aspectRatio = metadataUpdates.aspectRatio;
+                if (updates.prompt !== undefined) amplifyUpdates.prompt = updates.prompt;
+                if (updates.enhancedPrompt !== undefined) amplifyUpdates.enhancedPrompt = updates.enhancedPrompt;
+                if (updates.aspectRatio !== undefined) amplifyUpdates.aspectRatio = updates.aspectRatio;
+                if (updates.s3Key !== undefined) amplifyUpdates.s3Key = updates.s3Key;
 
-                // Add S3 key if URL is being updated
-                if ('url' in updates) {
-                    if (newS3Key) {
-                        amplifyUpdates.s3Key = newS3Key;
-                    } else if (!url) {
-                        // URL is being cleared - delete from S3 if there was an existing S3 key
-                        if (currentImage.s3Key) {
-                            try {
-                                await amplifyStorageService.deleteImage(currentImage.s3Key);
-                            } catch (deleteError) {
-                                console.warn('Failed to delete S3 image:', deleteError);
-                            }
-                        }
-                        amplifyUpdates.s3Key = '';
-                    }
-                }
-
-                // Only call Amplify Data Service if there are updates to make
                 if (Object.keys(amplifyUpdates).length > 0) {
                     await amplifyDataService.updateImageMetadata({
                         id: currentImage.id,
@@ -465,12 +397,7 @@ export const useImageStore = create<ImageStore>()((set) => ({
                     });
                 }
             }
-            // For placeholder images (status !== 'complete'), skip database operations
-
         } catch (error) {
-            // Requirements: 5.3 - Error handling for partial operation failures
-            // Note: We don't rollback UI changes for updates as they might be partially valid
-            // Instead, we log the error and let the user retry if needed
             throw new Error(`Failed to update image data: ${error instanceof Error ? error.message : String(error)}`);
         }
     },

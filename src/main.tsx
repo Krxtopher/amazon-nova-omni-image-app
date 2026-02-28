@@ -8,7 +8,7 @@ import App from './App.tsx'
 // Configure Amplify with dynamic import to avoid build issues
 async function configureAmplify() {
   try {
-    const outputs = await import('./amplify_outputs.json')
+    const outputs = await import(`../amplify_outputs.json`)
     if (outputs.default && Object.keys(outputs.default).length > 0) {
       // Parse the Amplify configuration
       const amplifyConfig = parseAmplifyConfig(outputs.default)

@@ -1,0 +1,49 @@
+{
+  "mcpServers": {
+    "builder-mcp": {
+      "command": "/Users/schultkr/.toolbox/bin/builder-mcp",
+      "args": [],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "ReadInternalWebsites",
+        "InternalSearch"
+      ],
+      "disabledTools": [
+      ]
+    },
+    "aws-mcp": {
+      "command": "uvx",
+      "timeout": 100000,
+      "transport": "stdio",
+      "args": [
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.us-east-1.api.aws/mcp",
+        "--metadata",
+        "AWS_REGION=us-west-2"
+      ],
+      "autoApprove": [
+        "aws___read_documentation",
+        "aws___read_documentation",
+        "aws___search_documentation"
+      ],
+      "disabled": false
+    },
+    "aws-outlook-mcp": {
+      "command": "aws-outlook-mcp",
+      "args": [],
+      "autoApprove": [
+        "email_inbox",
+        "email_read"
+      ],
+      "disabled": true
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
+    }
+  }
+}

@@ -2,11 +2,8 @@ import { defineBackend } from '@aws-amplify/backend';
 import { Duration, Stack } from 'aws-cdk-lib';
 import {
     AuthorizationType,
-    CognitoUserPoolsAuthorizer,
     Cors,
     LambdaIntegration,
-    MockIntegration,
-    PassthroughBehavior,
     RestApi,
 } from 'aws-cdk-lib/aws-apigateway';
 import { Policy, PolicyStatement } from 'aws-cdk-lib/aws-iam';
@@ -30,20 +27,25 @@ const backend = defineBackend({
 // Create a new API stack for REST API and Lambda functions
 const apiStack = backend.createStack('api-stack');
 
+// Get the S3 bucket from Amplify Storage
+const storageBucket = backend.storage.resources.bucket;
+
 // Create Lambda functions using CDK
 const generateImageFunction = new lambda.NodejsFunction(apiStack, 'GenerateImageFunction', {
     entry: './amplify/functions/generate-image/handler.ts',
     runtime: Runtime.NODEJS_18_X,
-    timeout: Duration.minutes(5),
+    timeout: Duration.seconds(60),
+    memorySize: 512,
     environment: {
         BEDROCK_REGION: 'us-east-1',
+        STORAGE_BUCKET_NAME: storageBucket.bucketName,
     },
 });
 
 const enhancePromptFunction = new lambda.NodejsFunction(apiStack, 'EnhancePromptFunction', {
     entry: './amplify/functions/enhance-prompt/handler.ts',
     runtime: Runtime.NODEJS_18_X,
-    timeout: Duration.minutes(2),
+    timeout: Duration.seconds(30),
     environment: {
         BEDROCK_REGION: 'us-east-1',
     },
@@ -56,9 +58,15 @@ generateImageFunction.addToRolePolicy(new PolicyStatement({
         'bedrock:InvokeModelWithResponseStream',
     ],
     resources: [
-        'arn:aws:bedrock:us-east-1::foundation-model/us.amazon.nova-2-omni-v1:0',
+        'arn:aws:bedrock:*::foundation-model/amazon.nova-2-omni-v1:0',
+        'arn:aws:bedrock:*::foundation-model/us.amazon.nova-2-omni-v1:0',
+        `arn:aws:bedrock:*:${Stack.of(apiStack).account}:inference-profile/amazon.nova-2-omni-v1:0`,
+        `arn:aws:bedrock:*:${Stack.of(apiStack).account}:inference-profile/us.amazon.nova-2-omni-v1:0`,
     ],
 }));
+
+// Grant the generate-image Lambda permission to write to the S3 storage bucket
+storageBucket.grantWrite(generateImageFunction);
 
 enhancePromptFunction.addToRolePolicy(new PolicyStatement({
     actions: [
@@ -66,7 +74,10 @@ enhancePromptFunction.addToRolePolicy(new PolicyStatement({
         'bedrock:InvokeModelWithResponseStream',
     ],
     resources: [
-        'arn:aws:bedrock:us-east-1::foundation-model/us.amazon.nova-2-lite-v1:0',
+        'arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0',
+        'arn:aws:bedrock:*::foundation-model/us.amazon.nova-2-lite-v1:0',
+        `arn:aws:bedrock:*:${Stack.of(apiStack).account}:inference-profile/amazon.nova-2-lite-v1:0`,
+        `arn:aws:bedrock:*:${Stack.of(apiStack).account}:inference-profile/us.amazon.nova-2-lite-v1:0`,
     ],
 }));
 
@@ -77,7 +88,11 @@ const imageGeneratorApi = new RestApi(apiStack, 'ImageGeneratorApi', {
     deployOptions: {
         stageName: 'dev',
     },
-    // Remove defaultCorsPreflightOptions since we're handling CORS manually
+    defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: Cors.DEFAULT_HEADERS,
+    },
 });
 
 // Create Lambda integrations
@@ -90,52 +105,9 @@ generateImagePath.addMethod('POST', generateImageIntegration, {
     authorizationType: AuthorizationType.NONE, // Temporarily remove auth
 });
 
-// Add explicit OPTIONS method with mock integration (no auth required)
-const optionsIntegration = new MockIntegration({
-    integrationResponses: [{
-        statusCode: '200',
-        responseParameters: {
-            'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
-            'method.response.header.Access-Control-Allow-Origin': "'*'",
-            'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,POST'",
-            'method.response.header.Access-Control-Allow-Credentials': "'true'",
-        },
-    }],
-    passthroughBehavior: PassthroughBehavior.NEVER,
-    requestTemplates: {
-        'application/json': '{"statusCode": 200}',
-    },
-});
-
-generateImagePath.addMethod('OPTIONS', optionsIntegration, {
-    authorizationType: AuthorizationType.NONE,
-    methodResponses: [{
-        statusCode: '200',
-        responseParameters: {
-            'method.response.header.Access-Control-Allow-Headers': true,
-            'method.response.header.Access-Control-Allow-Origin': true,
-            'method.response.header.Access-Control-Allow-Methods': true,
-            'method.response.header.Access-Control-Allow-Credentials': true,
-        },
-    }],
-});
-
 const enhancePromptPath = imageGeneratorApi.root.addResource('enhance-prompt');
 enhancePromptPath.addMethod('POST', enhancePromptIntegration, {
     authorizationType: AuthorizationType.NONE, // Temporarily remove auth
-});
-
-enhancePromptPath.addMethod('OPTIONS', optionsIntegration, {
-    authorizationType: AuthorizationType.NONE,
-    methodResponses: [{
-        statusCode: '200',
-        responseParameters: {
-            'method.response.header.Access-Control-Allow-Headers': true,
-            'method.response.header.Access-Control-Allow-Origin': true,
-            'method.response.header.Access-Control-Allow-Methods': true,
-            'method.response.header.Access-Control-Allow-Credentials': true,
-        },
-    }],
 });
 
 // Create IAM policy to allow API access
