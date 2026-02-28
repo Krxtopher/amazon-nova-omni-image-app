@@ -1,8 +1,18 @@
 import { create } from 'zustand';
-import type { GeneratedImage, GeneratedText, GalleryItem } from '../types';
+import type { GeneratedImage, GeneratedText, GalleryItem, AspectRatio } from '../types';
 import { amplifyStorageService } from '../services/AmplifyStorageService';
 import { amplifyDataService } from '../services/AmplifyDataService';
 import { storageLogger } from '../utils/StorageLogger';
+import { ASPECT_RATIO_DIMENSIONS } from '../services/BedrockImageService';
+
+/**
+ * Resolve width/height from an aspect ratio string using the known dimension mapping.
+ * Falls back to 1024x1024 if the ratio is unknown.
+ */
+function getDimensionsForAspectRatio(aspectRatio: string): { width: number; height: number } {
+    const key = aspectRatio as Exclude<AspectRatio, 'random'>;
+    return ASPECT_RATIO_DIMENSIONS[key] ?? { width: 1024, height: 1024 };
+}
 
 /**
  * Gallery store state interface
@@ -84,18 +94,22 @@ export const useImageStore = create<ImageStore>()((set) => ({
             });
 
             // Step 2: Convert Amplify metadata to GeneratedImage format
-            const images: GeneratedImage[] = imageMetadata.map(metadata => ({
-                id: metadata.id,
-                url: '', // URLs will be loaded on demand
-                prompt: metadata.prompt,
-                enhancedPrompt: metadata.enhancedPrompt || undefined,
-                aspectRatio: (metadata.aspectRatio || '1:1') as any,
-                width: 1024, // Default dimensions, will be updated when image loads
-                height: 1024,
-                status: 'complete' as const,
-                createdAt: new Date(metadata.createdAt),
-                s3Key: metadata.s3Key, // Store S3 key for later retrieval
-            }));
+            const images: GeneratedImage[] = imageMetadata.map(metadata => {
+                const ratio = metadata.aspectRatio || '1:1';
+                const { width, height } = getDimensionsForAspectRatio(ratio);
+                return {
+                    id: metadata.id,
+                    url: '', // URLs will be loaded on demand
+                    prompt: metadata.prompt,
+                    enhancedPrompt: metadata.enhancedPrompt || undefined,
+                    aspectRatio: ratio as any,
+                    width,
+                    height,
+                    status: 'complete' as const,
+                    createdAt: new Date(metadata.createdAt),
+                    s3Key: metadata.s3Key, // Store S3 key for later retrieval
+                };
+            });
 
             // Step 3: Load text items from localStorage (unchanged)
             const textItemsTimer = storageLogger.startOperation('loadTextItems', 'localStorage');
@@ -141,18 +155,22 @@ export const useImageStore = create<ImageStore>()((set) => ({
             const imageMetadata = await amplifyDataService.listImageMetadata();
 
             // Convert to GeneratedImage format
-            const images: GeneratedImage[] = imageMetadata.map(metadata => ({
-                id: metadata.id,
-                url: '', // URLs will be loaded on demand
-                prompt: metadata.prompt,
-                enhancedPrompt: metadata.enhancedPrompt || undefined,
-                aspectRatio: (metadata.aspectRatio || '1:1') as any,
-                width: 1024, // Default dimensions
-                height: 1024,
-                status: 'complete' as const,
-                createdAt: new Date(metadata.createdAt),
-                s3Key: metadata.s3Key,
-            }));
+            const images: GeneratedImage[] = imageMetadata.map(metadata => {
+                const ratio = metadata.aspectRatio || '1:1';
+                const { width, height } = getDimensionsForAspectRatio(ratio);
+                return {
+                    id: metadata.id,
+                    url: '', // URLs will be loaded on demand
+                    prompt: metadata.prompt,
+                    enhancedPrompt: metadata.enhancedPrompt || undefined,
+                    aspectRatio: ratio as any,
+                    width,
+                    height,
+                    status: 'complete' as const,
+                    createdAt: new Date(metadata.createdAt),
+                    s3Key: metadata.s3Key,
+                };
+            });
 
             set({
                 images: images.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
