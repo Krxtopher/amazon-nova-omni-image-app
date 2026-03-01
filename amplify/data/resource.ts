@@ -14,6 +14,8 @@ const schema = a.schema({
             prompt: a.string().required(),
             enhancedPrompt: a.string(),
             aspectRatio: a.string(),
+            width: a.integer(),
+            height: a.integer(),
             s3Key: a.string().required(),
             s3Url: a.string(),
             createdAt: a.datetime().required(),

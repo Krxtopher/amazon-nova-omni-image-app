@@ -96,15 +96,15 @@ export const useImageStore = create<ImageStore>()((set) => ({
             // Step 2: Convert Amplify metadata to GeneratedImage format
             const images: GeneratedImage[] = imageMetadata.map(metadata => {
                 const ratio = metadata.aspectRatio || '1:1';
-                const { width, height } = getDimensionsForAspectRatio(ratio);
+                const fallback = getDimensionsForAspectRatio(ratio);
                 return {
                     id: metadata.id,
                     url: '', // URLs will be loaded on demand
                     prompt: metadata.prompt,
                     enhancedPrompt: metadata.enhancedPrompt || undefined,
                     aspectRatio: ratio as any,
-                    width,
-                    height,
+                    width: metadata.width || fallback.width,
+                    height: metadata.height || fallback.height,
                     status: 'complete' as const,
                     createdAt: new Date(metadata.createdAt),
                     s3Key: metadata.s3Key, // Store S3 key for later retrieval
@@ -157,15 +157,15 @@ export const useImageStore = create<ImageStore>()((set) => ({
             // Convert to GeneratedImage format
             const images: GeneratedImage[] = imageMetadata.map(metadata => {
                 const ratio = metadata.aspectRatio || '1:1';
-                const { width, height } = getDimensionsForAspectRatio(ratio);
+                const fallback = getDimensionsForAspectRatio(ratio);
                 return {
                     id: metadata.id,
                     url: '', // URLs will be loaded on demand
                     prompt: metadata.prompt,
                     enhancedPrompt: metadata.enhancedPrompt || undefined,
                     aspectRatio: ratio as any,
-                    width,
-                    height,
+                    width: metadata.width || fallback.width,
+                    height: metadata.height || fallback.height,
                     status: 'complete' as const,
                     createdAt: new Date(metadata.createdAt),
                     s3Key: metadata.s3Key,
@@ -289,6 +289,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 prompt: image.prompt,
                 enhancedPrompt: image.enhancedPrompt || undefined,
                 aspectRatio: image.aspectRatio,
+                width: image.width || undefined,
+                height: image.height || undefined,
                 s3Key: image.s3Key || '',
                 s3Url: undefined, // Generated on demand via getSecureImageUrl
             });
@@ -406,6 +408,8 @@ export const useImageStore = create<ImageStore>()((set) => ({
                 if (updates.prompt !== undefined) amplifyUpdates.prompt = updates.prompt;
                 if (updates.enhancedPrompt !== undefined) amplifyUpdates.enhancedPrompt = updates.enhancedPrompt;
                 if (updates.aspectRatio !== undefined) amplifyUpdates.aspectRatio = updates.aspectRatio;
+                if (updates.width !== undefined) amplifyUpdates.width = updates.width;
+                if (updates.height !== undefined) amplifyUpdates.height = updates.height;
                 if (updates.s3Key !== undefined) amplifyUpdates.s3Key = updates.s3Key;
 
                 if (Object.keys(amplifyUpdates).length > 0) {

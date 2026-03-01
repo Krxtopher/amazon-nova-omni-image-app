@@ -20,6 +20,8 @@ export interface ImageMetadata {
     prompt: string;
     enhancedPrompt?: string | null;
     aspectRatio?: string | null;
+    width?: number | null;
+    height?: number | null;
     s3Key: string;
     s3Url?: string | null;
     createdAt: string;
@@ -48,6 +50,8 @@ export interface CreateImageMetadataInput {
     prompt: string;
     enhancedPrompt?: string;
     aspectRatio?: string;
+    width?: number;
+    height?: number;
     s3Key: string;
     s3Url?: string;
 }
@@ -68,6 +72,8 @@ export interface UpdateImageMetadataInput {
     prompt?: string;
     enhancedPrompt?: string;
     aspectRatio?: string;
+    width?: number;
+    height?: number;
     s3Key?: string;
     s3Url?: string;
 }
@@ -100,6 +106,8 @@ export class AmplifyDataService {
                 prompt: input.prompt,
                 enhancedPrompt: input.enhancedPrompt || null,
                 aspectRatio: input.aspectRatio || null,
+                width: input.width ?? null,
+                height: input.height ?? null,
                 s3Key: input.s3Key,
                 s3Url: input.s3Url || null,
                 createdAt: new Date().toISOString(),
@@ -160,6 +168,8 @@ export class AmplifyDataService {
             if (input.prompt !== undefined) updateData.prompt = input.prompt;
             if (input.enhancedPrompt !== undefined) updateData.enhancedPrompt = input.enhancedPrompt;
             if (input.aspectRatio !== undefined) updateData.aspectRatio = input.aspectRatio;
+            if (input.width !== undefined) updateData.width = input.width;
+            if (input.height !== undefined) updateData.height = input.height;
             if (input.s3Key !== undefined) updateData.s3Key = input.s3Key;
             if (input.s3Url !== undefined) updateData.s3Url = input.s3Url;
 

@@ -11,6 +11,8 @@ interface LambdaImageResponse {
     s3Key: string;
     imageId: string;
     format: string;
+    width: number;
+    height: number;
 }
 
 interface LambdaTextResponse {
@@ -127,6 +129,8 @@ export class AmplifyLambdaService {
                     s3Key: response.s3Key,
                     imageId: response.imageId,
                     format: response.format,
+                    width: response.width,
+                    height: response.height,
                 } as any; // Extended GenerationResponse with s3Key
             } else if (response.type === 'text') {
                 return { type: 'text', text: response.text } as any;

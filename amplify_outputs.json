@@ -73,6 +73,20 @@
               "isRequired": false,
               "attributes": []
             },
+            "width": {
+              "name": "width",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "height": {
+              "name": "height",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
             "s3Key": {
               "name": "s3Key",
               "isArray": false,
