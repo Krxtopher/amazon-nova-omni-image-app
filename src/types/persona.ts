@@ -8,7 +8,7 @@ export interface Persona {
     name: string;
     shortDescription: string;
     personaDescription: string | null; // null for built-in personas handled by BedrockImageService
-    icon: string; // Lucide React icon name
+    icon: string | null; // Lucide React icon name, null for user-created personas without explicit icon
     isEditable: boolean; // true for custom personas, false for built-in
     createdAt: Date;
     updatedAt: Date;

@@ -52,7 +52,7 @@ class PersonaService {
                 name: personaData.name,
                 shortDescription: personaData.description || 'Custom persona',
                 personaDescription: personaData.promptTemplate,
-                icon: personaData.icon || 'Palette',
+                icon: personaData.icon || null,
                 isEditable: true,
                 createdAt: new Date(personaData.createdAt),
                 updatedAt: new Date(personaData.updatedAt)
@@ -75,12 +75,12 @@ class PersonaService {
      * Create a new custom persona using Amplify Data (DynamoDB)
      * Requirements: 5.1 - User-scoped persona creation
      */
-    async createCustomPersona(name: string, personaDescription: string, description?: string, icon?: string): Promise<CustomPersona> {
+    async createCustomPersona(name: string, personaDescription: string, description?: string, icon?: string | null): Promise<CustomPersona> {
         try {
             const personaData = await amplifyDataService.createPersonaData({
                 name: name.trim(),
                 description: description?.trim() || 'Custom persona',
-                icon: icon || 'Palette',
+                icon: icon ?? undefined,
                 promptTemplate: personaDescription,
                 isDefault: false
             });
@@ -91,7 +91,7 @@ class PersonaService {
                 name: personaData.name,
                 shortDescription: personaData.description || 'Custom persona',
                 personaDescription: personaData.promptTemplate,
-                icon: personaData.icon || 'Palette',
+                icon: personaData.icon || null,
                 isEditable: true,
                 createdAt: new Date(personaData.createdAt),
                 updatedAt: new Date(personaData.updatedAt)
@@ -135,7 +135,7 @@ class PersonaService {
                 name: updatedPersonaData.name,
                 shortDescription: updatedPersonaData.description || 'Custom persona',
                 personaDescription: updatedPersonaData.promptTemplate,
-                icon: updatedPersonaData.icon || 'Palette',
+                icon: updatedPersonaData.icon || null,
                 isEditable: true,
                 createdAt: new Date(updatedPersonaData.createdAt),
                 updatedAt: new Date(updatedPersonaData.updatedAt)

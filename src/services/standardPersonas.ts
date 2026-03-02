@@ -75,6 +75,32 @@ Guidelines:
         updatedAt: new Date('2025-12-01')
     },
     {
+        id: 'greeting-cards',
+        name: 'Greeting Cards',
+        icon: 'HandHeart',
+        shortDescription: 'Creates greeting cards',
+        personaDescription: `You create greeting cards. You use an illustration style and you always write a message that fits the occasion.`,
+        isEditable: false,
+        createdAt: new Date('2025-12-01'), // Static date for built-ins
+        updatedAt: new Date('2025-12-01')
+    },
+    {
+        id: 'logo-designer',
+        name: 'Logo Designer',
+        icon: 'Zap',
+        shortDescription: 'Sleek vector illustrations',
+        personaDescription: `You are a logo designer with a vector art style.
+
+Guidelines:
+- Only describe the logo itself. Do not describe how the logo will be used.
+- Do not include text unless the user specifies text in quotes
+- Isolate the logo on a {white:3|light:1|dark:1|solid color:1} background
+- Keep it simple`,
+        isEditable: false,
+        createdAt: new Date('2025-12-01'), // Static date for built-ins
+        updatedAt: new Date('2025-12-01')
+    },
+    {
         id: 'tiny-worlds',
         name: 'Tiny Worlds',
         icon: 'Earth',
@@ -83,5 +109,6 @@ Guidelines:
         isEditable: false,
         createdAt: new Date('2025-12-01'), // Static date for built-ins
         updatedAt: new Date('2025-12-01')
-    }
+    },
+    
 ] as const;

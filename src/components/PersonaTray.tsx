@@ -26,7 +26,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
     const [personaDescription, setPersonaDescription] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isGeneratingName, setIsGeneratingName] = useState(false);
-    const [selectedIcon, setSelectedIcon] = useState('Edit');
+    const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
     const [errors, setErrors] = useState<{ name?: string; personaDescription?: string }>({});
 
     // Load all personas when component mounts
@@ -52,7 +52,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
         setEditingPersona(null);
         setName('');
         setPersonaDescription('');
-        setSelectedIcon('Palette'); // Default to Palette icon
+        setSelectedIcon(null); // Default to null (displays as Zap icon)
         setErrors({});
         setIsCreating(true);
     };
@@ -62,7 +62,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
         setEditingPersona(persona);
         setName(persona.name);
         setPersonaDescription(persona.personaDescription);
-        setSelectedIcon(persona.icon || 'Edit');
+        setSelectedIcon(persona.icon || null);
         setErrors({});
         setIsCreating(true);
     };
@@ -164,7 +164,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
         setViewingPersona(null);
         setName('');
         setPersonaDescription('');
-        setSelectedIcon('Edit');
+        setSelectedIcon(null);
         setErrors({});
     };
 
@@ -182,7 +182,7 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
             const generatedName = await bedrockService.generatePersonaName(personaDescription.trim());
 
             setName(generatedName);
-            setSelectedIcon('Palette'); // Always use Palette icon
+            setSelectedIcon(null); // Keep null icon for custom personas
         } catch (error) {
             setErrors({
                 ...errors,
@@ -287,22 +287,13 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
                             )}
                         </div>
 
-                        {/* Name and Icon fields - 25% width */}
+                        {/* Name field - 25% width */}
                         <div className="w-1/4 space-y-2">
                             <Label className="text-white/50 font-medium special-gothic-label">
-                                Name & Icon
+                                Name
                             </Label>
-                            <div className="space-y-2">
-                                <div className="p-3 bg-white/5 border border-white/20 rounded-md text-sm text-white/80">
-                                    {viewingPersona.name}
-                                </div>
-                                {/* Icon preview */}
-                                <div className="flex items-center justify-center p-3 border border-white/20 rounded-md bg-white/5">
-                                    {(() => {
-                                        const PreviewIcon = loadIcon(viewingPersona.icon);
-                                        return <PreviewIcon className="h-6 w-6 text-white/70" />;
-                                    })()}
-                                </div>
+                            <div className="p-3 bg-white/5 border border-white/20 rounded-md text-sm text-white/80">
+                                {viewingPersona.name}
                             </div>
                         </div>
                     </div>
@@ -342,40 +333,31 @@ export function PersonaTray({ selectedPersona, onPersonaChange, onClose, onPerso
                             )}
                         </div>
 
-                        {/* Name and Icon fields - 25% width */}
+                        {/* Name field - 25% width */}
                         <div className="w-1/4 space-y-2">
                             <Label htmlFor="persona-name" className="text-white/50 font-medium special-gothic-label">
-                                Name & Icon
+                                Name
                             </Label>
-                            <div className="space-y-2">
-                                <div className="relative">
-                                    <Input
-                                        id="persona-name"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder="e.g., Fantasy Artist"
-                                        className={`bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none placeholder:text-neutral-200/60 placeholder:italic pr-10 ${errors.name ? 'border border-red-500' : 'border border-white/20'}`}
+                            <div className="relative">
+                                <Input
+                                    id="persona-name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="e.g., Fantasy Artist"
+                                    className={`bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none placeholder:text-neutral-200/60 placeholder:italic pr-10 ${errors.name ? 'border border-red-500' : 'border border-white/20'}`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateName}
+                                    disabled={isGeneratingName || !personaDescription.trim()}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Generate name from description"
+                                    aria-label="Generate name from description"
+                                >
+                                    <Sparkles
+                                        className={`h-4 w-4 text-purple-400 ${isGeneratingName ? 'animate-pulse' : ''}`}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={handleGenerateName}
-                                        disabled={isGeneratingName || !personaDescription.trim()}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Generate name from description"
-                                        aria-label="Generate name from description"
-                                    >
-                                        <Sparkles
-                                            className={`h-4 w-4 text-purple-400 ${isGeneratingName ? 'animate-pulse' : ''}`}
-                                        />
-                                    </button>
-                                </div>
-                                {/* Icon preview */}
-                                <div className="flex items-center justify-center p-3 border border-white/20 rounded-md bg-white/5">
-                                    {(() => {
-                                        const PreviewIcon = loadIcon(selectedIcon);
-                                        return <PreviewIcon className="h-6 w-6 text-white/70" />;
-                                    })()}
-                                </div>
+                                </button>
                             </div>
                             {errors.name && (
                                 <p className="text-sm text-red-500">{errors.name}</p>

@@ -280,7 +280,7 @@ describe('Persona Management Property Tests', () => {
                             expect(persona.name).toBe(originalData.name);
                             expect(persona.shortDescription).toBe(originalData.description || 'Custom persona');
                             expect(persona.personaDescription).toBe(originalData.promptTemplate);
-                            expect(persona.icon).toBe(originalData.icon || 'Palette');
+                            expect(persona.icon).toBe(originalData.icon || null);
                             expect(persona.isEditable).toBe(true);
                             expect(persona.createdAt).toBeInstanceOf(Date);
                             expect(persona.updatedAt).toBeInstanceOf(Date);

@@ -12,7 +12,10 @@ import type { LucideIcon } from 'lucide-react';
  * @param iconName - The name of the Lucide icon (e.g., "Palette", "Sparkles")
  * @returns The icon component or a fallback icon if not found
  */
-export function loadIcon(iconName: string): LucideIcon {
+export function loadIcon(iconName: string | null | undefined): LucideIcon {
+    if (!iconName) {
+        return LucideIcons.Zap;
+    }
     // Try to get the icon from the Lucide icons object
     const icon = (LucideIcons as any)[iconName];
 
