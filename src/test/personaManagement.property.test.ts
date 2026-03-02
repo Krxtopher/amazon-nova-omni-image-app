@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { personaService } from '../services/personaService';
 import { amplifyDataService } from '../services/AmplifyDataService';
-import type { CustomPersona } from '../types/persona';
 
 // Mock AmplifyDataService
 vi.mock('../services/AmplifyDataService', () => ({
@@ -34,12 +33,14 @@ describe('Persona Management Property Tests', () => {
                     // Generate random persona data
                     fc.record({
                         id: fc.string({ minLength: 1, maxLength: 50 }),
+                        userId: fc.string({ minLength: 1, maxLength: 50 }),
                         name: fc.string({ minLength: 1, maxLength: 100 }),
                         description: fc.string({ minLength: 1, maxLength: 200 }),
                         promptTemplate: fc.string({ minLength: 1, maxLength: 500 }),
                         icon: fc.string({ minLength: 1, maxLength: 20 }),
-                        createdAt: fc.date(),
-                        updatedAt: fc.date()
+                        isDefault: fc.boolean(),
+                        createdAt: fc.date().map(d => d.toISOString()),
+                        updatedAt: fc.date().map(d => d.toISOString())
                     }),
                     // Generate random updates
                     fc.record({
@@ -59,8 +60,13 @@ describe('Persona Management Property Tests', () => {
 
                         vi.mocked(amplifyDataService.updatePersonaData).mockResolvedValue(mockUpdatedPersonaData);
 
-                        // Perform the update
-                        const result = await personaService.updateCustomPersona(originalPersonaData.id, updates);
+                        // Perform the update - convert null to undefined for compatibility
+                        const cleanUpdates: Partial<{ name: string; personaDescription: string; icon: string }> = {};
+                        if (updates.name !== undefined && updates.name !== null) cleanUpdates.name = updates.name;
+                        if (updates.personaDescription !== undefined && updates.personaDescription !== null) cleanUpdates.personaDescription = updates.personaDescription;
+                        if (updates.icon !== undefined && updates.icon !== null) cleanUpdates.icon = updates.icon;
+
+                        const result = await personaService.updateCustomPersona(originalPersonaData.id, cleanUpdates);
 
                         // Verify the update was called with correct parameters
                         const expectedUpdates: any = {};
@@ -120,7 +126,7 @@ describe('Persona Management Property Tests', () => {
                     fc.string({ minLength: 1, maxLength: 50 }),
                     async (personaId) => {
                         // Mock successful deletion
-                        vi.mocked(amplifyDataService.deletePersonaData).mockResolvedValue(true);
+                        vi.mocked(amplifyDataService.deletePersonaData).mockResolvedValue(undefined);
 
                         // Perform the deletion
                         const result = await personaService.deleteCustomPersona(personaId);
@@ -150,7 +156,7 @@ describe('Persona Management Property Tests', () => {
                     fc.string({ minLength: 1, maxLength: 50 }),
                     async (personaId) => {
                         // Mock deletion failure (persona doesn't exist)
-                        vi.mocked(amplifyDataService.deletePersonaData).mockResolvedValue(false);
+                        vi.mocked(amplifyDataService.deletePersonaData).mockRejectedValue(new Error('Not found'));
 
                         // Perform the deletion
                         const result = await personaService.deleteCustomPersona(personaId);
@@ -201,11 +207,11 @@ describe('Persona Management Property Tests', () => {
 
                         vi.mocked(amplifyDataService.createPersonaData).mockResolvedValue(mockCreatedPersonaData);
 
-                        // Perform the creation
+                        // Perform the creation - convert null to undefined for compatibility
                         const result = await personaService.createCustomPersona(
                             personaData.name,
                             personaData.personaDescription,
-                            personaData.description,
+                            personaData.description ?? undefined,
                             personaData.icon
                         );
 

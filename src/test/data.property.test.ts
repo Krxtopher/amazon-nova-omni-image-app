@@ -6,10 +6,10 @@ interface MockImageMetadata {
     id: string;
     userId: string;
     prompt: string;
-    enhancedPrompt?: string;
-    aspectRatio?: string;
+    enhancedPrompt?: string | null;
+    aspectRatio?: string | null;
     s3Key: string;
-    s3Url?: string;
+    s3Url?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -18,8 +18,8 @@ interface MockPersonaData {
     id: string;
     userId: string;
     name: string;
-    description?: string;
-    icon?: string;
+    description?: string | null;
+    icon?: string | null;
     promptTemplate: string;
     isDefault: boolean;
     createdAt: string;
@@ -32,7 +32,7 @@ class MockDataService {
     private personaData: MockPersonaData[] = [];
 
     // Simulate user-scoped metadata storage
-    storeImageMetadata(metadata: MockImageMetadata, requestingUserId: string): MockImageMetadata {
+    storeImageMetadata(metadata: Omit<MockImageMetadata, 'userId'>, requestingUserId: string): MockImageMetadata {
         // Ensure the metadata is associated with the requesting user
         const userScopedMetadata = {
             ...metadata,
@@ -48,7 +48,7 @@ class MockDataService {
     }
 
     // Simulate user-scoped persona storage
-    storePersonaData(persona: MockPersonaData, requestingUserId: string): MockPersonaData {
+    storePersonaData(persona: Omit<MockPersonaData, 'userId'>, requestingUserId: string): MockPersonaData {
         // Ensure the persona is associated with the requesting user
         const userScopedPersona = {
             ...persona,

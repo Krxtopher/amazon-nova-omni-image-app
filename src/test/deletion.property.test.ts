@@ -6,10 +6,10 @@ interface MockImageMetadata {
     id: string;
     userId: string;
     prompt: string;
-    enhancedPrompt?: string;
-    aspectRatio?: string;
+    enhancedPrompt?: string | null;
+    aspectRatio?: string | null;
     s3Key: string;
-    s3Url?: string;
+    s3Url?: string | null;
     createdAt: string;
     updatedAt: string;
 }

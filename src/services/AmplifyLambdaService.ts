@@ -38,25 +38,6 @@ export class AmplifyLambdaService {
     }
 
     /**
-     * Gets the current authentication token for API calls
-     */
-    private async getAuthToken(): Promise<string> {
-        try {
-            const session = await fetchAuthSession();
-            const token = session.tokens?.accessToken?.toString();
-
-            if (!token) {
-                throw new Error('No authentication token available');
-            }
-
-            return token;
-        } catch (error) {
-            console.error('Failed to get auth token:', error);
-            throw new Error('Authentication required. Please sign in.');
-        }
-    }
-
-    /**
      * Makes an authenticated API call to a Lambda function using Amplify's REST API
      * For CORS testing, we'll temporarily skip authentication
      */

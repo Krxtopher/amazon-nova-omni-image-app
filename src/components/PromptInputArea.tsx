@@ -482,26 +482,6 @@ export function PromptInputArea({ bedrockService, onError: _onError, onSuccess, 
     };
 
     /**
-     * Get actual dimensions from an image data URL
-     * Returns a promise that resolves with the image's actual width and height
-     */
-    const getImageDimensions = (dataUrl: string): Promise<{ width: number; height: number }> => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                resolve({
-                    width: img.naturalWidth,
-                    height: img.naturalHeight,
-                });
-            };
-            img.onerror = () => {
-                reject(new Error('Failed to load image for dimension checking'));
-            };
-            img.src = dataUrl;
-        });
-    };
-
-    /**
      * Calculate aspect ratio from image dimensions
      * Requirements: 6.5
      */

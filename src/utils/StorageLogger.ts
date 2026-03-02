@@ -6,7 +6,7 @@
 
 export interface StorageOperationMetrics {
     operation: string;
-    storageType: 'localStorage' | 'sqlite' | 'indexeddb';
+    storageType: 'localStorage' | 'sqlite' | 'indexeddb' | 'amplify-data' | 's3';
     duration: number;
     success: boolean;
     error?: string;
@@ -49,7 +49,7 @@ export class StorageLogger {
     /**
      * Start timing a storage operation
      */
-    public startOperation(operation: string, storageType: 'localStorage' | 'sqlite' | 'indexeddb', metadata?: Record<string, any>): StorageOperationTimer {
+    public startOperation(operation: string, storageType: 'localStorage' | 'sqlite' | 'indexeddb' | 'amplify-data' | 's3', metadata?: Record<string, any>): StorageOperationTimer {
         return new StorageOperationTimer(this, operation, storageType, metadata);
     }
 
@@ -148,7 +148,7 @@ export class StorageLogger {
     /**
      * Get operations filtered by storage type
      */
-    public getOperationsByStorage(storageType: 'localStorage' | 'sqlite' | 'indexeddb'): StorageOperationMetrics[] {
+    public getOperationsByStorage(storageType: 'localStorage' | 'sqlite' | 'indexeddb' | 'amplify-data' | 's3'): StorageOperationMetrics[] {
         return this.operations.filter(op => op.storageType === storageType);
     }
 
@@ -267,14 +267,14 @@ export class StorageLogger {
 export class StorageOperationTimer {
     private startTime: number;
     private operation: string;
-    private storageType: 'localStorage' | 'sqlite' | 'indexeddb';
+    private storageType: 'localStorage' | 'sqlite' | 'indexeddb' | 'amplify-data' | 's3';
     private metadata?: Record<string, any>;
     private logger: StorageLogger;
 
     constructor(
         logger: StorageLogger,
         operation: string,
-        storageType: 'localStorage' | 'sqlite' | 'indexeddb',
+        storageType: 'localStorage' | 'sqlite' | 'indexeddb' | 'amplify-data' | 's3',
         metadata?: Record<string, any>
     ) {
         this.logger = logger;
