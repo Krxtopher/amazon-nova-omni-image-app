@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Trash2, Loader2 } from 'lucide-react';
-import { sqliteService } from '@/services/sqliteService';
+import { amplifyDataService } from '@/services/AmplifyDataService';
+import { amplifyStorageService } from '@/services/AmplifyStorageService';
 import { useImageStore } from '@/stores/imageStore';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { toast } from 'sonner';
@@ -27,8 +28,24 @@ export function ResetDataButton() {
     const handleReset = async () => {
         setIsResetting(true);
         try {
-            // Clear all data from SQLite
-            await sqliteService.clearAll();
+            // Delete all images (S3 files + DynamoDB metadata) for the current user
+            const images = await amplifyDataService.listImageMetadata();
+            await Promise.all(
+                images.map(async (image) => {
+                    try {
+                        await amplifyStorageService.deleteImage(image.s3Key);
+                    } catch {
+                        // S3 file may already be gone
+                    }
+                    await amplifyDataService.deleteImageMetadata(image.id);
+                })
+            );
+
+            // Delete all personas for the current user
+            const personas = await amplifyDataService.listPersonaData();
+            await Promise.all(
+                personas.map((persona) => amplifyDataService.deletePersonaData(persona.id))
+            );
 
             // Reinitialize the store with empty data
             await initialize();

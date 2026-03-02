@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { sqliteService } from '@/services/sqliteService';
+import { amplifyDataService } from '@/services/AmplifyDataService';
+import { amplifyStorageService } from '@/services/AmplifyStorageService';
 import { useImageStore } from '@/stores/imageStore';
 import { useUIStore } from '@/stores/uiStore';
 import { toast } from 'sonner';
@@ -81,8 +82,24 @@ function SettingsDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     const handleReset = async () => {
         setIsResetting(true);
         try {
-            // Clear all data from SQLite
-            await sqliteService.clearAll();
+            // Delete all images (S3 files + DynamoDB metadata) for the current user
+            const images = await amplifyDataService.listImageMetadata();
+            await Promise.all(
+                images.map(async (image) => {
+                    try {
+                        await amplifyStorageService.deleteImage(image.s3Key);
+                    } catch {
+                        // S3 file may already be gone
+                    }
+                    await amplifyDataService.deleteImageMetadata(image.id);
+                })
+            );
+
+            // Delete all personas for the current user
+            const personas = await amplifyDataService.listPersonaData();
+            await Promise.all(
+                personas.map((persona) => amplifyDataService.deletePersonaData(persona.id))
+            );
 
             // Clear text items from localStorage
             localStorage.removeItem('textItems');
@@ -112,8 +129,20 @@ function SettingsDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     const handleDeleteImages = async () => {
         setIsDeletingImages(true);
         try {
-            // Delete all image metadata and data from SQLite
-            await sqliteService.deleteAllImages();
+            // List all image metadata for the current user (owner-based auth scopes to current user)
+            const images = await amplifyDataService.listImageMetadata();
+
+            // Delete each image's S3 file and DynamoDB metadata
+            await Promise.all(
+                images.map(async (image) => {
+                    try {
+                        await amplifyStorageService.deleteImage(image.s3Key);
+                    } catch {
+                        // S3 file may already be gone — continue with metadata deletion
+                    }
+                    await amplifyDataService.deleteImageMetadata(image.id);
+                })
+            );
 
             // Clear text items from localStorage
             localStorage.removeItem('textItems');

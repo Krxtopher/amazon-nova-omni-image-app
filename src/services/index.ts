@@ -8,7 +8,6 @@ export { StreamingPromptEnhancementService } from './StreamingPromptEnhancementS
 export type { StreamingServiceConfig } from './StreamingPromptEnhancementService';
 export { PromptEnhancementService } from './PromptEnhancementService';
 export type { ServiceConfig } from './PromptEnhancementService';
-export { sqliteService } from './sqliteService';
 export { binaryStorageService } from './BinaryStorageService';
 export type { BinaryStorageService } from './BinaryStorageService';
 export { AmplifyDataService, amplifyDataService } from './AmplifyDataService';
