@@ -24,6 +24,13 @@ const backend = defineBackend({
     emailDomainValidator,
 });
 
+// Disable unauthenticated (guest) access to the Cognito Identity Pool.
+// This app requires sign-in for all functionality — no guest access is needed.
+// Leaving unauthenticated identities enabled allows anyone with the Identity Pool ID
+// to obtain AWS credentials, which is a security risk.
+const { cfnIdentityPool } = backend.auth.resources.cfnResources;
+cfnIdentityPool.allowUnauthenticatedIdentities = false;
+
 // Create a new API stack for REST API and Lambda functions
 const apiStack = backend.createStack('api-stack');
 
@@ -99,15 +106,15 @@ const imageGeneratorApi = new RestApi(apiStack, 'ImageGeneratorApi', {
 const generateImageIntegration = new LambdaIntegration(generateImageFunction);
 const enhancePromptIntegration = new LambdaIntegration(enhancePromptFunction);
 
-// Add API routes WITHOUT Cognito authorization for testing
+// Add API routes with IAM authorization
 const generateImagePath = imageGeneratorApi.root.addResource('generate-image');
 generateImagePath.addMethod('POST', generateImageIntegration, {
-    authorizationType: AuthorizationType.NONE, // Temporarily remove auth
+    authorizationType: AuthorizationType.IAM,
 });
 
 const enhancePromptPath = imageGeneratorApi.root.addResource('enhance-prompt');
 enhancePromptPath.addMethod('POST', enhancePromptIntegration, {
-    authorizationType: AuthorizationType.NONE, // Temporarily remove auth
+    authorizationType: AuthorizationType.IAM,
 });
 
 // Create IAM policy to allow API access
