@@ -31,6 +31,14 @@ const backend = defineBackend({
 const { cfnIdentityPool } = backend.auth.resources.cfnResources;
 cfnIdentityPool.allowUnauthenticatedIdentities = false;
 
+// Disable self-registration on the Cognito User Pool.
+// Only admins should be able to create user accounts.
+// This prevents unauthorized users from signing up, even if they have a valid email domain.
+const { cfnUserPool } = backend.auth.resources.cfnResources;
+cfnUserPool.adminCreateUserConfig = {
+    allowAdminCreateUserOnly: true,
+};
+
 // Create a new API stack for REST API and Lambda functions
 const apiStack = backend.createStack('api-stack');
 

@@ -51,24 +51,10 @@ export const authenticatorTheme = {
 };
 
 export const authenticatorFormFields = {
-    signUp: {
-        email: {
-            order: 1,
-            placeholder: 'Enter your Amazon email address',
+    signIn: {
+        username: {
+            placeholder: 'Enter your email address',
             label: 'Email Address',
-            required: true,
-        },
-        password: {
-            order: 2,
-            placeholder: 'Enter your password',
-            label: 'Password',
-            required: true,
-        },
-        confirm_password: {
-            order: 3,
-            placeholder: 'Confirm your password',
-            label: 'Confirm Password',
-            required: true,
         },
     },
 };
@@ -81,7 +67,7 @@ export const authenticatorComponents = {
                     Image Generator
                 </h1>
                 <p className="text-muted-foreground">
-                    Sign in with your Amazon email address
+                    Sign in with your credentials
                 </p>
             </div>
         );
@@ -91,7 +77,7 @@ export const authenticatorComponents = {
         return (
             <div className="text-center mt-6">
                 <p className="text-sm text-muted-foreground">
-                    Access is restricted to Amazon email addresses
+                    Contact your administrator for account access
                 </p>
             </div>
         );

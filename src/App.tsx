@@ -293,6 +293,7 @@ function App() {
           <Authenticator
             formFields={authenticatorFormFields}
             components={authenticatorComponents}
+            hideSignUp={true}
           >
             {({ signOut, user }) => (
               <AuthProvider value={{ signOut, userEmail: user?.signInDetails?.loginId }}>
