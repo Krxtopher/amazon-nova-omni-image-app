@@ -1,17 +1,5 @@
 {
   "mcpServers": {
-    "builder-mcp": {
-      "command": "/Users/schultkr/.toolbox/bin/builder-mcp",
-      "args": [],
-      "env": {},
-      "disabled": false,
-      "autoApprove": [
-        "ReadInternalWebsites",
-        "InternalSearch"
-      ],
-      "disabledTools": [
-      ]
-    },
     "aws-mcp": {
       "command": "uvx",
       "timeout": 100000,
